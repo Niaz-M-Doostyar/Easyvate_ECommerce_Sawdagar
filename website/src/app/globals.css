@@ -115,6 +115,73 @@ a {
   transition: width 0.3s ease;
 }
 
+/* ==========================================
+   Owl Carousel Fallback Grid
+   Show items in a grid if owl-carousel has not initialized yet
+   ========================================== */
+.owl-carousel:not(.owl-loaded) {
+  display: flex !important;
+  flex-wrap: wrap;
+  gap: 16px;
+  overflow: hidden;
+}
+.owl-carousel:not(.owl-loaded) > .product-item,
+.owl-carousel:not(.owl-loaded) > .category-item,
+.owl-carousel:not(.owl-loaded) > .brand-item,
+.owl-carousel:not(.owl-loaded) > .instagram-item,
+.owl-carousel:not(.owl-loaded) > .testimonial-item {
+  flex: 0 0 auto;
+  width: calc(25% - 12px);
+  max-width: 280px;
+}
+.owl-carousel:not(.owl-loaded) > .hero-single {
+  flex: 0 0 100%;
+  width: 100%;
+}
+.owl-carousel:not(.owl-loaded) > .hero-single ~ .hero-single {
+  display: none;
+}
+.owl-carousel:not(.owl-loaded) > .deal-item {
+  flex: 0 0 100%;
+  width: 100%;
+}
+@media (max-width: 768px) {
+  .owl-carousel:not(.owl-loaded) > .product-item,
+  .owl-carousel:not(.owl-loaded) > .category-item {
+    width: calc(50% - 8px);
+  }
+}
+
+/* ==========================================
+   Toast z-index fix (above Mocart theme modals)
+   ========================================== */
+.fixed.z-\\[100\\] {
+  z-index: 100000 !important;
+}
+
+/* ==========================================
+   Button Fixes
+   ========================================== */
+/* Fix theme buttons to look consistent */
+.theme-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
+.theme-btn:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+/* Fix dropdown-toggle button in header to match theme */
+.header-top .dropdown-toggle {
+  font-size: inherit;
+  line-height: inherit;
+}
+.header-top .dropdown-toggle::after {
+  vertical-align: middle;
+}
+
 /* Order Tracking Steps */
 .order-track {
   padding: 30px;

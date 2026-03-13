@@ -48,7 +48,7 @@ export function ToastProvider({ children }) {
   return (
     <ToastContext.Provider value={{ toasts, addToast, removeToast, success, error, info, warning }}>
       {children}
-      <div className="fixed top-4 right-4 z-[100] flex flex-col gap-2 max-w-sm" style={{ direction: 'ltr' }}>
+      <div className="fixed top-4 right-4 flex flex-col gap-2 max-w-sm" style={{ direction: 'ltr', zIndex: 100000 }}>
         {toasts.map((toast) => (
           <div
             key={toast.id}

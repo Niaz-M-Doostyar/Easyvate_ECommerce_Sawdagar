@@ -68,7 +68,7 @@ export default function RootLayout({ children }) {
         <Script src="/assets/js/jquery.nice-select.min.js" strategy="lazyOnload" />
         <Script src="/assets/js/countdown.min.js" strategy="lazyOnload" />
         <Script src="/assets/js/modernizr.min.js" strategy="lazyOnload" />
-        <Script src="/assets/js/main.js" strategy="lazyOnload" />
+        {/* main.js disabled — MocartInit handles all plugin initialization */}
       </body>
     </html>
   );

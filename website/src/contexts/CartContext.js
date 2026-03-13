@@ -2,6 +2,8 @@
 
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { useAuth, authHeaders } from './AuthContext';
+import { useToast } from './ToastContext';
+import { safeJsonParse } from '@/lib/utils';
 
 const CartContext = createContext(null);
 const GUEST_CART_KEY = 'sawdagar_cart_v2';
@@ -41,13 +43,13 @@ function readGuestCart() {
     if (!raw) {
       const legacy = localStorage.getItem('sawdagar_cart');
       if (!legacy) return [];
-      const migrated = sanitizeGuestItems(JSON.parse(legacy));
+      const migrated = sanitizeGuestItems(safeJsonParse(legacy, []));
       localStorage.removeItem('sawdagar_cart');
       writeGuestCart(migrated);
       return migrated;
     }
 
-    const parsed = JSON.parse(raw);
+    const parsed = safeJsonParse(raw, null);
     if (!parsed || typeof parsed !== 'object') return [];
     if (!parsed.updatedAt || Date.now() - parsed.updatedAt > GUEST_CART_TTL_MS) {
       localStorage.removeItem(GUEST_CART_KEY);
@@ -55,6 +57,7 @@ function readGuestCart() {
     }
 
     return sanitizeGuestItems(parsed.items);
+
   } catch {
     return [];
   }
@@ -71,6 +74,7 @@ function writeGuestCart(items) {
 
 export function CartProvider({ children }) {
   const { user } = useAuth();
+  const toast = useToast();
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(false);
 
@@ -140,6 +144,7 @@ export function CartProvider({ children }) {
       }
       setItems(updated);
       writeGuestCart(updated);
+      toast.success('Added to cart');
       return { success: true };
     }
     const res = await fetch('/api/cart', {
@@ -149,9 +154,11 @@ export function CartProvider({ children }) {
     });
     if (res.ok) {
       await fetchCart();
+      toast.success('Added to cart');
       return { success: true };
     }
     const data = await res.json();
+    toast.error(data.error || 'Failed to add to cart');
     return { success: false, error: data.error };
   };
 
@@ -160,6 +167,7 @@ export function CartProvider({ children }) {
       const updated = items.map((i) => (i.productId === itemId ? { ...i, quantity } : i));
       setItems(updated);
       writeGuestCart(updated);
+      toast.success('Cart updated');
       return { success: true };
     }
     const res = await fetch(`/api/cart/${itemId}`, {
@@ -169,9 +177,12 @@ export function CartProvider({ children }) {
     });
     if (res.ok) {
       await fetchCart();
+      toast.success('Cart updated');
       return { success: true };
     }
-    return { success: false };
+    const data = await res.json();
+    toast.error(data.error || 'Failed to update cart');
+    return { success: false, error: data.error };
   };
 
   const removeFromCart = async (itemId) => {
@@ -179,24 +190,34 @@ export function CartProvider({ children }) {
       const updated = items.filter((i) => i.productId !== itemId);
       setItems(updated);
       writeGuestCart(updated);
+      toast.success('Removed from cart');
       return { success: true };
     }
     const res = await fetch(`/api/cart/${itemId}`, { method: 'DELETE', headers: authHeaders() });
     if (res.ok) {
       await fetchCart();
+      toast.success('Removed from cart');
       return { success: true };
     }
-    return { success: false };
+    const data = await res.json();
+    toast.error(data.error || 'Failed to remove from cart');
+    return { success: false, error: data.error };
   };
 
   const clearCart = async () => {
     if (!user) {
       setItems([]);
       localStorage.removeItem(GUEST_CART_KEY);
+      toast.success('Cart cleared');
       return;
     }
-    await fetch('/api/cart', { method: 'DELETE', headers: authHeaders() });
-    setItems([]);
+    const res = await fetch('/api/cart', { method: 'DELETE', headers: authHeaders() });
+    if (res.ok) {
+      setItems([]);
+      toast.success('Cart cleared');
+    } else {
+      toast.error('Failed to clear cart');
+    }
   };
 
   const cartCount = items.reduce((sum, i) => sum + (i.quantity || 0), 0);

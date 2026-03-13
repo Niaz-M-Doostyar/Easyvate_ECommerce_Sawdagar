@@ -11,15 +11,15 @@ export default function MocartInit() {
       if (cancelled) return;
       const $ = window.jQuery;
       if ($ && $.fn && $.fn.owlCarousel) {
-        // Wait one animation frame + 300ms for React DOM paint to finish
+        // Wait for React DOM paint to complete before initializing carousels
         requestAnimationFrame(() => {
           if (cancelled) return;
           timer = setTimeout(() => {
             if (!cancelled) initAll($);
-          }, 300);
+          }, 500);
         });
       } else if (retries > 0) {
-        timer = setTimeout(() => poll(retries - 1), 120);
+        timer = setTimeout(() => poll(retries - 1), 150);
       }
     }
 

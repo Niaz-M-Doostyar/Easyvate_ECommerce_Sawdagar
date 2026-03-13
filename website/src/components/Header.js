@@ -142,14 +142,14 @@ export default function Header() {
                     <li><Link href="/search"><i className="far fa-timer"></i> Daily Deal</Link></li>
                     <li>
                       <div className="dropdown">
-                        <button type="button" className="dropdown-toggle btn btn-link p-0" data-bs-toggle="dropdown" aria-expanded="false">
+                        <button type="button" className="dropdown-toggle" style={{ background: 'none', border: 'none', color: 'inherit', cursor: 'pointer', padding: 0, fontSize: 'inherit' }} data-bs-toggle="dropdown" aria-expanded="false">
                           <i className="far fa-globe-americas"></i> {lang === 'en' ? 'EN' : lang === 'ps' ? 'PS' : 'DR'}
                         </button>
-                        {/* <div className="dropdown-menu">
+                        <div className="dropdown-menu">
                           <button className="dropdown-item" onClick={() => switchLanguage('en')}>English</button>
                           <button className="dropdown-item" onClick={() => switchLanguage('ps')}>پښتو (Pashto)</button>
                           <button className="dropdown-item" onClick={() => switchLanguage('dr')}>دری (Dari)</button>
-                        </div> */}
+                        </div>
                       </div>
                     </li>
                     <li className="social">

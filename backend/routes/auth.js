@@ -4,7 +4,7 @@ const prisma = require('../lib/prisma');
 const { hashPassword, comparePassword, generateToken } = require('../lib/auth');
 const { validateEmail, sanitize } = require('../lib/utils');
 const { generateToken: generateUUID } = require('../lib/utils');
-const { sendVerificationEmail, sendPasswordResetEmail, sendAdminNotification } = require('../lib/email');
+const { sendVerificationEmail, sendPasswordResetEmail, sendAdminNotification, getLastEmailError } = require('../lib/email');
 const { authenticate } = require('../middleware/auth');
 const { logTransaction } = require('../lib/transactionLog');
 
@@ -41,8 +41,11 @@ router.post('/register', async (req, res) => {
       return res.status(400).json({ error: 'Company name is required for suppliers' });
     }
 
-    const verificationToken = generateUUID();
     const hashedPassword = await hashPassword(password);
+
+    // Auto-verify customers, suppliers need email verification
+    const autoVerify = userRole === 'customer';
+    const verificationToken = autoVerify ? null : generateUUID();
 
     const user = await prisma.user.create({
       data: {
@@ -51,7 +54,8 @@ router.post('/register', async (req, res) => {
         fullName: sanitize(fullName),
         phone: phone || null,
         role: userRole,
-        isActive: false,
+        isActive: autoVerify,
+        emailVerified: autoVerify,
         province: province || null,
         district: district || null,
         village: village || null,
@@ -65,13 +69,20 @@ router.post('/register', async (req, res) => {
       },
     });
 
-    await sendVerificationEmail(user.email, verificationToken);
+    if (!autoVerify) {
+      await sendVerificationEmail(user.email, verificationToken);
+    }
     if (userRole === 'supplier') {
       await sendAdminNotification('New supplier registration', `${user.fullName} (${user.email}) registered as a supplier.`);
     }
 
     await logTransaction(req, 'REGISTER', 'User', user.id, { email: user.email, role: userRole });
-    res.status(201).json({ message: 'Registration successful. Please verify your email.' });
+
+    if (autoVerify) {
+      res.status(201).json({ message: 'Registration successful! You can now log in.' });
+    } else {
+      res.status(201).json({ message: 'Registration successful. Please verify your email.' });
+    }
   } catch (err) {
     console.error('Register error:', err);
     res.status(500).json({ error: 'Registration failed' });
@@ -273,7 +284,11 @@ router.post('/test-email', async (req, res) => {
     if (result) {
       res.json({ message: `Test verification email sent to ${email}` });
     } else {
-      res.status(500).json({ error: 'Failed to send email. Check SMTP_USER and SMTP_PASS in .env' });
+      const err = (typeof getLastEmailError === 'function' ? getLastEmailError() : null);
+      return res.status(500).json({
+        error: 'Failed to send email. Check SMTP_USER and SMTP_PASS in .env',
+        details: err ? (err.message || String(err)) : undefined,
+      });
     }
   } catch (err) {
     console.error('Test email error:', err);

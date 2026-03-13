@@ -50,10 +50,7 @@ export default function CleanQuickViewModal({ product, onClose }) {
   const handleAdd = async () => {
     const res = await addToCart(product.id, qty);
     if (res?.success) {
-      toast.success(t?.("added_to_cart") || "Added to cart!");
       onClose();
-    } else {
-      toast.error(res?.error || t?.("error") || "Failed");
     }
   };
 
@@ -156,7 +153,7 @@ export default function CleanQuickViewModal({ product, onClose }) {
           )}
 
           <div style={{ marginTop: '15px', paddingTop: '15px', borderTop: '1px solid #eee' }}>
-            <Link href={`/products/${product.id}`} onClick={onClose} className="theme-btn2" style={{ width: '100%', textAlign: 'center' }}>
+            <Link href={`/products/${product.id}`} onClick={onClose} className="theme-btn theme-btn2" style={{ width: '100%', textAlign: 'center' }}>
               {t?.('view_details') || 'View Full Details'} <i className="fas fa-arrow-right"></i>
             </Link>
           </div>

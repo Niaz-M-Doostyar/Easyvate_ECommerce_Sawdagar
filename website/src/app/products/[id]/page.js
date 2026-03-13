@@ -5,6 +5,7 @@ import { useCart } from "@/contexts/CartContext";
 import { useToast } from "@/contexts/ToastContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { formatPrice } from "@/lib/currency";
+import { safeJsonParse } from "@/lib/utils";
 import ProductCard from "@/components/ProductCard";
 
 export default function ProductDetailPage({ params }) {
@@ -56,9 +57,7 @@ export default function ProductDetailPage({ params }) {
   const handleAddToCart = async () => {
     setAdding(true);
     try {
-      const r = await addToCart(parseInt(id), qty);
-      if (r.success) toast.success(t('added_to_cart') || "Added to cart!");
-      else toast.error(r.error || t('error') || "Failed to add to cart");
+      await addToCart(parseInt(id), qty);
     } catch {
       toast.error(t('error') || "Failed to add to cart");
     } finally {
@@ -101,11 +100,12 @@ export default function ProductDetailPage({ params }) {
   let attributes = [];
   try {
     if (product.attributes) {
-      const parsed = typeof product.attributes === "string" ? JSON.parse(product.attributes) : product.attributes;
+      const parsed = safeJsonParse(product.attributes, null);
       if (Array.isArray(parsed)) attributes = parsed;
-      else if (typeof parsed === "object") attributes = Object.entries(parsed).map(([k, v]) => ({ key: k, value: v }));
+      else if (parsed && typeof parsed === "object") attributes = Object.entries(parsed).map(([k, v]) => ({ key: k, value: v }));
     }
   } catch {}
+
 
   return (
     <>

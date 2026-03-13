@@ -137,7 +137,7 @@ export default function CartPage() {
                                 </div>
                               </td>
                               <td>
-                                <button onClick={() => { removeFromCart(item.id || item.productId); toast.success(t('item_removed') || "Item removed"); }} className="shop-cart-remove">
+                                <button onClick={() => removeFromCart(item.id || item.productId)} className="shop-cart-remove">
                                   <i className="far fa-times"></i>
                                 </button>
                               </td>
@@ -152,7 +152,7 @@ export default function CartPage() {
                   <div className="row">
                     <div className="col-md-5 col-lg-6">
                       <div className="shop-cart-btn text-md-end">
-                        <button onClick={() => { clearCart(); toast.success(t('cart_cleared') || "Cart cleared"); }} className="theme-btn2 me-2">
+                        <button onClick={() => clearCart()} className="theme-btn theme-btn2 me-2">
                           <i className="far fa-trash-alt"></i> {t('clear_cart') || 'Clear Cart'}
                         </button>
                         <Link href="/search" className="theme-btn">

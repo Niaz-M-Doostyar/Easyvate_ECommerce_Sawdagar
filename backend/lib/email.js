@@ -2,13 +2,15 @@ const nodemailer = require('nodemailer');
 
 const smtpHost = process.env.SMTP_HOST || 'smtp.gmail.com';
 const smtpPort = parseInt(process.env.SMTP_PORT, 10) || 587;
+const smtpSecure = process.env.SMTP_SECURE === 'true' || smtpPort === 465;
 const smtpUser = process.env.SMTP_USER;
 const smtpPass = process.env.SMTP_PASS;
 
 const transporter = nodemailer.createTransport({
   host: smtpHost,
   port: smtpPort,
-  secure: smtpPort === 465,
+  secure: smtpSecure,
+  requireTLS: true,
   auth: {
     user: smtpUser,
     pass: smtpPass,
@@ -38,20 +40,26 @@ function emailWrapper(title, body) {
 </td></tr></table></body></html>`;
 }
 
+let lastEmailError = null;
+
 const sendEmail = async (to, subject, html) => {
   try {
-    const fromAddress = process.env.SMTP_FROM || `Sawdagar NoReply <noreply@sawdagar.af>`;
+    const fromAddress = process.env.SMTP_FROM || `Sawdagar NoReply <noreply@sawdagaraf.com>`;
     await transporter.sendMail({
       from: fromAddress,
-      replyTo: 'noreply@sawdagar.af',
+      replyTo: 'noreply@sawdagaraf.com',
       to, subject, html,
     });
+    lastEmailError = null;
     return true;
   } catch (err) {
-    console.error('Email send error:', err.message);
+    console.error('Email send error:', err);
+    lastEmailError = err;
     return false;
   }
 };
+
+const getLastEmailError = () => lastEmailError;
 
 const sendVerificationEmail = async (email, token) => {
   const url = `${process.env.FRONTEND_URL}/verify-email?token=${token}`;

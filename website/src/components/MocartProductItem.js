@@ -35,7 +35,7 @@ export default function MocartProductItem({ product, showBadge = true }) {
       <div className="product-img">
         {badge}
         <Link href={`/products/${product.id}`}>
-          <img src={imgUrl} alt={name} loading="lazy" decoding="async" />
+          <img src={imgData.src} srcSet={imgData.srcSet} sizes={imgData.sizes} alt={name} loading="lazy" decoding="async" />
         </Link>
         <div className="product-action-wrap">
           <div className="product-action">
@@ -89,7 +89,7 @@ export function MocartProductListItem({ product }) {
   const name = lang === 'ps' ? (product.namePs || product.nameEn) :
                lang === 'dr' ? (product.nameDr || product.nameEn) : product.nameEn;
 
-  const imgUrl = optimizedImageUrl(product.images?.[0]?.url || '/assets/img/product/e1.png', { width: 280, quality: 75 });
+  const listImgUrl = optimizedImageUrl(product.images?.[0]?.url || '/assets/img/product/e1.png', { width: 280, quality: 75 });
   const price = product.retailPrice || product.suggestedPrice || 0;
   const oldPrice = product.wholesaleCost && product.wholesaleCost > price ? product.wholesaleCost : null;
 
@@ -97,7 +97,7 @@ export function MocartProductListItem({ product }) {
     <div className="product-list-item">
       <div className="product-list-img">
         <Link href={`/products/${product.id}`}>
-          <img src={imgUrl} alt={name} loading="lazy" decoding="async" />
+          <img src={listImgUrl} alt={name} loading="lazy" decoding="async" />
         </Link>
       </div>
       <div className="product-list-content">
