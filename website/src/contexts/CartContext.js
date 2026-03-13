@@ -120,44 +120,51 @@ export function CartProvider({ children }) {
 
   const addToCart = async (productId, quantity = 1) => {
     if (!user) {
-      let productData = null;
-      try {
-        const pRes = await fetch(`/api/products/${productId}`);
-        if (pRes.ok) {
-          const pData = await pRes.json();
-          productData = pData.product || pData;
-        }
-      } catch {}
-
+      // Optimistic: add immediately with minimal data, fetch product in background
       const existing = items.find((i) => i.productId === productId);
       let updated;
       if (existing) {
         updated = items.map((i) => (i.productId === productId ? { ...i, quantity: i.quantity + quantity } : i));
       } else {
-        updated = [...items, {
-          productId,
-          quantity,
-          retailPrice: productData?.retailPrice || 0,
-          nameEn: productData?.nameEn || '',
-          image: productData?.images?.[0]?.url || '',
-        }];
+        updated = [...items, { productId, quantity, retailPrice: 0, nameEn: '', image: '' }];
       }
       setItems(updated);
       writeGuestCart(updated);
       toast.success('Added to cart');
+
+      // Fetch product data in background to fill in price/name/image
+      if (!existing) {
+        fetch(`/api/products/${productId}`).then(r => r.ok ? r.json() : null).then(pData => {
+          if (!pData) return;
+          const p = pData.product || pData;
+          setItems(prev => {
+            const enriched = prev.map(i => i.productId === productId && !i.nameEn ? {
+              ...i, retailPrice: p.retailPrice || 0, nameEn: p.nameEn || '', image: p.images?.[0]?.url || '',
+            } : i);
+            writeGuestCart(enriched);
+            return enriched;
+          });
+        }).catch(() => {});
+      }
       return { success: true };
     }
+    // Logged-in: optimistic update then server sync
+    const existingItem = items.find(i => (i.product?.id || i.productId) === productId);
+    if (existingItem) {
+      setItems(prev => prev.map(i => i === existingItem ? { ...i, quantity: (i.quantity || 0) + quantity } : i));
+    }
+    toast.success('Added to cart');
     const res = await fetch('/api/cart', {
       method: 'POST',
       headers: authHeaders({ 'Content-Type': 'application/json' }),
       body: JSON.stringify({ productId, quantity }),
     });
     if (res.ok) {
-      await fetchCart();
-      toast.success('Added to cart');
+      fetchCart();
       return { success: true };
     }
     const data = await res.json();
+    fetchCart();
     toast.error(data.error || 'Failed to add to cart');
     return { success: false, error: data.error };
   };
@@ -170,17 +177,19 @@ export function CartProvider({ children }) {
       toast.success('Cart updated');
       return { success: true };
     }
+    // Optimistic update
+    setItems(prev => prev.map(i => i.id === itemId ? { ...i, quantity } : i));
+    toast.success('Cart updated');
     const res = await fetch(`/api/cart/${itemId}`, {
       method: 'PUT',
       headers: authHeaders({ 'Content-Type': 'application/json' }),
       body: JSON.stringify({ quantity }),
     });
     if (res.ok) {
-      await fetchCart();
-      toast.success('Cart updated');
       return { success: true };
     }
     const data = await res.json();
+    fetchCart();
     toast.error(data.error || 'Failed to update cart');
     return { success: false, error: data.error };
   };
@@ -193,15 +202,15 @@ export function CartProvider({ children }) {
       toast.error('Removed from cart');
       return { success: true };
     }
+    // Optimistic remove
+    setItems(prev => prev.filter(i => i.id !== itemId));
+    toast.error('Removed from cart');
     const res = await fetch(`/api/cart/${itemId}`, { method: 'DELETE', headers: authHeaders() });
     if (res.ok) {
-      await fetchCart();
-      toast.error('Removed from cart');
       return { success: true };
     }
-    const data = await res.json();
-    toast.error(data.error || 'Failed to remove from cart');
-    return { success: false, error: data.error };
+    fetchCart();
+    return { success: false };
   };
 
   const clearCart = async () => {
