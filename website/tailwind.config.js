@@ -20,7 +20,7 @@ module.exports = {
         champagne: '#F5EFE0',
         gold:      { DEFAULT: '#C5A572', dark: '#A8884A', light: '#D4BB85', muted: 'rgba(197,165,114,.12)', '50': '#FAF6EE', '100': '#F0E8D4' },
         // Legacy compat
-        primary:   { DEFAULT: '#0A1628', dark: '#050C18', light: '#1A2332', '50': '#F7FAFC', '100': '#E2E8F0' },
+        primary:   { DEFAULT: '#059669', dark: '#047a55', light: '#2fb57f', '50': '#ecfff4', '100': '#d6f8e8' },
         navy:      { DEFAULT: '#0A1628', dark: '#050C18', light: '#1A2332' },
         body:      '#4A5568',
         green:     '#48BB78',
