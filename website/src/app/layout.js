@@ -4,6 +4,7 @@ import { ToastProvider } from '@/contexts/ToastContext';
 import { LanguageProvider } from '@/contexts/LanguageContext';
 import { AuthProvider } from '@/contexts/AuthContext';
 import { CartProvider } from '@/contexts/CartContext';
+import { SiteDataProvider } from '@/contexts/SiteDataContext';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import ScrollToTop from '@/components/ScrollToTop';
@@ -26,35 +27,31 @@ export default function RootLayout({ children }) {
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;700&display=swap" rel="stylesheet" />
-        <link rel="preload" href="/assets/css/bootstrap.min.css" as="style" />
-        <link rel="preload" href="/assets/css/style.css" as="style" />
         <link rel="stylesheet" href="/assets/css/bootstrap.min.css" />
         <link rel="stylesheet" href="/assets/css/all-fontawesome.min.css" />
-        <link rel="stylesheet" href="/assets/css/animate.min.css" />
-        <link rel="stylesheet" href="/assets/css/magnific-popup.min.css" />
         <link rel="stylesheet" href="/assets/css/owl.carousel.min.css" />
-        <link rel="stylesheet" href="/assets/css/jquery-ui.min.css" />
-        <link rel="stylesheet" href="/assets/css/nice-select.min.css" />
         <link rel="stylesheet" href="/assets/css/style.css" />
       </head>
       <body>
         <PageLoader />
         <ToastProvider>
           <LanguageProvider>
-            <AuthProvider>
-              <CartProvider>
-                <Header />
-                <main className="main">{children}</main>
-                <Footer />
-                <MobileBottomNav />
-                <ScrollToTop />
-                <AnimationInit />
-              </CartProvider>
-            </AuthProvider>
+            <SiteDataProvider>
+              <AuthProvider>
+                <CartProvider>
+                  <Header />
+                  <main className="main">{children}</main>
+                  <Footer />
+                  <MobileBottomNav />
+                  <ScrollToTop />
+                  <AnimationInit />
+                </CartProvider>
+              </AuthProvider>
+            </SiteDataProvider>
           </LanguageProvider>
         </ToastProvider>
 
-        <Script src="/assets/js/jquery-3.7.1.min.js" strategy="beforeInteractive" />
+        <Script src="/assets/js/jquery-3.7.1.min.js" strategy="afterInteractive" />
         <Script src="/assets/js/bootstrap.bundle.min.js" strategy="afterInteractive" />
         <Script src="/assets/js/owl.carousel.min.js" strategy="afterInteractive" />
         <Script src="/assets/js/wow.min.js" strategy="afterInteractive" />

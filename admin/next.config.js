@@ -6,7 +6,11 @@ module.exports = {
   poweredByHeader: false,
   compress: true,
   swcMinify: true,
-  images: { domains: ['localhost', 'images.unsplash.com'] },
+  output: 'standalone',
+  images: {
+    domains: ['localhost', 'images.unsplash.com'],
+    minimumCacheTTL: 86400,
+  },
   async headers() {
     return [
       {

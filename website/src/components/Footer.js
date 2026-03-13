@@ -1,35 +1,14 @@
 'use client';
 
-import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useSiteData } from '@/contexts/SiteDataContext';
 
 export default function Footer() {
   const { lang } = useLanguage();
-  const [categories, setCategories] = useState([]);
-  const [siteContent, setSiteContent] = useState(null);
+  const { categories, siteContent, getName: siteGetName } = useSiteData();
 
-  useEffect(() => {
-    Promise.all([
-      fetch('/api/categories').then(r => r.json()).catch(() => null),
-      fetch('/api/site-content').then(r => r.json()).catch(() => null),
-    ]).then(([catData, siteData]) => {
-      const cats = Array.isArray(catData?.categories)
-        ? catData.categories
-        : Array.isArray(catData)
-        ? catData
-        : [];
-      setCategories(cats);
-      if (siteData?.content) setSiteContent(siteData.content);
-    });
-  }, []);
-
-  const getName = (item) => {
-    if (!item) return '';
-    if (lang === 'ps' && item.namePs) return item.namePs;
-    if (lang === 'dr' && item.nameDr) return item.nameDr;
-    return item.nameEn || '';
-  };
+  const getName = (item) => siteGetName(item, lang);
 
   const footer = siteContent?.footer || {};
 

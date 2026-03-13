@@ -5,8 +5,12 @@ export default function PageLoader() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const timer = setTimeout(() => setLoading(false), 1000);
-    const handleLoad = () => setTimeout(() => setLoading(false), 300);
+    const timer = setTimeout(() => setLoading(false), 400);
+    const handleLoad = () => setTimeout(() => setLoading(false), 100);
+    if (document.readyState === 'complete') {
+      setLoading(false);
+      return;
+    }
     window.addEventListener('load', handleLoad);
     return () => {
       clearTimeout(timer);

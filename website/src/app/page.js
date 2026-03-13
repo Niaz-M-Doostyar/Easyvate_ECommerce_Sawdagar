@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useCart } from '@/contexts/CartContext';
+import { useSiteData } from '@/contexts/SiteDataContext';
 import MocartInit from '@/components/MocartInit';
 import MocartProductItem, { MocartProductListItem } from '@/components/MocartProductItem';
 import { formatPrice, CURRENCY_SYMBOL } from '@/lib/currency';
@@ -11,29 +12,19 @@ import { formatPrice, CURRENCY_SYMBOL } from '@/lib/currency';
 export default function HomePage() {
   const { lang } = useLanguage();
   const { addToCart } = useCart();
+  const { categories, siteContent, getName: siteGetName } = useSiteData();
   const [products, setProducts] = useState([]);
-  const [categories, setCategories] = useState([]);
-  const [siteContent, setSiteContent] = useState(null);
   const [sponsoredProducts, setSponsoredProducts] = useState([]);
   const [activeTab, setActiveTab] = useState(0);
 
-  const getName = useCallback((item) => {
-    if (!item) return '';
-    if (lang === 'ps' && item.namePs) return item.namePs;
-    if (lang === 'dr' && item.nameDr) return item.nameDr;
-    return item.nameEn || '';
-  }, [lang]);
+  const getName = useCallback((item) => siteGetName(item, lang), [siteGetName, lang]);
 
   useEffect(() => {
     Promise.all([
       fetch('/api/products?limit=24&status=approved').then(r => r.json()).catch(() => ({})),
-      fetch('/api/categories').then(r => r.json()).catch(() => ({})),
-      fetch('/api/site-content').then(r => r.json()).catch(() => null),
       fetch('/api/products/sponsored').then(r => r.json()).catch(() => ({})),
-    ]).then(([pData, cData, siteData, sponsoredData]) => {
+    ]).then(([pData, sponsoredData]) => {
       setProducts(pData.products || []);
-      setCategories(cData.categories || []);
-      if (siteData?.content) setSiteContent(siteData.content);
       setSponsoredProducts(sponsoredData.products || sponsoredData || []);
     });
   }, []);

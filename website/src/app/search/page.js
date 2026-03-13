@@ -5,19 +5,20 @@ import Link from "next/link";
 import ProductCard from "@/components/ProductCard";
 import Pagination from "@/components/Pagination";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useSiteData } from "@/contexts/SiteDataContext";
 import { CURRENCY_SYMBOL } from "@/lib/currency";
 
 function SearchContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const { t, lang } = useLanguage();
+  const { categories, getName: siteGetName } = useSiteData();
   const q = searchParams.get("q") || "";
   const cat = searchParams.get("category") || "";
   const sort = searchParams.get("sort") || "";
   const currentPage = parseInt(searchParams.get("page") || "1");
 
   const [products, setProducts] = useState([]);
-  const [categories, setCategories] = useState([]);
   const [totalPages, setTotalPages] = useState(1);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -27,14 +28,7 @@ function SearchContent() {
   const [ratingFilter, setRatingFilter] = useState(0);
   const [showMobileFilter, setShowMobileFilter] = useState(false);
 
-  const getName = (item) => {
-    if (!item) return '';
-    if (lang === 'ps' && item.namePs) return item.namePs;
-    if (lang === 'dr' && item.nameDr) return item.nameDr;
-    return item.nameEn || '';
-  };
-
-  useEffect(() => { fetch("/api/categories").then(r => r.json()).then(d => setCategories(d.categories || d || [])).catch(() => {}); }, []);
+  const getName = (item) => siteGetName(item, lang);
 
   const fetchProducts = useCallback(async () => {
     setLoading(true);

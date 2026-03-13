@@ -4,6 +4,7 @@ const nextConfig = {
   poweredByHeader: false,
   compress: true,
   swcMinify: true,
+  output: 'standalone',
   images: {
     domains: ['localhost', 'images.unsplash.com', 'upload.wikimedia.org', 'picsum.photos'],
     remotePatterns: [
@@ -11,6 +12,10 @@ const nextConfig = {
       { protocol: 'https', hostname: 'upload.wikimedia.org' },
       { protocol: 'https', hostname: 'picsum.photos' },
     ],
+    minimumCacheTTL: 86400,
+  },
+  experimental: {
+    optimizeCss: false,
   },
   async headers() {
     return [

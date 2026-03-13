@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, memo } from 'react';
 import { useCart } from '@/contexts/CartContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { formatPrice } from '@/lib/currency';
@@ -12,7 +12,7 @@ function normalizeImg(src) {
   return `/${src}`;
 }
 
-export default function MocartProductItem({ product, showBadge = true }) {
+const MocartProductItem = memo(function MocartProductItem({ product, showBadge = true }) {
   const { addToCart } = useCart();
   const { lang } = useLanguage();
   const [isNew, setIsNew] = useState(false);
@@ -93,9 +93,11 @@ export default function MocartProductItem({ product, showBadge = true }) {
       </div>
     </div>
   );
-}
+});
 
-export function MocartProductListItem({ product }) {
+export default MocartProductItem;
+
+export const MocartProductListItem = memo(function MocartProductListItem({ product }) {
   const { addToCart } = useCart();
   const { lang } = useLanguage();
 
@@ -139,4 +141,4 @@ export function MocartProductListItem({ product }) {
       </button>
     </div>
   );
-}
+});

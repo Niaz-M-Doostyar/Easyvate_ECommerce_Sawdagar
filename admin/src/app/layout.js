@@ -1,8 +1,16 @@
 "use client";
 import "./globals.css";
+import { SWRConfig } from "swr";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ToastProvider } from "@/contexts/ToastContext";
 import { LanguageProvider } from "@/contexts/LanguageContext";
+
+const swrConfig = {
+  dedupingInterval: 10000,
+  revalidateOnFocus: false,
+  revalidateIfStale: true,
+};
+
 export default function RootLayout({ children }) {
   return (
     <html lang="en" className="scroll-smooth">
@@ -12,11 +20,13 @@ export default function RootLayout({ children }) {
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
       </head>
       <body className="min-h-screen bg-[#F5F7FA]">
-        <ToastProvider>
-          <LanguageProvider>
-            <AuthProvider>{children}</AuthProvider>
-          </LanguageProvider>
-        </ToastProvider>
+        <SWRConfig value={swrConfig}>
+          <ToastProvider>
+            <LanguageProvider>
+              <AuthProvider>{children}</AuthProvider>
+            </LanguageProvider>
+          </ToastProvider>
+        </SWRConfig>
       </body>
     </html>
   );

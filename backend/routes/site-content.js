@@ -6,6 +6,7 @@ const { getSiteContent } = require('../lib/siteContent');
 router.get('/', async (req, res) => {
   try {
     const content = await getSiteContent();
+    res.set('Cache-Control', 'public, max-age=60, stale-while-revalidate=120');
     res.json({ content });
   } catch {
     res.status(500).json({ error: 'Failed to fetch site content' });

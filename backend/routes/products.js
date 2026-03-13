@@ -72,6 +72,7 @@ router.get('/', optionalAuth, async (req, res) => {
     ]);
 
     const totalPages = Math.max(1, Math.ceil(total / limit));
+    res.set('Cache-Control', 'public, max-age=30, stale-while-revalidate=60');
     res.json({
       products,
       total,

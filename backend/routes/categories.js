@@ -22,6 +22,7 @@ router.get('/', async (req, res) => {
       include: { _count: { select: { products: { where: { status: 'approved', isDeleted: false } } } } },
       orderBy: { nameEn: 'asc' },
     });
+    res.set('Cache-Control', 'public, max-age=60, stale-while-revalidate=120');
     res.json({ categories: allCategories, tree: categories });
   } catch (err) {
     console.error('Categories error:', err);

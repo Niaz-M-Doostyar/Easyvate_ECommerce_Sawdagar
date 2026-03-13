@@ -6,43 +6,23 @@ import { useRouter, usePathname } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { useCart } from '@/contexts/CartContext';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useSiteData } from '@/contexts/SiteDataContext';
 import { formatPrice } from '@/lib/currency';
 
 export default function Header() {
   const { user, logout } = useAuth();
   const { items: cartItems, cartCount, cartTotal, removeFromCart } = useCart();
   const { t, lang, switchLanguage } = useLanguage();
+  const { categories, siteContent, getName: siteGetName } = useSiteData();
   const router = useRouter();
   const pathname = usePathname();
-  const [categories, setCategories] = useState([]);
-  const [siteContent, setSiteContent] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [suggestions, setSuggestions] = useState([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const searchRef = useRef(null);
   const debounceRef = useRef(null);
 
-  const getName = useCallback((item) => {
-    if (!item) return '';
-    if (lang === 'ps' && item.namePs) return item.namePs;
-    if (lang === 'dr' && item.nameDr) return item.nameDr;
-    return item.nameEn || '';
-  }, [lang]);
-
-  useEffect(() => {
-    Promise.all([
-      fetch('/api/categories').then(r => r.json()).catch(() => null),
-      fetch('/api/site-content').then(r => r.json()).catch(() => null),
-    ]).then(([catData, siteData]) => {
-      const cats = Array.isArray(catData?.categories)
-        ? catData.categories
-        : Array.isArray(catData)
-        ? catData
-        : [];
-      setCategories(cats);
-      if (siteData?.content) setSiteContent(siteData.content);
-    });
-  }, []);
+  const getName = useCallback((item) => siteGetName(item, lang), [siteGetName, lang]);
 
   useEffect(() => {
     // Close mobile menu on route change
