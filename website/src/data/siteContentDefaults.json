@@ -1,0 +1,152 @@
+{
+  "header": {
+    "email": "info@sawdagar.af",
+    "phone": "+93 700 000 000",
+    "topBarMessage": "Welcome to Sawdagar Online Shopping Store!",
+    "socialLinks": { "facebook": "#", "twitter": "#", "instagram": "#", "youtube": "#" },
+    "logo": ""
+  },
+  "footer": {
+    "aboutText": "Afghanistan's premier online marketplace connecting suppliers, retailers, and customers nationwide. Quality products, fair prices, fast delivery.",
+    "phone": "+93 700 000 000",
+    "email": "info@sawdagar.af",
+    "address": "Kabul, Afghanistan",
+    "businessHours": "Sat - Thu (8:00 AM - 5:00 PM)",
+    "quickLinks": [
+      { "label": "About Us", "href": "/about" },
+      { "label": "Contact Us", "href": "/contact" },
+      { "label": "Shop", "href": "/search" },
+      { "label": "My Account", "href": "/dashboard" }
+    ],
+    "supportLinks": [
+      { "label": "FAQ", "href": "/contact" },
+      { "label": "Returns & Refunds", "href": "/contact" },
+      { "label": "Shipping Info", "href": "/contact" },
+      { "label": "Privacy Policy", "href": "/contact" }
+    ],
+    "socialLinks": { "facebook": "#", "twitter": "#", "instagram": "#", "youtube": "#", "pinterest": "#" },
+    "appStoreUrl": "#",
+    "playStoreUrl": "#",
+    "copyrightText": "Sawdagar"
+  },
+  "home": {
+    "hero": {
+      "badge": "Start From ؋999",
+      "titleLines": ["Explore", "Unique", "Products"],
+      "description": "Afghanistan's premier online marketplace with thousands of quality products. Free delivery across all 34 provinces.",
+      "primaryButtonLabel": "Shop Now",
+      "primaryButtonHref": "/search",
+      "secondaryButtonLabel": "Learn More",
+      "secondaryButtonHref": "/about",
+      "image": "",
+      "priceLabel": "Price",
+      "priceValue": "؋2,500",
+      "slides": [
+        { "subtitle": "Start From ؋999", "title": "Explore The Trendy products for you.", "description": "", "image": "/assets/img/hero/01.png", "priceLabel": "Price", "priceValue": "؋2,500" },
+        { "subtitle": "Start From ؋999", "title": "Explore The Trendy products for you.", "description": "", "image": "/assets/img/hero/02.png", "priceLabel": "Price", "priceValue": "؋2,500" },
+        { "subtitle": "Start From ؋999", "title": "Explore The Trendy products for you.", "description": "", "image": "/assets/img/hero/03.png", "priceLabel": "Price", "priceValue": "؋2,500" }
+      ]
+    },
+    "promoBanners": [
+      { "label": "Travel Sale", "title": "Best Travel Sale\nCollections", "image": "/assets/img/banner/mini-banner-1.jpg", "buttonLabel": "Shop Now", "buttonHref": "/search" },
+      { "label": "Hot Sale", "title": "Headphone Sale\nCollections", "image": "/assets/img/banner/mini-banner-2.jpg", "buttonLabel": "Discover Now", "buttonHref": "/search" },
+      { "label": "Shoe Sale", "title": "Summer Shoe Sale\nUp To 50% Off", "image": "/assets/img/banner/mini-banner-3.jpg", "buttonLabel": "Discover Now", "buttonHref": "/search" }
+    ],
+    "features": [
+      { "title": "Free Delivery", "desc": "Orders Over ؋5,000", "icon": "delivery-2.svg" },
+      { "title": "Get Refund", "desc": "Within 30 Days Returns", "icon": "refund.svg" },
+      { "title": "Safe Payment", "desc": "100% Secure Payment", "icon": "payment.svg" },
+      { "title": "24/7 Support", "desc": "Feel Free To Call Us", "icon": "support.svg" }
+    ],
+    "productBannerImage": "/assets/img/banner/product-banner.jpg",
+    "bigBanner": { "subtitle": "Mega Collections", "title": "Huge Sale Up To 40% Off", "description": "at our outlet stores", "buttonLabel": "Shop Now", "buttonHref": "/search", "image": "/assets/img/banner/big-banner.jpg" },
+    "brands": { "title": "Popular Brands" },
+    "brandItems": [
+      { "name": "Brand 1", "image": "/assets/img/brand/01.png" },
+      { "name": "Brand 2", "image": "/assets/img/brand/02.png" },
+      { "name": "Brand 3", "image": "/assets/img/brand/03.png" },
+      { "name": "Brand 4", "image": "/assets/img/brand/04.png" },
+      { "name": "Brand 5", "image": "/assets/img/brand/05.png" },
+      { "name": "Brand 6", "image": "/assets/img/brand/06.png" }
+    ],
+    "video": { "backgroundImage": "/assets/img/video/01.jpg", "videoUrl": "https://www.youtube.com/watch?v=ckHzmP1evNU" },
+    "dealOfWeek": { "badge": "Weekly Deal", "title": "Best Deal For This Week", "description": "There are many variations of passages available but the majority have suffered alteration in some form.", "buttonLabel": "Shop Now", "buttonHref": "/search", "image": "/assets/img/deal/01.png", "discountPercent": "35", "countdownDate": "2027/12/30" },
+    "gallery": { "tagline": "Our Gallery", "title": "Let's Check Our Photo Gallery" },
+    "galleryImages": [
+      { "image": "/assets/img/gallery/02.jpg", "size": "col-md-4 col-lg-3" },
+      { "image": "/assets/img/gallery/03.jpg", "size": "col-md-4 col-lg-3" },
+      { "image": "/assets/img/gallery/01.jpg", "size": "col-md-12 col-lg-6" },
+      { "image": "/assets/img/gallery/06.jpg", "size": "col-md-8 col-lg-6" },
+      { "image": "/assets/img/gallery/04.jpg", "size": "col-md-4 col-lg-3" },
+      { "image": "/assets/img/gallery/05.jpg", "size": "col-md-4 col-lg-3" }
+    ],
+    "testimonials": { "tagline": "Testimonials", "title": "What Our Clients Say About Us" },
+    "testimonialItems": [
+      { "name": "Sylvia H Green", "role": "Customer", "image": "/assets/img/testimonial/01.jpg", "text": "There are many variations of long passages available but the content majority have suffered to the editor page.", "rating": 5 },
+      { "name": "Gordo Novak", "role": "Customer", "image": "/assets/img/testimonial/02.jpg", "text": "There are many variations of long passages available but the content majority have suffered to the editor page.", "rating": 5 },
+      { "name": "Reid E Butt", "role": "Customer", "image": "/assets/img/testimonial/03.jpg", "text": "There are many variations of long passages available but the content majority have suffered to the editor page.", "rating": 5 }
+    ],
+    "blog": { "tagline": "Our Blog", "title": "Our Latest News & Blog" },
+    "blogItems": [
+      { "image": "/assets/img/blog/01.jpg", "date": "Aug 12, 2025", "author": "Admin", "comments": "2.5k", "title": "There are many variations of passage available majority suffered.", "excerpt": "There are many variations available the majority have suffered alteration randomised words." },
+      { "image": "/assets/img/blog/02.jpg", "date": "Aug 15, 2025", "author": "Admin", "comments": "3.1k", "title": "Contrary to popular belief making simply random text latin.", "excerpt": "There are many variations available the majority have suffered alteration randomised words." },
+      { "image": "/assets/img/blog/03.jpg", "date": "Aug 18, 2025", "author": "Admin", "comments": "1.6k", "title": "If you are going use passage you need sure there middle text.", "excerpt": "There are many variations available the majority have suffered alteration randomised words." }
+    ],
+    "newsletter": { "title": "Get 20% Off Discount Coupon", "description": "By subscribing our newsletter", "buttonLabel": "Subscribe" },
+    "instagram": { "title": "@sawdagar" },
+    "instagramItems": [
+      { "image": "/assets/img/instagram/01.jpg" },
+      { "image": "/assets/img/instagram/02.jpg" },
+      { "image": "/assets/img/instagram/03.jpg" },
+      { "image": "/assets/img/instagram/04.jpg" },
+      { "image": "/assets/img/instagram/05.jpg" },
+      { "image": "/assets/img/instagram/06.jpg" },
+      { "image": "/assets/img/instagram/07.jpg" }
+    ]
+  },
+  "about": {
+    "heroTitle": "About Sawdagar",
+    "heroDescription": "Afghanistan's leading online marketplace connecting suppliers, retailers, and customers nationwide",
+    "missionLabel": "Our Mission",
+    "missionTitle": "Empowering Afghan Commerce",
+    "missionParagraphs": [
+      "Sawdagar bridges the gap between wholesale suppliers and retail customers, creating a seamless marketplace that serves all of Afghanistan.",
+      "We are committed to making e-commerce accessible, reliable, and affordable for every Afghan citizen."
+    ],
+    "missionImage": "",
+    "stats": [
+      { "value": "10K+", "label": "Happy Customers" },
+      { "value": "500+", "label": "Products" },
+      { "value": "34", "label": "Provinces Covered" },
+      { "value": "100+", "label": "Trusted Suppliers" }
+    ],
+    "steps": [
+      { "step": "01", "title": "Suppliers List", "desc": "Verified suppliers upload products with wholesale prices" },
+      { "step": "02", "title": "Admin Reviews", "desc": "Our team reviews, approves, and sets fair retail pricing" },
+      { "step": "03", "title": "Customers Shop", "desc": "Browse, search, and add products to your cart" },
+      { "step": "04", "title": "COD Delivery", "desc": "Pay cash on delivery when your order arrives" }
+    ],
+    "ctaTitle": "Ready to Start Shopping?",
+    "ctaDescription": "Join thousands of satisfied customers across Afghanistan",
+    "primaryButtonLabel": "Browse Products",
+    "primaryButtonHref": "/search",
+    "secondaryButtonLabel": "Become a Supplier",
+    "secondaryButtonHref": "/register"
+  },
+  "contact": {
+    "heroTitle": "Contact Us",
+    "heroDescription": "Have questions? We'd love to hear from you.",
+    "cards": [
+      { "icon": "M15 10.5a3 3 0 11-6 0 3 3 0 016 0z M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z", "title": "Our Office", "lines": ["Kabul, Afghanistan", "District 5, Main Street"] },
+      { "icon": "M2.25 6.75c0 8.284 6.716 15 15 15h2.25a2.25 2.25 0 002.25-2.25v-1.372c0-.516-.351-.966-.852-1.091l-4.423-1.106c-.44-.11-.902.055-1.173.417l-.97 1.293c-.282.376-.769.542-1.21.38a12.035 12.035 0 01-7.143-7.143c-.162-.441.004-.928.38-1.21l1.293-.97c.363-.271.527-.734.417-1.173L6.963 3.102a1.125 1.125 0 00-1.091-.852H4.5A2.25 2.25 0 002.25 4.5v2.25z", "title": "Phone", "lines": ["+93 700 000 000", "+93 799 000 000"] },
+      { "icon": "M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75", "title": "Email", "lines": ["info@sawdagar.af", "support@sawdagar.af"] }
+    ],
+    "businessHoursTitle": "Business Hours",
+    "businessHours": [
+      { "day": "Saturday - Thursday", "time": "8:00 AM - 5:00 PM" },
+      { "day": "Friday", "time": "Closed" }
+    ],
+    "formTitle": "Send Us a Message",
+    "successMessage": "Message sent! We'll get back to you soon."
+  }
+}
