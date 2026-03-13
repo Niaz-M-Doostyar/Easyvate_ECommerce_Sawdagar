@@ -1,26 +1,41 @@
 'use client';
 
 import Link from 'next/link';
+import { useState, useEffect } from 'react';
 import { useCart } from '@/contexts/CartContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { formatPrice } from '@/lib/currency';
-import { optimizedImageUrl, responsiveImage } from '@/lib/image';
+
+function normalizeImg(src) {
+  if (!src) return '/assets/img/product/e1.png';
+  if (src.startsWith('http') || src.startsWith('/')) return src;
+  return `/${src}`;
+}
 
 export default function MocartProductItem({ product, showBadge = true }) {
   const { addToCart } = useCart();
   const { lang } = useLanguage();
+  const [isNew, setIsNew] = useState(false);
 
   if (!product) return null;
 
   const name = lang === 'ps' ? (product.namePs || product.nameEn) :
                lang === 'dr' ? (product.nameDr || product.nameEn) : product.nameEn;
 
-  const imgData = responsiveImage(product.images?.[0]?.url || '/assets/img/product/e1.png', { widths: [280, 420, 560], quality: 75, sizes: '(max-width: 576px) 45vw, (max-width: 992px) 30vw, 220px' });
+  const imgSrc = normalizeImg(product.images?.[0]?.url);
   const price = product.retailPrice || product.suggestedPrice || 0;
   const oldPrice = product.wholesaleCost && product.wholesaleCost > price ? product.wholesaleCost : null;
-  const isNew = product.createdAt && (Date.now() - new Date(product.createdAt).getTime()) < 7 * 86400000;
   const isOutOfStock = product.stock <= 0;
   const discount = oldPrice ? Math.round(((oldPrice - price) / oldPrice) * 100) : 0;
+
+  useEffect(() => {
+    if (!product?.createdAt) {
+      setIsNew(false);
+      return;
+    }
+    const createdAt = new Date(product.createdAt).getTime();
+    setIsNew(Date.now() - createdAt < 7 * 86400000);
+  }, [product?.createdAt]);
 
   let badge = null;
   if (showBadge) {
@@ -35,7 +50,7 @@ export default function MocartProductItem({ product, showBadge = true }) {
       <div className="product-img">
         {badge}
         <Link href={`/products/${product.id}`}>
-          <img src={imgData.src} srcSet={imgData.srcSet} sizes={imgData.sizes} alt={name} loading="lazy" decoding="async" />
+          <img src={imgSrc} alt={name} loading="lazy" decoding="async" />
         </Link>
         <div className="product-action-wrap">
           <div className="product-action">
@@ -89,7 +104,7 @@ export function MocartProductListItem({ product }) {
   const name = lang === 'ps' ? (product.namePs || product.nameEn) :
                lang === 'dr' ? (product.nameDr || product.nameEn) : product.nameEn;
 
-  const listImgUrl = optimizedImageUrl(product.images?.[0]?.url || '/assets/img/product/e1.png', { width: 280, quality: 75 });
+  const listImgUrl = normalizeImg(product.images?.[0]?.url);
   const price = product.retailPrice || product.suggestedPrice || 0;
   const oldPrice = product.wholesaleCost && product.wholesaleCost > price ? product.wholesaleCost : null;
 

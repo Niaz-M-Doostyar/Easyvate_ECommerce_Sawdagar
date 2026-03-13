@@ -6,18 +6,25 @@ const smtpSecure = process.env.SMTP_SECURE === 'true' || smtpPort === 465;
 const smtpUser = process.env.SMTP_USER;
 const smtpPass = process.env.SMTP_PASS;
 
-const transporter = nodemailer.createTransport({
-  host: smtpHost,
-  port: smtpPort,
-  secure: smtpSecure,
-  requireTLS: true,
-  auth: {
-    user: smtpUser,
-    pass: smtpPass,
-  },
-  pool: true,
-  maxConnections: 3,
-});
+const smtpConfigured = smtpUser && smtpPass;
+
+let transporter = null;
+if (smtpConfigured) {
+  transporter = nodemailer.createTransport({
+    host: smtpHost,
+    port: smtpPort,
+    secure: smtpSecure,
+    requireTLS: true,
+    auth: {
+      user: smtpUser,
+      pass: smtpPass,
+    },
+    pool: true,
+    maxConnections: 3,
+  });
+} else {
+  console.warn('SMTP is not configured. Emails will not be sent. Set SMTP_USER and SMTP_PASS in your environment.');
+}
 
 function emailWrapper(title, body) {
   return `<!DOCTYPE html>
@@ -41,16 +48,28 @@ function emailWrapper(title, body) {
 }
 
 let lastEmailError = null;
+let lastEmail = null;
 
 const sendEmail = async (to, subject, html) => {
+  const fromAddress = process.env.SMTP_FROM || `Sawdagar NoReply <noreply@sawdagaraf.com>`;
+
+  if (!transporter) {
+    const err = new Error('SMTP not configured. Set SMTP_USER and SMTP_PASS.');
+    console.warn('Email not sent:', { to, subject, html, from: fromAddress });
+    lastEmailError = err;
+    return false;
+  }
+
   try {
-    const fromAddress = process.env.SMTP_FROM || `Sawdagar NoReply <noreply@sawdagaraf.com>`;
     await transporter.sendMail({
       from: fromAddress,
       replyTo: 'noreply@sawdagaraf.com',
-      to, subject, html,
+      to,
+      subject,
+      html,
     });
     lastEmailError = null;
+    lastEmail = { to, subject, html, sentAt: new Date().toISOString() };
     return true;
   } catch (err) {
     console.error('Email send error:', err);
@@ -60,6 +79,7 @@ const sendEmail = async (to, subject, html) => {
 };
 
 const getLastEmailError = () => lastEmailError;
+const getLastEmail = () => lastEmail;
 
 const sendVerificationEmail = async (email, token) => {
   const url = `${process.env.FRONTEND_URL}/verify-email?token=${token}`;
@@ -137,4 +157,5 @@ module.exports = {
   sendEmail, sendVerificationEmail, sendPasswordResetEmail,
   sendOrderConfirmation, sendOrderStatusUpdate,
   sendProductApprovalEmail, sendSponsorshipStatusEmail, sendAdminNotification,
+  getLastEmailError, getLastEmail,
 };

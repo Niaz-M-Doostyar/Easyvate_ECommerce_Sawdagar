@@ -13,20 +13,41 @@ export default function RegisterPage() {
   const { t } = useLanguage();
   const [role, setRole] = useState("customer");
   const [loading, setLoading] = useState(false);
+  const [formError, setFormError] = useState("");
   const [form, setForm] = useState({ fullName: "", email: "", phone: "", password: "", confirmPassword: "", companyName: "", companyAddress: "" });
   const set = (k, v) => setForm(p => ({ ...p, [k]: v }));
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (form.password !== form.confirmPassword) { toast.error("Passwords don't match"); return; }
-    if (form.password.length < 6) { toast.error("Password must be at least 6 characters"); return; }
+    setFormError("");
+
+    if (form.password !== form.confirmPassword) {
+      const msg = "Passwords don't match";
+      setFormError(msg);
+      toast.error(msg);
+      return;
+    }
+    if (form.password.length < 6) {
+      const msg = "Password must be at least 6 characters";
+      setFormError(msg);
+      toast.error(msg);
+      return;
+    }
+
     setLoading(true);
     const body = { fullName: form.fullName, email: form.email, phone: form.phone, password: form.password, role };
     if (role === "supplier") { body.companyName = form.companyName; body.companyAddress = form.companyAddress; }
     const result = await register(body);
     setLoading(false);
-    if (result.success) { toast.success(result.message || t('register_success')); router.push("/login"); }
-    else toast.error(result.error || "Registration failed");
+
+    if (result.success) {
+      setFormError("");
+      toast.success(result.message || t('register_success'));
+      router.push("/login");
+    } else {
+      setFormError(result.error || "Registration failed");
+      toast.error(result.error || "Registration failed");
+    }
   };
 
   return (
@@ -128,6 +149,11 @@ export default function RegisterPage() {
                     I agree to the <a href="#">Terms of Service</a> and <a href="#">Privacy Policy</a>
                   </label>
                 </div>
+                {formError && (
+                  <div className="alert alert-danger mb-3" role="alert">
+                    {formError}
+                  </div>
+                )}
                 <div className="d-flex align-items-center">
                   <button type="submit" className="theme-btn" disabled={loading}>
                     {loading ? (

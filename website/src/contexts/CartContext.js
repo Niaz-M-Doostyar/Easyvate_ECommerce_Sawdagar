@@ -190,13 +190,13 @@ export function CartProvider({ children }) {
       const updated = items.filter((i) => i.productId !== itemId);
       setItems(updated);
       writeGuestCart(updated);
-      toast.success('Removed from cart');
+      toast.error('Removed from cart');
       return { success: true };
     }
     const res = await fetch(`/api/cart/${itemId}`, { method: 'DELETE', headers: authHeaders() });
     if (res.ok) {
       await fetchCart();
-      toast.success('Removed from cart');
+      toast.error('Removed from cart');
       return { success: true };
     }
     const data = await res.json();

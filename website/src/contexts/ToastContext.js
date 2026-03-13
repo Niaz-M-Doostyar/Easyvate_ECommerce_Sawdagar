@@ -7,7 +7,7 @@ const ToastContext = createContext(null);
 export function ToastProvider({ children }) {
   const [toasts, setToasts] = useState([]);
 
-  const addToast = useCallback((message, type = 'info', duration = 4000) => {
+  const addToast = useCallback((message, type = 'info', duration = 6000) => {
     const id = Date.now() + Math.random();
     setToasts((prev) => [...prev, { id, message, type }]);
     setTimeout(() => {
@@ -25,10 +25,10 @@ export function ToastProvider({ children }) {
   const warning = (msg) => addToast(msg, 'warning');
 
   const typeStyles = {
-    success: 'bg-white border-l-4 border-l-green-500 text-gray-800',
-    error: 'bg-white border-l-4 border-l-red-500 text-gray-800',
-    warning: 'bg-white border-l-4 border-l-amber-500 text-gray-800',
-    info: 'bg-white border-l-4 border-l-blue-500 text-gray-800',
+    success: { backgroundColor: '#16a34a', color: '#fff' },
+    error: { backgroundColor: '#dc2626', color: '#fff' },
+    warning: { backgroundColor: '#f59e0b', color: '#fff' },
+    info: { backgroundColor: '#2563eb', color: '#fff' },
   };
 
   const iconMap = {
@@ -38,29 +38,54 @@ export function ToastProvider({ children }) {
     info: 'ℹ',
   };
 
-  const iconColors = {
-    success: 'bg-green-100 text-green-600',
-    error: 'bg-red-100 text-red-600',
-    warning: 'bg-amber-100 text-amber-600',
-    info: 'bg-blue-100 text-blue-600',
+  const iconStyles = {
+    success: { backgroundColor: '#ffffff', color: '#16a34a' },
+    error: { backgroundColor: '#ffffff', color: '#dc2626' },
+    warning: { backgroundColor: '#ffffff', color: '#f59e0b' },
+    info: { backgroundColor: '#ffffff', color: '#2563eb' },
   };
 
   return (
     <ToastContext.Provider value={{ toasts, addToast, removeToast, success, error, info, warning }}>
       {children}
-      <div className="fixed top-4 right-4 flex flex-col gap-2 max-w-sm" style={{ direction: 'ltr', zIndex: 100000 }}>
-        {toasts.map((toast) => (
-          <div
-            key={toast.id}
-            onClick={() => removeToast(toast.id)}
-            className={`toast-enter cursor-pointer rounded-lg px-4 py-3 shadow-lg flex items-center gap-3 ${typeStyles[toast.type] || typeStyles.info}`}
-          >
-            <span className={`w-7 h-7 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0 ${iconColors[toast.type]}`}>
-              {iconMap[toast.type]}
-            </span>
-            <span className="text-sm font-medium">{toast.message}</span>
-          </div>
-        ))}
+      <div
+        style={{
+          position: 'fixed',
+          top: 16,
+          right: 16,
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 8,
+          maxWidth: 320,
+          zIndex: 100000,
+          direction: 'ltr',
+        }}
+      >
+        {toasts.map((toast) => {
+          const baseStyle = typeStyles[toast.type] || typeStyles.info;
+          const style = {
+            ...baseStyle,
+            background: baseStyle.backgroundColor,
+            border: 'none',
+          };
+          const iconStyle = iconStyles[toast.type] || iconStyles.info;
+          return (
+            <div
+              key={toast.id}
+              onClick={() => removeToast(toast.id)}
+              className="toast-enter cursor-pointer rounded-lg px-4 py-3 shadow-lg flex items-center gap-3"
+              style={style}
+            >
+              <span
+                className="w-7 h-7 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0"
+                style={iconStyle}
+              >
+                {iconMap[toast.type]}
+              </span>
+              <span className="text-sm font-medium">{toast.message}</span>
+            </div>
+          );
+        })}
       </div>
     </ToastContext.Provider>
   );

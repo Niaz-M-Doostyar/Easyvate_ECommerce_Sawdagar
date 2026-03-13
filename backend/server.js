@@ -67,6 +67,14 @@ app.use('/api/upload', uploadRoutes);
 app.use('/api/image', imageRoutes);
 app.use('/api/site-content', siteContentRoutes);
 
+// Debug endpoints (development only)
+try {
+  const debugRoutes = require('./routes/debug');
+  app.use('/api/debug', debugRoutes);
+} catch (e) {
+  // ignore if missing
+}
+
 // Health check
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });

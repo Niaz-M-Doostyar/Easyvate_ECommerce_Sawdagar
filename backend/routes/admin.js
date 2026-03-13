@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const prisma = require('../lib/prisma');
 const { authenticate, requireRole } = require('../middleware/auth');
-const { paginate } = require('../lib/utils');
+const { paginate, generateToken } = require('../lib/utils');
 const { execSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
@@ -17,7 +17,7 @@ const backupUpload = multer({
     else cb(new Error('Only .sql files are allowed'));
   }
 });
-const { sendProductApprovalEmail, sendOrderStatusUpdate, sendSponsorshipStatusEmail } = require('../lib/email');
+const { sendVerificationEmail, sendProductApprovalEmail, sendOrderStatusUpdate, sendSponsorshipStatusEmail } = require('../lib/email');
 const { getSiteContent, saveSiteContent } = require('../lib/siteContent');
 const { logTransaction } = require('../lib/transactionLog');
 
@@ -233,6 +233,26 @@ router.put('/users/:id', authenticate, requireRole('admin'), async (req, res) =>
     res.json({ user });
   } catch (err) {
     res.status(500).json({ error: 'Failed to update user' });
+  }
+});
+
+// POST /api/admin/users/:id/resend-verification
+router.post('/users/:id/resend-verification', authenticate, requireRole('admin'), async (req, res) => {
+  try {
+    const userId = parseInt(req.params.id);
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    if (!user) return res.status(404).json({ error: 'User not found' });
+    if (user.emailVerified) return res.status(400).json({ error: 'User already verified' });
+
+    const token = user.verifyToken || generateToken();
+    await prisma.user.update({ where: { id: userId }, data: { verifyToken: token } });
+
+    const sent = await sendVerificationEmail(user.email, token);
+    if (!sent) return res.status(500).json({ error: 'Failed to send verification email' });
+
+    res.json({ message: 'Verification email sent' });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to resend verification email' });
   }
 });
 

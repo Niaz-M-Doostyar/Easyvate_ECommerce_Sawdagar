@@ -7,6 +7,28 @@ export default function MocartInit() {
     let cancelled = false;
     let timer = null;
 
+    function hidePreloader() {
+      const pre = document.querySelector('.preloader');
+      if (!pre) return;
+      try {
+        // Try jQuery fadeOut if available
+        const $ = window.jQuery;
+        if ($) {
+          $(pre).fadeOut('slow');
+          return;
+        }
+      } catch (e) {}
+
+      // Fallback plain JS hide
+      try {
+        pre.style.transition = 'opacity 0.3s ease';
+        pre.style.opacity = '0';
+        setTimeout(() => {
+          try { pre.style.display = 'none'; } catch (e) {}
+        }, 400);
+      } catch (e) {}
+    }
+
     function poll(retries) {
       if (cancelled) return;
       const $ = window.jQuery;
@@ -20,6 +42,9 @@ export default function MocartInit() {
         });
       } else if (retries > 0) {
         timer = setTimeout(() => poll(retries - 1), 150);
+      } else {
+        // Ensure preloader doesn't hang indefinitely if jQuery never loads
+        hidePreloader();
       }
     }
 

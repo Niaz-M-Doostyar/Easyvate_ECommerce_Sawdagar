@@ -84,6 +84,21 @@ export default function AdminUsers() {
     } finally { setSaving(false); }
   };
 
+  const resendVerification = async (id) => {
+    try {
+      const r = await fetch(`/api/admin/users/${id}/resend-verification`, { method: 'POST', credentials: 'include' });
+      const data = await r.json();
+      if (r.ok) {
+        toast.success(data.message || "Verification email sent");
+        fetchUsers();
+      } else {
+        toast.error(data.error || "Failed to send verification email");
+      }
+    } catch {
+      toast.error("Failed to send verification email");
+    }
+  };
+
   const roleColor = { admin: "badge-red", supplier: "badge-blue", customer: "badge-green", delivery: "badge-yellow" };
 
   return (
@@ -149,9 +164,14 @@ export default function AdminUsers() {
                   </td>
                   <td className="text-body text-sm">{new Date(u.createdAt).toLocaleDateString()}</td>
                   <td>
-                    <div className="flex gap-1">
+                    <div className="flex gap-1 flex-wrap">
                       <button onClick={() => setDetail(u)} className="btn btn-sm btn-outline">{t("view")}</button>
                       <button onClick={() => openEdit(u)} className="btn btn-sm btn-primary">{t("edit")}</button>
+                      {!u.emailVerified && (
+                        <button onClick={() => resendVerification(u.id)} className="btn btn-sm btn-secondary">
+                          Resend
+                        </button>
+                      )}
                     </div>
                   </td>
                 </tr>

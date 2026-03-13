@@ -48,10 +48,8 @@ export default function CleanQuickViewModal({ product, onClose }) {
   const stop = (e) => e.stopPropagation();
 
   const handleAdd = async () => {
-    const res = await addToCart(product.id, qty);
-    if (res?.success) {
-      onClose();
-    }
+    await addToCart(product.id, qty);
+    onClose();
   };
 
   useEffect(() => {

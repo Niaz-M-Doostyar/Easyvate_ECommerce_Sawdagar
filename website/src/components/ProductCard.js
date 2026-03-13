@@ -41,9 +41,7 @@ export default function ProductCard({ product, layout = 'grid' }) {
     e.stopPropagation();
     if (adding) return;
     setAdding(true);
-    const result = await addToCart(product.id, 1);
-    if (result.success) toast.success(t('added_to_cart') || 'Added!');
-    else toast.error(result.error || t('error'));
+    await addToCart(product.id, 1);
     setTimeout(() => setAdding(false), 600);
   };
 

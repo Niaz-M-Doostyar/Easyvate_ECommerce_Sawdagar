@@ -43,8 +43,9 @@ router.post('/register', async (req, res) => {
 
     const hashedPassword = await hashPassword(password);
 
-    // Auto-verify customers, suppliers need email verification
-    const autoVerify = userRole === 'customer';
+    // Auto-verify if explicitly enabled via env (useful for local dev).
+    // By default, users must verify their email to login.
+    const autoVerify = process.env.AUTO_VERIFY_CUSTOMER === 'true';
     const verificationToken = autoVerify ? null : generateUUID();
 
     const user = await prisma.user.create({
@@ -70,8 +71,15 @@ router.post('/register', async (req, res) => {
     });
 
     if (!autoVerify) {
-      await sendVerificationEmail(user.email, verificationToken);
+      const sent = await sendVerificationEmail(user.email, verificationToken);
+      if (!sent) {
+        return res.status(500).json({
+          error: 'Registration created but verification email could not be sent. Please contact support or try again later.',
+          details: getLastEmailError()?.message || undefined,
+        });
+      }
     }
+
     if (userRole === 'supplier') {
       await sendAdminNotification('New supplier registration', `${user.fullName} (${user.email}) registered as a supplier.`);
     }
@@ -147,7 +155,8 @@ const verifyEmail = async (token, res) => {
 
     await prisma.user.update({
       where: { id: user.id },
-      data: { emailVerified: true, isActive: true, verifyToken: null },
+      data: { emailVerified: true, isActive: true },
+      // Keep verifyToken in the database so the link remains usable if clicked again.
     });
 
     res.json({ message: 'Email verified successfully' });
@@ -158,6 +167,28 @@ const verifyEmail = async (token, res) => {
 
 router.post('/verify-email', async (req, res) => verifyEmail(req.body.token, res));
 router.get('/verify-email', async (req, res) => verifyEmail(req.query.token, res));
+
+// POST /api/auth/resend-verification
+router.post('/resend-verification', async (req, res) => {
+  try {
+    const { email } = req.body;
+    if (!email) return res.status(400).json({ error: 'Email is required' });
+
+    const user = await prisma.user.findUnique({ where: { email: email.toLowerCase() } });
+    if (!user) return res.status(404).json({ error: 'User not found' });
+    if (user.emailVerified) return res.status(400).json({ error: 'Email already verified' });
+
+    const token = user.verifyToken || generateUUID();
+    await prisma.user.update({ where: { id: user.id }, data: { verifyToken: token } });
+
+    const sent = await sendVerificationEmail(user.email, token);
+    if (!sent) return res.status(500).json({ error: 'Failed to send verification email' });
+
+    res.json({ message: 'Verification email sent' });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to send verification email' });
+  }
+});
 
 // POST /api/auth/forgot-password
 router.post('/forgot-password', async (req, res) => {
