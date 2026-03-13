@@ -7,6 +7,7 @@ import { useCart } from '@/contexts/CartContext';
 import { useToast } from '@/contexts/ToastContext';
 import QuickViewModal from './CleanQuickViewModal';
 import { formatPrice } from '@/lib/currency';
+import { optimizedImageUrl, responsiveImage, FALLBACK_PRODUCT_IMAGE } from '@/lib/image';
 
 export default function ProductCard({ product, layout = 'grid' }) {
   const { t, lang } = useLanguage();
@@ -28,8 +29,10 @@ export default function ProductCard({ product, layout = 'grid' }) {
     const url = img.url || img;
     return url.startsWith('http') ? url : url.startsWith('/') ? url : `/${url}`;
   });
-  const fallbackImg = 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=400&h=400&fit=crop';
+  const fallbackImg = FALLBACK_PRODUCT_IMAGE;
   if (images.length === 0) images.push(fallbackImg);
+  const activeImgResp = responsiveImage(images[activeImg], { widths: [320, 560, 760], quality: 75, sizes: '(max-width: 576px) 90vw, (max-width: 992px) 45vw, 280px' });
+  const listImgResp = responsiveImage(images[0], { widths: [280, 420, 560], quality: 75, sizes: '(max-width: 576px) 40vw, 200px' });
   const rating = product.rating || 4;
   const inStock = product.stock > 0;
 
@@ -63,7 +66,7 @@ export default function ProductCard({ product, layout = 'grid' }) {
       <div className={`product-item flex flex-row ${visible ? 'animate-fade-up' : 'opacity-0'}`}>
         <div className="product-img w-48 flex-shrink-0">
           {badge && <span className={`type ${badge.cls}`}>{badge.text}</span>}
-          <Link href={`/products/${product.id}`}><img src={images[0]} alt={getName()} onError={(e) => { e.target.src=fallbackImg; }} /></Link>
+          <Link href={`/products/${product.id}`}><img src={listImgResp.src} srcSet={listImgResp.srcSet} sizes={listImgResp.sizes} alt={getName()} loading="lazy" decoding="async" onError={(e) => { e.target.src=fallbackImg; }} /></Link>
         </div>
         <div className="product-content flex-1 flex flex-col justify-center">
           <h3 className="product-title"><Link href={`/products/${product.id}`}>{getName()}</Link></h3>
@@ -84,7 +87,7 @@ export default function ProductCard({ product, layout = 'grid' }) {
       <div className="product-img product-hover-gallery" ref={hoverRef} onMouseMove={handleMouseMove} onMouseLeave={() => setActiveImg(0)}>
         {badge && <span className={`type ${badge.cls}`}>{badge.text}</span>}
         <Link href={`/products/${product.id}`}>
-          <img src={images[activeImg]} alt={getName()} onError={(e) => { e.target.src=fallbackImg; }} style={{ transition: 'opacity 0.3s ease' }} />
+          <img src={activeImgResp.src} srcSet={activeImgResp.srcSet} sizes={activeImgResp.sizes} alt={getName()} loading="lazy" decoding="async" onError={(e) => { e.target.src=fallbackImg; }} style={{ transition: 'opacity 0.3s ease' }} />
         </Link>
         {/* Navigation arrows (shown on hover) */}
         {images.length > 1 && (

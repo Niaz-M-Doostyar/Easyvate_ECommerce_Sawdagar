@@ -77,7 +77,7 @@ export default function HomePage() {
 
   return (
     <>
-      <MocartInit />
+      {products.length > 0 && <MocartInit key={`init-${products.length}-${categories.length}`} />}
 
       {/* Hero Slider */}
       <div className="hero-section hs-1 mt-30">

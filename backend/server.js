@@ -2,6 +2,7 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const cookieParser = require('cookie-parser');
+const compression = require('compression');
 const path = require('path');
 const fs = require('fs');
 
@@ -25,9 +26,21 @@ app.use(cors({
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
+app.use(compression());
 
-// Static files for uploads
-app.use('/uploads', express.static(uploadsDir));
+// Static files for uploads with strong browser caching
+app.use('/uploads', express.static(uploadsDir, {
+  maxAge: '30d',
+  etag: true,
+  lastModified: true,
+  setHeaders: (res, filePath) => {
+    if (filePath.includes('/.cache/')) {
+      res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+    } else {
+      res.setHeader('Cache-Control', 'public, max-age=2592000');
+    }
+  },
+}));
 
 // Routes
 const authRoutes = require('./routes/auth');
@@ -39,6 +52,7 @@ const adminRoutes = require('./routes/admin');
 const supplierRoutes = require('./routes/supplier');
 const deliveryRoutes = require('./routes/delivery');
 const uploadRoutes = require('./routes/upload');
+const imageRoutes = require('./routes/image');
 const siteContentRoutes = require('./routes/site-content');
 
 app.use('/api/auth', authRoutes);
@@ -50,6 +64,7 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/supplier', supplierRoutes);
 app.use('/api/delivery', deliveryRoutes);
 app.use('/api/upload', uploadRoutes);
+app.use('/api/image', imageRoutes);
 app.use('/api/site-content', siteContentRoutes);
 
 // Health check

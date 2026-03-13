@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, FlatList, TouchableOpacity, Image, TextInput, StyleSheet, ActivityIndicator, Dimensions } from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, TextInput, StyleSheet, ActivityIndicator, Dimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { Image } from 'expo-image';
 import { products as productsApi, categories as categoriesApi } from '../services/api';
 import { useLanguage } from '../contexts/LanguageContext';
-import { formatPrice, API_URL } from '../config';
+import { formatPrice, API_URL, optimizedImageUri } from '../config';
 import { colors, spacing, fontSize, borderRadius } from '../theme';
 
 const { width } = Dimensions.get('window');
@@ -53,11 +54,11 @@ export default function ProductsScreen({ navigation, route }) {
 
   const renderProduct = ({ item }) => {
     const img = item.images?.[0]?.url;
-    const uri = img ? (img.startsWith('http') ? img : `${API_URL}${img}`) : null;
+    const uri = optimizedImageUri(img, { width: Math.round(CARD_W * 2) });
     return (
       <TouchableOpacity style={styles.card} onPress={() => navigation.navigate('ProductDetail', { id: item.id })} activeOpacity={0.8}>
         <View style={styles.cardImg}>
-          {uri ? <Image source={{ uri }} style={styles.img} resizeMode="contain" /> :
+          {uri ? <Image source={{ uri, cacheKey: uri }} style={styles.img} contentFit="contain" cachePolicy="memory-disk" transition={120} /> :
             <Ionicons name="image-outline" size={36} color={colors.border} />}
         </View>
         <View style={styles.cardBody}>

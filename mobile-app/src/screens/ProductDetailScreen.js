@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, ScrollView, Image, TouchableOpacity, StyleSheet, ActivityIndicator, Alert, FlatList, Dimensions } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator, Alert, FlatList, Dimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { Image } from 'expo-image';
 import { products as productsApi } from '../services/api';
 import { useCart } from '../contexts/CartContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useAuth } from '../contexts/AuthContext';
-import { formatPrice, API_URL } from '../config';
+import { formatPrice, API_URL, optimizedImageUri } from '../config';
 import { colors, spacing, fontSize, borderRadius } from '../theme';
 
 const { width } = Dimensions.get('window');
@@ -61,7 +62,7 @@ export default function ProductDetailScreen({ navigation, route }) {
 
   const images = product.images || [];
   const currentImg = images[selectedImage]?.url;
-  const imgUri = currentImg ? (currentImg.startsWith('http') ? currentImg : `${API_URL}${currentImg}`) : null;
+  const imgUri = optimizedImageUri(currentImg, { width: Math.round(width * 2) });
   const price = product.retailPrice || product.suggestedPrice;
   const align = isRTL ? 'right' : 'left';
   const rowDir = isRTL ? 'row-reverse' : 'row';
@@ -72,7 +73,7 @@ export default function ProductDetailScreen({ navigation, route }) {
         {/* Image Gallery */}
         <View style={styles.gallery}>
           {imgUri ? (
-            <Image source={{ uri: imgUri }} style={styles.mainImage} resizeMode="contain" />
+            <Image source={{ uri: imgUri, cacheKey: imgUri }} style={styles.mainImage} contentFit="contain" cachePolicy="memory-disk" transition={120} />
           ) : (
             <View style={[styles.mainImage, styles.noImage]}><Ionicons name="image-outline" size={60} color={colors.border} /></View>
           )}
@@ -86,13 +87,13 @@ export default function ProductDetailScreen({ navigation, route }) {
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={{ paddingHorizontal: spacing.md }}
             renderItem={({ item, index }) => {
-              const uri = item.url?.startsWith('http') ? item.url : `${API_URL}${item.url}`;
+              const uri = optimizedImageUri(item.url, { width: 120 });
               return (
                 <TouchableOpacity
                   style={[styles.thumb, selectedImage === index && styles.thumbActive]}
                   onPress={() => setSelectedImage(index)}
                 >
-                  <Image source={{ uri }} style={styles.thumbImg} resizeMode="contain" />
+                  <Image source={{ uri, cacheKey: uri }} style={styles.thumbImg} contentFit="contain" cachePolicy="memory-disk" transition={100} />
                 </TouchableOpacity>
               );
             }}
@@ -173,11 +174,11 @@ export default function ProductDetailScreen({ navigation, route }) {
               contentContainerStyle={{ paddingHorizontal: spacing.lg }}
               renderItem={({ item }) => {
                 const img = item.images?.[0]?.url;
-                const uri = img ? (img.startsWith('http') ? img : `${API_URL}${img}`) : null;
+                const uri = optimizedImageUri(img, { width: 260 });
                 return (
                   <TouchableOpacity style={styles.relatedCard} onPress={() => navigation.push('ProductDetail', { id: item.id })}>
                     <View style={styles.relatedImg}>
-                      {uri ? <Image source={{ uri }} style={styles.relImg} resizeMode="contain" /> :
+                      {uri ? <Image source={{ uri, cacheKey: uri }} style={styles.relImg} contentFit="contain" cachePolicy="memory-disk" transition={100} /> :
                         <Ionicons name="image-outline" size={24} color={colors.border} />}
                     </View>
                     <Text style={styles.relName} numberOfLines={1}>{getLocalizedName(item)}</Text>

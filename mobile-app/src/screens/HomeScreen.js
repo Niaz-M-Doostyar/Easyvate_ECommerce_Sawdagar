@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, FlatList, TouchableOpacity, Image, StyleSheet, RefreshControl, Dimensions } from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, RefreshControl, Dimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { Image } from 'expo-image';
 import { products as productsApi, categories as categoriesApi } from '../services/api';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useAuth } from '../contexts/AuthContext';
-import { formatPrice, API_URL } from '../config';
+import { formatPrice, API_URL, optimizedImageUri } from '../config';
 import { colors, spacing, fontSize, borderRadius } from '../theme';
 
 const { width } = Dimensions.get('window');
@@ -12,13 +13,13 @@ const CARD_WIDTH = (width - spacing.lg * 2 - spacing.md) / 2;
 
 function ProductCard({ item, onPress, getLocalizedName, isRTL }) {
   const image = item.images?.[0]?.url;
-  const imageUri = image ? (image.startsWith('http') ? image : `${API_URL}${image}`) : null;
+  const imageUri = optimizedImageUri(image, { width: Math.round(CARD_WIDTH * 2) });
 
   return (
     <TouchableOpacity style={styles.card} onPress={onPress} activeOpacity={0.8}>
       <View style={styles.cardImage}>
         {imageUri ? (
-          <Image source={{ uri: imageUri }} style={styles.image} resizeMode="contain" />
+          <Image source={{ uri: imageUri, cacheKey: imageUri }} style={styles.image} contentFit="contain" cachePolicy="memory-disk" transition={120} />
         ) : (
           <View style={styles.placeholder}><Ionicons name="image-outline" size={40} color={colors.border} /></View>
         )}

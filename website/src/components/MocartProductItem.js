@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useCart } from '@/contexts/CartContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { formatPrice } from '@/lib/currency';
+import { optimizedImageUrl, responsiveImage } from '@/lib/image';
 
 export default function MocartProductItem({ product, showBadge = true }) {
   const { addToCart } = useCart();
@@ -14,7 +15,7 @@ export default function MocartProductItem({ product, showBadge = true }) {
   const name = lang === 'ps' ? (product.namePs || product.nameEn) :
                lang === 'dr' ? (product.nameDr || product.nameEn) : product.nameEn;
 
-  const imgUrl = product.images?.[0]?.url || '/assets/img/product/e1.png';
+  const imgData = responsiveImage(product.images?.[0]?.url || '/assets/img/product/e1.png', { widths: [280, 420, 560], quality: 75, sizes: '(max-width: 576px) 45vw, (max-width: 992px) 30vw, 220px' });
   const price = product.retailPrice || product.suggestedPrice || 0;
   const oldPrice = product.wholesaleCost && product.wholesaleCost > price ? product.wholesaleCost : null;
   const isNew = product.createdAt && (Date.now() - new Date(product.createdAt).getTime()) < 7 * 86400000;
@@ -34,7 +35,7 @@ export default function MocartProductItem({ product, showBadge = true }) {
       <div className="product-img">
         {badge}
         <Link href={`/products/${product.id}`}>
-          <img src={imgUrl} alt={name} />
+          <img src={imgUrl} alt={name} loading="lazy" decoding="async" />
         </Link>
         <div className="product-action-wrap">
           <div className="product-action">
@@ -88,7 +89,7 @@ export function MocartProductListItem({ product }) {
   const name = lang === 'ps' ? (product.namePs || product.nameEn) :
                lang === 'dr' ? (product.nameDr || product.nameEn) : product.nameEn;
 
-  const imgUrl = product.images?.[0]?.url || '/assets/img/product/e1.png';
+  const imgUrl = optimizedImageUrl(product.images?.[0]?.url || '/assets/img/product/e1.png', { width: 280, quality: 75 });
   const price = product.retailPrice || product.suggestedPrice || 0;
   const oldPrice = product.wholesaleCost && product.wholesaleCost > price ? product.wholesaleCost : null;
 
@@ -96,7 +97,7 @@ export function MocartProductListItem({ product }) {
     <div className="product-list-item">
       <div className="product-list-img">
         <Link href={`/products/${product.id}`}>
-          <img src={imgUrl} alt={name} />
+          <img src={imgUrl} alt={name} loading="lazy" decoding="async" />
         </Link>
       </div>
       <div className="product-list-content">

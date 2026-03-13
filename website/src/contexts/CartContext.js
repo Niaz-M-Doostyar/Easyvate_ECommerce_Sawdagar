@@ -4,6 +4,70 @@ import { createContext, useContext, useState, useEffect, useCallback } from 'rea
 import { useAuth, authHeaders } from './AuthContext';
 
 const CartContext = createContext(null);
+const GUEST_CART_KEY = 'sawdagar_cart_v2';
+const GUEST_CART_TTL_MS = 1000 * 60 * 60 * 24 * 7;
+
+function sanitizeGuestItems(rawItems) {
+  if (!Array.isArray(rawItems)) return [];
+
+  const merged = new Map();
+  for (const item of rawItems) {
+    const productId = Number(item?.productId || item?.id);
+    const quantity = Number(item?.quantity || 0);
+    if (!Number.isFinite(productId) || productId <= 0 || !Number.isFinite(quantity) || quantity <= 0) {
+      continue;
+    }
+
+    const existing = merged.get(productId);
+    if (existing) {
+      existing.quantity += quantity;
+    } else {
+      merged.set(productId, {
+        productId,
+        quantity,
+        retailPrice: Number(item?.retailPrice || 0),
+        nameEn: item?.nameEn || '',
+        image: item?.image || '',
+      });
+    }
+  }
+
+  return Array.from(merged.values());
+}
+
+function readGuestCart() {
+  try {
+    const raw = localStorage.getItem(GUEST_CART_KEY);
+    if (!raw) {
+      const legacy = localStorage.getItem('sawdagar_cart');
+      if (!legacy) return [];
+      const migrated = sanitizeGuestItems(JSON.parse(legacy));
+      localStorage.removeItem('sawdagar_cart');
+      writeGuestCart(migrated);
+      return migrated;
+    }
+
+    const parsed = JSON.parse(raw);
+    if (!parsed || typeof parsed !== 'object') return [];
+    if (!parsed.updatedAt || Date.now() - parsed.updatedAt > GUEST_CART_TTL_MS) {
+      localStorage.removeItem(GUEST_CART_KEY);
+      return [];
+    }
+
+    return sanitizeGuestItems(parsed.items);
+  } catch {
+    return [];
+  }
+}
+
+function writeGuestCart(items) {
+  const cleaned = sanitizeGuestItems(items);
+  localStorage.setItem(GUEST_CART_KEY, JSON.stringify({
+    version: 2,
+    updatedAt: Date.now(),
+    items: cleaned,
+  }));
+}
 
 export function CartProvider({ children }) {
   const { user } = useAuth();
@@ -12,19 +76,25 @@ export function CartProvider({ children }) {
 
   const fetchCart = useCallback(async () => {
     if (!user) {
-      const local = localStorage.getItem('sawdagar_cart');
-      setItems(local ? JSON.parse(local) : []);
+      const localItems = readGuestCart();
+      setItems(localItems);
       return;
     }
+    // User is logged in — clear any guest cart to prevent ghost items
+    localStorage.removeItem(GUEST_CART_KEY);
+    localStorage.removeItem('sawdagar_cart');
     setLoading(true);
     try {
       const res = await fetch('/api/cart', { headers: authHeaders() });
       if (res.ok) {
         const data = await res.json();
         setItems(data.items || []);
+      } else {
+        setItems([]);
       }
     } catch {
       console.error('Failed to fetch cart');
+      setItems([]);
     } finally {
       setLoading(false);
     }
@@ -33,6 +103,16 @@ export function CartProvider({ children }) {
   useEffect(() => {
     fetchCart();
   }, [fetchCart]);
+
+  useEffect(() => {
+    const onStorage = (event) => {
+      if (event.key === GUEST_CART_KEY && !user) {
+        setItems(readGuestCart());
+      }
+    };
+    window.addEventListener('storage', onStorage);
+    return () => window.removeEventListener('storage', onStorage);
+  }, [user]);
 
   const addToCart = async (productId, quantity = 1) => {
     if (!user) {
@@ -59,7 +139,7 @@ export function CartProvider({ children }) {
         }];
       }
       setItems(updated);
-      localStorage.setItem('sawdagar_cart', JSON.stringify(updated));
+      writeGuestCart(updated);
       return { success: true };
     }
     const res = await fetch('/api/cart', {
@@ -79,7 +159,7 @@ export function CartProvider({ children }) {
     if (!user) {
       const updated = items.map((i) => (i.productId === itemId ? { ...i, quantity } : i));
       setItems(updated);
-      localStorage.setItem('sawdagar_cart', JSON.stringify(updated));
+      writeGuestCart(updated);
       return { success: true };
     }
     const res = await fetch(`/api/cart/${itemId}`, {
@@ -98,7 +178,7 @@ export function CartProvider({ children }) {
     if (!user) {
       const updated = items.filter((i) => i.productId !== itemId);
       setItems(updated);
-      localStorage.setItem('sawdagar_cart', JSON.stringify(updated));
+      writeGuestCart(updated);
       return { success: true };
     }
     const res = await fetch(`/api/cart/${itemId}`, { method: 'DELETE', headers: authHeaders() });
@@ -112,7 +192,7 @@ export function CartProvider({ children }) {
   const clearCart = async () => {
     if (!user) {
       setItems([]);
-      localStorage.removeItem('sawdagar_cart');
+      localStorage.removeItem(GUEST_CART_KEY);
       return;
     }
     await fetch('/api/cart', { method: 'DELETE', headers: authHeaders() });

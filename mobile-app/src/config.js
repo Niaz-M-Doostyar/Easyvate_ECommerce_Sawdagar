@@ -15,3 +15,17 @@ export function formatPrice(price) {
   if (price == null || isNaN(price)) return `${CURRENCY_SYMBOL}0`;
   return `${CURRENCY_SYMBOL}${Number(price).toLocaleString()}`;
 }
+
+/**
+ * Build an optimized image URI via /api/image endpoint.
+ * For upload paths, returns WebP resized version. Others pass through.
+ */
+export function optimizedImageUri(src, { width = 400, quality = 75 } = {}) {
+  if (!src) return null;
+  const full = src.startsWith('http') ? src : `${API_URL}${src}`;
+  // Only optimize /uploads/ images
+  if (src.startsWith('/uploads/')) {
+    return `${API_URL}/api/image?src=${encodeURIComponent(src)}&w=${width}&q=${quality}`;
+  }
+  return full;
+}

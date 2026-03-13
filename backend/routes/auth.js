@@ -263,4 +263,22 @@ router.put('/change-password', authenticate, async (req, res) => {
   return updateProfile(req, res);
 });
 
+// POST /api/auth/test-email - Send a test verification email (admin/dev only)
+router.post('/test-email', async (req, res) => {
+  try {
+    const { email } = req.body;
+    if (!email) return res.status(400).json({ error: 'Email is required' });
+    const testToken = 'test-' + Date.now();
+    const result = await sendVerificationEmail(email, testToken);
+    if (result) {
+      res.json({ message: `Test verification email sent to ${email}` });
+    } else {
+      res.status(500).json({ error: 'Failed to send email. Check SMTP_USER and SMTP_PASS in .env' });
+    }
+  } catch (err) {
+    console.error('Test email error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 module.exports = router;
