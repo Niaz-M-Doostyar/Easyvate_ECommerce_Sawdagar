@@ -781,15 +781,18 @@ label {
 }
 
 .theme-btn2{
-  background: var(--color-red);
-  color: var(--color-white);
+  background: transparent;
+  color: var(--theme-color);
+  border: 2px solid var(--theme-color);
+  box-shadow: none;
 }
 
 .theme-btn2::before {
-  background: var(--theme-color);
+  display: none;
 }
 
 .theme-btn2:hover{
+  background: var(--theme-color);
   color: var(--color-white);
 }
 

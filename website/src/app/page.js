@@ -36,6 +36,14 @@ export default function HomePage() {
   const bigBanner = home.bigBanner || {};
   const dealOfWeek = home.dealOfWeek || {};
   const gallery = home.gallery || {};
+  const galleryImages = home.galleryImages || [
+    { image: '/assets/img/gallery/02.jpg', size: 'col-md-4 col-lg-3' },
+    { image: '/assets/img/gallery/03.jpg', size: 'col-md-4 col-lg-3' },
+    { image: '/assets/img/gallery/01.jpg', size: 'col-md-12 col-lg-6' },
+    { image: '/assets/img/gallery/06.jpg', size: 'col-md-8 col-lg-6' },
+    { image: '/assets/img/gallery/04.jpg', size: 'col-md-4 col-lg-3' },
+    { image: '/assets/img/gallery/05.jpg', size: 'col-md-4 col-lg-3' },
+  ];
   const testimonials = home.testimonials || {};
   const testimonialItems = home.testimonialItems || [];
   const blogItems = home.blogItems || [];
@@ -43,6 +51,19 @@ export default function HomePage() {
   const brands = home.brands || {};
   const brandItems = home.brandItems || [];
   const instagramItems = home.instagramItems || [];
+
+  const [galleryOpen, setGalleryOpen] = useState(false);
+  const [galleryIndex, setGalleryIndex] = useState(0);
+
+  const openGallery = (index) => {
+    setGalleryIndex(index);
+    setGalleryOpen(true);
+  };
+
+  const closeGallery = () => setGalleryOpen(false);
+
+  const goNext = () => setGalleryIndex((prev) => (prev + 1) % galleryImages.length);
+  const goPrev = () => setGalleryIndex((prev) => (prev - 1 + galleryImages.length) % galleryImages.length);
 
   // Split products for different sections
   const trendingProducts = products.slice(0, 8);
@@ -68,7 +89,8 @@ export default function HomePage() {
 
   return (
     <>
-      {products.length > 0 && <MocartInit key={`init-${products.length}-${categories.length}`} />}
+      {/* Initialize Mocart JS plugins (owl carousel, magnific popup, etc.) */}
+      <MocartInit />
 
       {/* Hero Slider */}
       <div className="hero-section hs-1 mt-30">
@@ -457,19 +479,21 @@ export default function HomePage() {
             </div>
           </div>
           <div className="row g-4 popup-gallery">
-            {(home.galleryImages || [
-              { image: '/assets/img/gallery/02.jpg', size: 'col-md-4 col-lg-3' },
-              { image: '/assets/img/gallery/03.jpg', size: 'col-md-4 col-lg-3' },
-              { image: '/assets/img/gallery/01.jpg', size: 'col-md-12 col-lg-6' },
-              { image: '/assets/img/gallery/06.jpg', size: 'col-md-8 col-lg-6' },
-              { image: '/assets/img/gallery/04.jpg', size: 'col-md-4 col-lg-3' },
-              { image: '/assets/img/gallery/05.jpg', size: 'col-md-4 col-lg-3' },
-            ]).map((item, i) => (
+            {galleryImages.map((item, i) => (
               <div className={item.size || 'col-md-4 col-lg-3'} key={i}>
                 <div className="gallery-item wow fadeInDown" data-wow-delay=".25s">
                   <div className="gallery-img">
                     <img src={item.image} alt="" />
-                    <a className="popup-img gallery-link" href={item.image}><i className="fal fa-plus"></i></a>
+                    <a
+                      className="gallery-link"
+                      href="#"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        openGallery(i);
+                      }}
+                    >
+                      <i className="fal fa-plus"></i>
+                    </a>
                   </div>
                 </div>
               </div>
@@ -518,6 +542,27 @@ export default function HomePage() {
           </div>
         </div>
       </div>
+
+      {/* Gallery Modal (fallback for Magnific Popup) */}
+      {galleryOpen && (
+        <div className="gallery-modal" role="dialog" aria-modal="true">
+          <div className="gallery-modal-backdrop" onClick={closeGallery} />
+          <div className="gallery-modal-content">
+            <button type="button" className="gallery-modal-close" onClick={closeGallery} aria-label="Close">
+              <i className="fas fa-times"></i>
+            </button>
+            <div className="gallery-modal-body">
+              <button className="gallery-modal-nav prev" onClick={goPrev} aria-label="Previous">
+                <i className="fas fa-chevron-left"></i>
+              </button>
+              <img src={galleryImages[galleryIndex]?.image} alt="Gallery" />
+              <button className="gallery-modal-nav next" onClick={goNext} aria-label="Next">
+                <i className="fas fa-chevron-right"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Blog Area */}
       <div className="blog-area py-100">

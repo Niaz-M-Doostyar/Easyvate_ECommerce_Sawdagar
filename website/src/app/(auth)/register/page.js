@@ -83,14 +83,14 @@ export default function RegisterPage() {
               <div className="d-flex gap-2 mb-4">
                 <button
                   type="button"
-                  className={`theme-btn ${role === 'customer' ? '' : 'theme-btn2'} flex-fill`}
+                  className={role === 'customer' ? 'theme-btn flex-fill' : 'theme-btn2 flex-fill'}
                   onClick={() => setRole('customer')}
                 >
                   <i className="far fa-user"></i> {t('register_as_customer') || 'Customer'}
                 </button>
                 <button
                   type="button"
-                  className={`theme-btn ${role === 'supplier' ? '' : 'theme-btn2'} flex-fill`}
+                  className={role === 'supplier' ? 'theme-btn flex-fill' : 'theme-btn2 flex-fill'}
                   onClick={() => setRole('supplier')}
                 >
                   <i className="far fa-store"></i> {t('register_as_supplier') || 'Supplier'}

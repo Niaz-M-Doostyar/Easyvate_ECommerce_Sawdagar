@@ -19,20 +19,34 @@ export default function Header() {
   const [searchQuery, setSearchQuery] = useState('');
   const [suggestions, setSuggestions] = useState([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
+  const [categoryOpen, setCategoryOpen] = useState(false);
   const searchRef = useRef(null);
+  const categoryRef = useRef(null);
   const debounceRef = useRef(null);
 
   const getName = useCallback((item) => siteGetName(item, lang), [siteGetName, lang]);
 
   useEffect(() => {
-    // Close mobile menu on route change
+    // Close mobile menu + category dropdown on route change
     if (typeof window !== 'undefined' && window.jQuery) {
       try {
         const offcanvas = window.bootstrap?.Offcanvas?.getInstance(document.getElementById('offcanvasNavbar'));
         if (offcanvas) offcanvas.hide();
       } catch(e) {}
     }
+    setCategoryOpen(false);
   }, [pathname]);
+
+  // Close category dropdown when clicking outside
+  useEffect(() => {
+    const handler = (e) => {
+      if (categoryRef.current && !categoryRef.current.contains(e.target)) {
+        setCategoryOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
 
   const hideOffcanvas = () => {
     if (typeof window === 'undefined') return;
@@ -121,8 +135,8 @@ export default function Header() {
               <div className="col-12 col-md-6 col-lg-6 col-xl-7">
                 <div className="header-top-right">
                   <ul className="header-top-list">
-                    <li><Link href="/search"><i className="far fa-timer"></i> Daily Deal</Link></li>
-                    <li>
+                    
+                    {/* <li>
                       <div className="dropdown">
                         <button type="button" className="dropdown-toggle" style={{ background: 'none', border: 'none', color: 'inherit', cursor: 'pointer', padding: 0, fontSize: 'inherit' }} data-bs-toggle="dropdown" aria-expanded="false">
                           <i className="far fa-globe-americas"></i> {lang === 'en' ? 'EN' : lang === 'ps' ? 'PS' : 'DR'}
@@ -133,7 +147,7 @@ export default function Header() {
                           <button className="dropdown-item" onClick={() => switchLanguage('dr')}>دری (Dari)</button>
                         </div>
                       </div>
-                    </li>
+                    </li> */}
                     <li className="social">
                       <div className="header-top-social">
                         <span>Follow Us: </span>
@@ -304,14 +318,14 @@ export default function Header() {
             <Link className="navbar-brand" href="/">
               <img src={logoUrl} className="logo-scrolled" alt="Sawdagar" style={logoStyle} />
             </Link>
-            <div className="category-all">
-              <button className="category-btn" type="button">
+            <div className="category-all" ref={categoryRef}>
+              <button className="category-btn" type="button" onClick={() => setCategoryOpen(open => !open)}>
                 <i className="fas fa-list-ul"></i><span>All Categories</span>
               </button>
-              <ul className="main-category">
+              <ul className={categoryOpen ? 'main-category show' : 'main-category'}>
                 {categories.slice(0, 12).map(cat => (
                   <li key={cat.id}>
-                    <Link href={`/categories/${cat.slug}`}>
+                    <Link href={`/categories/${cat.slug}`} onClick={() => setCategoryOpen(false)}>
                       <img src={`/assets/img/icon/${getCategoryIcon(cat.slug)}`} alt="" />
                       <span>{getName(cat)}</span>
                     </Link>
