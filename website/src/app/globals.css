@@ -9,11 +9,34 @@
 body {
   margin: 0;
   padding: 0;
-  overflow-x: hidden;
 }
 
 html {
   overflow-x: hidden;
+}
+
+/* Magnific Popup fix: ensure overlay renders above all content and isn't clipped */
+.mfp-bg,
+.mfp-wrap,
+.mfp-container {
+  position: fixed !important;
+  top: 0;
+  left: 0;
+  width: 100% !important;
+  height: 100% !important;
+  z-index: 999999 !important;
+}
+
+.mfp-content {
+  max-width: 100% !important;
+  max-height: 100% !important;
+}
+
+.mfp-figure img {
+  width: auto !important;
+  height: auto !important;
+  max-width: 100% !important;
+  max-height: 100% !important;
 }
 
 /* ==========================================
@@ -911,6 +934,26 @@ a {
 .category-area .owl-item {
   display: flex;
   align-items: stretch;
+}
+
+/* Ensure each product/category card has a consistent min height to avoid spacing jumps */
+.product-item,
+.category-item,
+.product-slider .owl-item .product-item,
+.category-area .owl-item .category-item {
+  min-height: 420px;
+}
+
+@media (max-width: 992px) {
+  .product-item, .category-item {
+    min-height: 360px;
+  }
+}
+
+@media (max-width: 768px) {
+  .product-item, .category-item {
+    min-height: 340px;
+  }
 }
 
 .product-slider .owl-item .product-item,
