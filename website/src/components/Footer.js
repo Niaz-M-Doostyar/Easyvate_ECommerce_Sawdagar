@@ -11,6 +11,8 @@ export default function Footer() {
   const getName = (item) => siteGetName(item, lang);
 
   const footer = siteContent?.footer || {};
+  const logoUrl = (siteContent?.header?.logo || "").trim() || "/assets/img/logo/logo-light.png";
+  const logoStyle = { maxHeight: 70, maxWidth: 240, width: 'auto', height: 'auto', objectFit: 'contain' };
 
   return (
     <footer className="footer-area ft-bg">
@@ -20,7 +22,7 @@ export default function Footer() {
             <div className="col-md-6 col-lg-3">
               <div className="footer-widget-box about-us">
                 <Link href="/" className="footer-logo">
-                  <img src="/assets/img/logo/logo-light.png" alt="Sawdagar" />
+                  <img src={logoUrl} alt="Sawdagar" style={logoStyle} />
                 </Link>
                 <p className="mb-3">
                   {footer.aboutText || "Afghanistan's premier online marketplace connecting suppliers, retailers, and customers nationwide."}
@@ -92,14 +94,6 @@ export default function Footer() {
                       </div>
                     </a>
                   </div>
-                </div>
-                <div className="footer-payment mt-20">
-                  <span>We Accept:</span>
-                  <img src="/assets/img/payment/visa.svg" alt="Visa" />
-                  <img src="/assets/img/payment/mastercard.svg" alt="Mastercard" />
-                  <img src="/assets/img/payment/amex.svg" alt="Amex" />
-                  <img src="/assets/img/payment/discover.svg" alt="Discover" />
-                  <img src="/assets/img/payment/paypal.svg" alt="PayPal" />
                 </div>
               </div>
             </div>

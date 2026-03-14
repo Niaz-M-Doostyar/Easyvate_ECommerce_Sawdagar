@@ -4,11 +4,14 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/contexts/ToastContext";
+import { useSiteContent } from "@/hooks/useAdminApi";
 
 export default function AdminLoginPage() {
   const { login } = useAuth();
   const toast = useToast();
   const router = useRouter();
+  const { data: content } = useSiteContent();
+  const logoUrl = (content?.content?.header?.logo || "").trim() || "";
   const [form, setForm] = useState({ email: "", password: "" });
   const [loading, setLoading] = useState(false);
   const [showPass, setShowPass] = useState(false);
@@ -32,11 +35,13 @@ export default function AdminLoginPage() {
         {/* Logo */}
         <div className="text-center mb-8">
           <Link href="/admin" className="inline-flex items-center gap-2.5 mb-6">
-            <div className="w-12 h-12 bg-primary rounded-xl flex items-center justify-center shadow-lg shadow-primary/20">
-              <span className="text-white font-extrabold text-2xl font-heading">S</span>
-            </div>
-            <span className="text-2xl font-extrabold text-navy font-heading">Sawdagar</span>
-          </Link>
+              {logoUrl ? (
+                <img src={logoUrl} alt="Sawdagar" style={{ maxHeight: 64, width: 'auto', objectFit: 'contain' }} />
+              ) : (
+                <div className="w-12 h-12 bg-primary rounded-xl flex items-center justify-center shadow-lg shadow-primary/20">
+                  <span className="text-white font-extrabold text-2xl font-heading">S</span>
+                </div>
+              )}
           <h2 className="text-2xl font-bold text-navy font-heading">Admin Login</h2>
           <p className="text-body mt-2">Sign in to access the admin panel</p>
         </div>

@@ -88,7 +88,7 @@ export default function Header() {
   const contactEmail = headerContent.email || 'info@sawdagar.af';
   const contactPhone = headerContent.phone || '+93 700 000 000';
   const logoUrl = (headerContent.logo || '').trim() || '/assets/img/logo/logo.png';
-  const logoStyle = { maxHeight: 60, maxWidth: 220, width: 'auto', height: 'auto', objectFit: 'contain' };
+  const logoStyle = { maxHeight: 90, maxWidth: 250, width: 'auto', height: 'auto', objectFit: 'contain' };
 
   return (
     <header className="header">
