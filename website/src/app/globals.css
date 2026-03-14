@@ -904,3 +904,46 @@ a {
   .pagination-area { text-align: center; }
   .pagination { justify-content: center; flex-wrap: wrap; }
 }
+
+/* Force product and category cards to match heights and avoid uneven rows */
+.product-slider .product-item,
+.item-2 .product-item,
+.product-area .product-item,
+.owl-carousel .product-item,
+.owl-carousel .category-item {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  height: 100%;
+}
+
+.product-item .product-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.product-title a {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  min-height: 48px;
+}
+
+.category-item {
+  display: flex;
+  align-items: stretch;
+}
+
+.category-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.category-info .content {
+  flex: 1;
+}
