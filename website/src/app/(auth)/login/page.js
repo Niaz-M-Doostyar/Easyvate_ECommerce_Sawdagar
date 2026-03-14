@@ -52,7 +52,7 @@ export default function LoginPage() {
           <div className="col-md-7 col-lg-5 mx-auto">
             <div className="login-form">
               <div className="login-header">
-                <img src={logoUrl} alt="Sawdagar" />
+                <img src={logoUrl} alt="Sawdagar" style={{ maxHeight: 100, width: 'auto', objectFit: 'contain' }} />
                 <p>{t('welcome') || 'Login with your Sawdagar account'}</p>
               </div>
               <form onSubmit={handleSubmit}>

@@ -75,7 +75,7 @@ export default function RegisterPage() {
           <div className="col-md-8 col-lg-6 mx-auto">
             <div className="login-form">
               <div className="login-header">
-                <img src={logoUrl} alt="Sawdagar" />
+                <img src={logoUrl} alt="Sawdagar" style={{ maxHeight: 100, width: 'auto', objectFit: 'contain' }} />
                 <p>Create your Sawdagar account</p>
               </div>
 
