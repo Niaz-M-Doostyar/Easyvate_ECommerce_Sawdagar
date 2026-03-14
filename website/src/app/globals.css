@@ -906,9 +906,15 @@ a {
 }
 
 /* Force product and category cards to match heights and avoid uneven rows */
-.product-slider .product-item,
-.item-2 .product-item,
-.product-area .product-item,
+.product-slider .owl-item,
+.product-area .owl-item,
+.category-area .owl-item {
+  display: flex;
+  align-items: stretch;
+}
+
+.product-slider .owl-item .product-item,
+.product-area .owl-item .product-item,
 .owl-carousel .product-item,
 .owl-carousel .category-item {
   display: flex;
@@ -946,4 +952,17 @@ a {
 
 .category-info .content {
   flex: 1;
+}
+
+/* Ensure footer columns don't stretch too tall when text has line breaks */
+.footer-widget-box {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+}
+
+.footer-widget-box p {
+  white-space: pre-line;
+  line-height: 1.5;
+  margin-bottom: 1rem;
 }
