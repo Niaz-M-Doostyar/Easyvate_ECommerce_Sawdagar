@@ -18,6 +18,9 @@ yarn-error.log*
 # Environment
 .env
 
+# Uploaded assets
+backend/uploads/
+
 # IDE
 .vscode/
 

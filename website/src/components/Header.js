@@ -87,6 +87,7 @@ export default function Header() {
   const headerContent = siteContent?.header || {};
   const contactEmail = headerContent.email || 'info@sawdagar.af';
   const contactPhone = headerContent.phone || '+93 700 000 000';
+  const logoUrl = (headerContent.logo || '').trim() || '/assets/img/logo/logo.png';
 
   return (
     <header className="header">
@@ -156,7 +157,7 @@ export default function Header() {
             <div className="col-5 col-lg-3 col-xl-3">
               <div className="header-middle-logo">
                 <Link className="navbar-brand" href="/">
-                  <img src="/assets/img/logo/logo.png" alt="Sawdagar" />
+                  <img src={logoUrl} alt="Sawdagar" />
                 </Link>
               </div>
             </div>
@@ -300,7 +301,7 @@ export default function Header() {
         <nav className="navbar light navbar-expand-lg">
           <div className="container position-relative">
             <Link className="navbar-brand" href="/">
-              <img src="/assets/img/logo/logo.png" className="logo-scrolled" alt="Sawdagar" />
+              <img src={logoUrl} className="logo-scrolled" alt="Sawdagar" />
             </Link>
             <div className="category-all">
               <button className="category-btn" type="button">
@@ -335,7 +336,7 @@ export default function Header() {
               aria-labelledby="offcanvasNavbarLabel">
               <div className="offcanvas-header">
                 <Link href="/" className="offcanvas-brand" id="offcanvasNavbarLabel">
-                  <img src="/assets/img/logo/logo.png" alt="Sawdagar" />
+                  <img src={logoUrl} alt="Sawdagar" />
                 </Link>
                 <button type="button" className="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
               </div>

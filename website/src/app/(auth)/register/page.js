@@ -5,12 +5,15 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/contexts/ToastContext";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useSiteData } from "@/contexts/SiteDataContext";
 
 export default function RegisterPage() {
   const { register } = useAuth();
   const toast = useToast();
   const router = useRouter();
   const { t } = useLanguage();
+  const { siteContent } = useSiteData();
+  const logoUrl = (siteContent?.header?.logo || "").trim() || "/assets/img/logo/logo.png";
   const [role, setRole] = useState("customer");
   const [loading, setLoading] = useState(false);
   const [formError, setFormError] = useState("");
@@ -72,7 +75,7 @@ export default function RegisterPage() {
           <div className="col-md-8 col-lg-6 mx-auto">
             <div className="login-form">
               <div className="login-header">
-                <img src="/assets/img/logo/logo.png" alt="Sawdagar" />
+                <img src={logoUrl} alt="Sawdagar" />
                 <p>Create your Sawdagar account</p>
               </div>
 

@@ -5,12 +5,15 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/contexts/ToastContext";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useSiteData } from "@/contexts/SiteDataContext";
 
 export default function LoginPage() {
   const { login } = useAuth();
   const toast = useToast();
   const router = useRouter();
   const { t } = useLanguage();
+  const { siteContent } = useSiteData();
+  const logoUrl = (siteContent?.header?.logo || "").trim() || "/assets/img/logo/logo.png";
   const [form, setForm] = useState({ email: "", password: "" });
   const [loading, setLoading] = useState(false);
 
@@ -49,7 +52,7 @@ export default function LoginPage() {
           <div className="col-md-7 col-lg-5 mx-auto">
             <div className="login-form">
               <div className="login-header">
-                <img src="/assets/img/logo/logo.png" alt="Sawdagar" />
+                <img src={logoUrl} alt="Sawdagar" />
                 <p>{t('welcome') || 'Login with your Sawdagar account'}</p>
               </div>
               <form onSubmit={handleSubmit}>
