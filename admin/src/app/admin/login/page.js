@@ -42,6 +42,7 @@ export default function AdminLoginPage() {
                   <span className="text-white font-extrabold text-2xl font-heading">S</span>
                 </div>
               )}
+          </Link>
           <h2 className="text-2xl font-bold text-navy font-heading">Admin Login</h2>
           <p className="text-body mt-2">Sign in to access the admin panel</p>
         </div>

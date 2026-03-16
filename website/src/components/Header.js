@@ -136,18 +136,18 @@ export default function Header() {
                 <div className="header-top-right">
                   <ul className="header-top-list">
                     
-                    {/* <li>
+                    <li>
                       <div className="dropdown">
-                        <button type="button" className="dropdown-toggle" style={{ background: 'none', border: 'none', color: 'inherit', cursor: 'pointer', padding: 0, fontSize: 'inherit' }} data-bs-toggle="dropdown" aria-expanded="false">
+                        <button type="button" className="lang-switcher-btn dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
                           <i className="far fa-globe-americas"></i> {lang === 'en' ? 'EN' : lang === 'ps' ? 'PS' : 'DR'}
                         </button>
                         <div className="dropdown-menu">
-                          <button className="dropdown-item" onClick={() => switchLanguage('en')}>English</button>
-                          <button className="dropdown-item" onClick={() => switchLanguage('ps')}>پښتو (Pashto)</button>
-                          <button className="dropdown-item" onClick={() => switchLanguage('dr')}>دری (Dari)</button>
+                          <button className="dropdown-item" onClick={() => switchLanguage('en')}>🇺🇸 English</button>
+                          <button className="dropdown-item" onClick={() => switchLanguage('ps')}>🇦🇫 پښتو (Pashto)</button>
+                          <button className="dropdown-item" onClick={() => switchLanguage('dr')}>🇦🇫 دری (Dari)</button>
                         </div>
                       </div>
-                    </li> */}
+                    </li>
                     <li className="social">
                       <div className="header-top-social">
                         <span>Follow Us: </span>

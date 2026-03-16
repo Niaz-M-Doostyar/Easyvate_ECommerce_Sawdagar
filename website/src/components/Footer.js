@@ -75,9 +75,9 @@ export default function Footer() {
             <div className="col-md-6 col-lg-3">
               <div className="footer-widget-box list">
                 <h4 className="footer-widget-title">Get Mobile App</h4>
-                <p>{footer.appText || 'Sawdagar App is now available on App Store & Google Play.'}</p>
+                <p style={{ fontSize: 14, lineHeight: 1.6, opacity: 0.8 }}>{footer.appText || 'Sawdagar App is now available on App Store & Google Play.'}</p>
                 <div className="footer-download">
-                  <h5>Download Our Mobile App</h5>
+                  <h5 style={{ fontSize: 13, fontWeight: 600, marginBottom: 12, opacity: 0.7 }}>Download Our Mobile App</h5>
                   <div className="footer-download-btn">
                     <a href={footer.googlePlayUrl || '#'}>
                       <i className="fab fa-google-play"></i>

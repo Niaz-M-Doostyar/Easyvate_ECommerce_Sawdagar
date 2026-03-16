@@ -93,7 +93,7 @@ export default function HomePage() {
       <MocartInit />
 
       {/* Hero Slider */}
-      <div className="hero-section hs-1 mt-30">
+      <div className="hero-section hs-1" style={{ marginTop: 0 }}>
         <div className="container">
           <div className="hero-slider owl-carousel owl-theme">
             {heroSlides.map((slide, i) => (

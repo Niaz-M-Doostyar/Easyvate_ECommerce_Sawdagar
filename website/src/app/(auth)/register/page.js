@@ -80,17 +80,17 @@ export default function RegisterPage() {
               </div>
 
               {/* Role Tabs */}
-              <div className="d-flex gap-2 mb-4">
+              <div className="role-selector">
                 <button
                   type="button"
-                  className={role === 'customer' ? 'theme-btn flex-fill' : 'theme-btn2 flex-fill'}
+                  className={`role-btn${role === 'customer' ? ' active' : ''}`}
                   onClick={() => setRole('customer')}
                 >
                   <i className="far fa-user"></i> {t('register_as_customer') || 'Customer'}
                 </button>
                 <button
                   type="button"
-                  className={role === 'supplier' ? 'theme-btn flex-fill' : 'theme-btn2 flex-fill'}
+                  className={`role-btn${role === 'supplier' ? ' active' : ''}`}
                   onClick={() => setRole('supplier')}
                 >
                   <i className="far fa-store"></i> {t('register_as_supplier') || 'Supplier'}
