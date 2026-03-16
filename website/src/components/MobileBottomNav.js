@@ -22,11 +22,11 @@ export default function MobileBottomNav() {
   };
 
   const navItems = [
-    { href: '/', icon: 'far fa-home', label: 'Home' },
-    { href: '/search', icon: 'far fa-grid-2', label: 'Shop' },
-    { action: 'search', icon: 'far fa-search', label: 'Search' },
-    { href: '/cart', icon: 'far fa-shopping-bag', label: 'Cart', badge: cartCount },
-    { href: user ? '/dashboard' : '/login', icon: 'far fa-user', label: 'Account' },
+    { href: '/', icon: 'fas fa-home', label: 'Home' },
+    { href: '/search', icon: 'fas fa-th-large', label: 'Shop' },
+    { action: 'search', icon: 'fas fa-search', label: 'Search' },
+    { href: '/cart', icon: 'fas fa-shopping-bag', label: 'Cart', badge: cartCount },
+    { href: user ? '/dashboard' : '/login', icon: 'fas fa-user', label: 'Account' },
   ];
 
   return (

@@ -116,17 +116,17 @@ export default function Header() {
                   <ul className="header-top-list">
                     <li>
                       <a href={`mailto:${contactEmail}`}>
-                        <i className="far fa-envelopes"></i> {contactEmail}
+                        <i className="far fa-envelope"></i> {contactEmail}
                       </a>
                     </li>
                     <li>
                       <a href={`tel:${contactPhone}`}>
-                        <i className="far fa-headset"></i> {contactPhone}
+                        <i className="fas fa-headset"></i> {contactPhone}
                       </a>
                     </li>
                     <li className="help">
                       <Link href="/contact">
-                        <i className="far fa-comment-question"></i> Need Help?
+                        <i className="far fa-question-circle"></i> Need Help?
                       </Link>
                     </li>
                   </ul>
@@ -135,19 +135,6 @@ export default function Header() {
               <div className="col-12 col-md-6 col-lg-6 col-xl-7">
                 <div className="header-top-right">
                   <ul className="header-top-list">
-                    
-                    <li>
-                      <div className="dropdown">
-                        <button type="button" className="lang-switcher-btn dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
-                          <i className="far fa-globe-americas"></i> {lang === 'en' ? 'EN' : lang === 'ps' ? 'PS' : 'DR'}
-                        </button>
-                        <div className="dropdown-menu">
-                          <button className="dropdown-item" onClick={() => switchLanguage('en')}>🇺🇸 English</button>
-                          <button className="dropdown-item" onClick={() => switchLanguage('ps')}>🇦🇫 پښتو (Pashto)</button>
-                          <button className="dropdown-item" onClick={() => switchLanguage('dr')}>🇦🇫 دری (Dari)</button>
-                        </div>
-                      </div>
-                    </li>
                     <li className="social">
                       <div className="header-top-social">
                         <span>Follow Us: </span>
@@ -193,33 +180,24 @@ export default function Header() {
                   </div>
                 </form>
                 {showSuggestions && suggestions.length > 0 && (
-                  <div className="search-suggestions" style={{
-                    position: 'absolute', top: '100%', left: 0, right: 0, background: '#fff',
-                    boxShadow: '0 8px 30px rgba(0,0,0,0.12)', borderRadius: '0 0 8px 8px',
-                    zIndex: 9999, maxHeight: 400, overflowY: 'auto', border: '1px solid #eee', borderTop: 'none'
-                  }}>
+                  <div className="search-suggestions">
                     {suggestions.map(p => (
                       <Link key={p.id} href={`/products/${p.id}`} onClick={() => setShowSuggestions(false)}
-                        style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 15px',
-                          borderBottom: '1px solid #f5f5f5', textDecoration: 'none', color: '#333',
-                          transition: 'background 0.15s' }}
-                        onMouseEnter={e => e.currentTarget.style.background = '#f8f9fa'}
-                        onMouseLeave={e => e.currentTarget.style.background = '#fff'}>
+                        className="search-suggestion-item">
                         <img src={p.images?.[0]?.url || '/assets/img/product/e1.png'} alt={getName(p) || p.nameEn}
-                          style={{ width: 45, height: 45, objectFit: 'contain', borderRadius: 6, background: '#f8f8f8', flexShrink: 0 }}
+                          className="search-suggestion-img"
                           onError={e => { e.target.src = '/assets/img/product/e1.png'; }} />
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <p style={{ margin: 0, fontWeight: 600, fontSize: 13, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        <div className="search-suggestion-info">
+                          <p className="search-suggestion-name">
                             {getName(p) || p.nameEn}
                           </p>
-                          <p style={{ margin: 0, fontSize: 12, color: '#999' }}>{p.category?.nameEn || ''}</p>
+                          <p className="search-suggestion-category">{p.category?.nameEn || ''}</p>
                         </div>
-                        <strong style={{ color: 'var(--theme-color)', fontSize: 13, whiteSpace: 'nowrap' }}>{formatPrice(p.retailPrice)}</strong>
+                        <strong className="search-suggestion-price">{formatPrice(p.retailPrice)}</strong>
                       </Link>
                     ))}
                     <Link href={`/search?q=${encodeURIComponent(searchQuery)}`} onClick={() => setShowSuggestions(false)}
-                      style={{ display: 'block', textAlign: 'center', padding: '10px', color: 'var(--theme-color)',
-                        fontWeight: 600, fontSize: 13, textDecoration: 'none', borderTop: '1px solid #eee' }}>
+                      className="search-suggestion-viewall">
                       View all results for &quot;{searchQuery}&quot;
                     </Link>
                   </div>

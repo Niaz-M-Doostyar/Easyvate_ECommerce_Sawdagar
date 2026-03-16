@@ -22,11 +22,9 @@ export default function RootLayout({ children }) {
     <html lang="en">
       <head>
         <link rel="icon" type="image/x-icon" href="/assets/img/logo/favicon.png" />
-        <link rel="dns-prefetch" href="https://fonts.googleapis.com" />
-        <link rel="dns-prefetch" href="https://fonts.gstatic.com" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;700&family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+        <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
         <link rel="stylesheet" href="/assets/css/bootstrap.min.css" />
         <link rel="stylesheet" href="/assets/css/all-fontawesome.min.css" />
         <link rel="stylesheet" href="/assets/css/owl.carousel.min.css" />
@@ -53,18 +51,10 @@ export default function RootLayout({ children }) {
 
         <Script src="/assets/js/jquery-3.7.1.min.js" strategy="afterInteractive" />
         <Script src="/assets/js/bootstrap.bundle.min.js" strategy="afterInteractive" />
-        <Script src="/assets/js/owl.carousel.min.js" strategy="afterInteractive" />
-        <Script src="/assets/js/wow.min.js" strategy="afterInteractive" />
+        <Script src="/assets/js/owl.carousel.min.js" strategy="lazyOnload" />
+        <Script src="/assets/js/wow.min.js" strategy="lazyOnload" />
         <Script src="/assets/js/jquery.magnific-popup.min.js" strategy="lazyOnload" />
-        <Script src="/assets/js/jquery.appear.min.js" strategy="lazyOnload" />
-        <Script src="/assets/js/jquery.easing.min.js" strategy="lazyOnload" />
-        <Script src="/assets/js/imagesloaded.pkgd.min.js" strategy="lazyOnload" />
-        <Script src="/assets/js/isotope.pkgd.min.js" strategy="lazyOnload" />
-        <Script src="/assets/js/counter-up.js" strategy="lazyOnload" />
-        <Script src="/assets/js/jquery-ui.min.js" strategy="lazyOnload" />
-        <Script src="/assets/js/jquery.nice-select.min.js" strategy="lazyOnload" />
         <Script src="/assets/js/countdown.min.js" strategy="lazyOnload" />
-        <Script src="/assets/js/modernizr.min.js" strategy="lazyOnload" />
         {/* main.js disabled — MocartInit handles all plugin initialization */}
       </body>
     </html>
