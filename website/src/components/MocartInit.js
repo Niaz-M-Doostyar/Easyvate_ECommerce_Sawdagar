@@ -164,7 +164,7 @@ export default function MocartInit() {
       }
     }
 
-    poll(80);
+    poll(40);
     initMagnific();
 
     return () => {

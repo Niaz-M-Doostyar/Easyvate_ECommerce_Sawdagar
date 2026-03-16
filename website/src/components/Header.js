@@ -291,7 +291,7 @@ export default function Header() {
 
       {/* Navbar */}
       <div className="main-navigation">
-        <nav className="navbar light navbar-expand-lg">
+        <nav className="navbar navbar-expand-lg">
           <div className="container position-relative">
             <Link className="navbar-brand" href="/">
               <img src={logoUrl} className="logo-scrolled" alt="Sawdagar" style={logoStyle} />
