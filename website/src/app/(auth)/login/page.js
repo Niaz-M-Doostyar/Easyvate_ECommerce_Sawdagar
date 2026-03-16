@@ -31,79 +31,56 @@ export default function LoginPage() {
   };
 
   return (
-    <>
-      {/* Breadcrumb */}
-      <div className="site-breadcrumb">
-        <div className="site-breadcrumb-bg" style={{ background: 'url(/assets/img/breadcrumb/01.jpg)' }}></div>
-        <div className="container">
-          <div className="site-breadcrumb-wrap">
-            <h4 className="breadcrumb-title">{t('login')}</h4>
-            <ul className="breadcrumb-menu">
-              <li><Link href="/"><i className="far fa-home"></i> {t('home')}</Link></li>
-              <li className="active">{t('login')}</li>
-            </ul>
-          </div>
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-primary/5 flex items-center justify-center py-20 px-4">
+      <div className="w-full max-w-md animate-fade-up">
+        <div className="text-center mb-8">
+          <Link href="/" className="inline-flex items-center gap-2.5 mb-6">
+            <img src={logoUrl} alt="Sawdagar" className="h-12 object-contain" />
+            <span className="text-2xl font-extrabold text-midnight font-display">Sawdagar</span>
+          </Link>
+          <h2 className="text-2xl font-bold text-midnight font-display">{t('login')}</h2>
+          <p className="text-body mt-2">{t('welcome') || 'Login with your Sawdagar account'}</p>
         </div>
-      </div>
 
-      {/* Login Area */}
-      <div className="login-area py-100">
-        <div className="container">
-          <div className="col-md-7 col-lg-5 mx-auto">
-            <div className="login-form">
-              <div className="login-header">
-                <img src={logoUrl} alt="Sawdagar" style={{ maxHeight: 100, width: 'auto', objectFit: 'contain' }} />
-                <p>{t('welcome') || 'Login with your Sawdagar account'}</p>
-              </div>
-              <form onSubmit={handleSubmit}>
-                <div className="form-group">
-                  <label>{t('email')}</label>
-                  <input
-                    type="email"
-                    className="form-control"
-                    placeholder={t('email')}
-                    value={form.email}
-                    onChange={e => setForm({ ...form, email: e.target.value })}
-                    required
-                  />
-                </div>
-                <div className="form-group">
-                  <label>{t('password')}</label>
-                  <input
-                    type="password"
-                    className="form-control"
-                    placeholder={t('password')}
-                    value={form.password}
-                    onChange={e => setForm({ ...form, password: e.target.value })}
-                    required
-                  />
-                </div>
-                <div className="d-flex justify-content-between mb-4">
-                  <div className="form-check">
-                    <input className="form-check-input" type="checkbox" id="remember" />
-                    <label className="form-check-label" htmlFor="remember">
-                      Remember Me
-                    </label>
-                  </div>
-                  <Link href="/forgot-password" className="forgot-pass">{t('forgot_password')}</Link>
-                </div>
-                <div className="d-flex align-items-center">
-                  <button type="submit" className="theme-btn" disabled={loading}>
-                    {loading ? (
-                      <><i className="fas fa-spinner fa-spin"></i> Signing in...</>
-                    ) : (
-                      <><i className="far fa-sign-in"></i> {t('login')}</>
-                    )}
-                  </button>
-                </div>
-              </form>
-              <div className="login-footer">
-                <p>{t('dont_have_account')} <Link href="/register">{t('register')}.</Link></p>
-              </div>
+        <div className="bg-white rounded-2xl shadow-card p-8">
+          <form onSubmit={handleSubmit} className="space-y-5">
+            <div>
+              <label className="text-sm font-semibold text-midnight mb-1.5 block font-display">{t('email')}</label>
+              <input
+                type="email"
+                value={form.email}
+                onChange={e => setForm({ ...form, email: e.target.value })}
+                className="w-full rounded-lg border border-gray-200 px-4 py-3 text-sm text-midnight placeholder:text-body focus:border-theme-color focus:outline-none focus:ring-2 focus:ring-theme-color/30"
+                placeholder={t('email')}
+                required
+              />
             </div>
-          </div>
+
+            <div>
+              <label className="text-sm font-semibold text-midnight mb-1.5 block font-display">{t('password')}</label>
+              <input
+                type="password"
+                value={form.password}
+                onChange={e => setForm({ ...form, password: e.target.value })}
+                className="w-full rounded-lg border border-gray-200 px-4 py-3 text-sm text-midnight placeholder:text-body focus:border-theme-color focus:outline-none focus:ring-2 focus:ring-theme-color/30"
+                placeholder={t('password')}
+                required
+              />
+            </div>
+
+            <div className="flex items-center justify-between">
+              <Link href="/forgot-password" className="text-sm font-semibold text-gold hover:text-gold/80">
+                {t('forgot_password')}
+              </Link>
+              <span className="text-sm text-body">{t('dont_have_account')} <Link href="/register" className="font-semibold text-gold hover:text-gold/80">{t('register')}</Link></span>
+            </div>
+
+            <button type="submit" disabled={loading} className="theme-btn w-full justify-center text-base py-3.5 disabled:opacity-60">
+              {loading ? `${t('sending') || 'Sending...'} ` : `${t('login')}`}
+            </button>
+          </form>
         </div>
       </div>
-    </>
+    </div>
   );
 }
