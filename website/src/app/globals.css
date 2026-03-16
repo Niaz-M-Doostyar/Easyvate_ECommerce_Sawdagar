@@ -107,7 +107,8 @@ html {
   padding: 12px 0 !important;
   border-bottom: 1px solid var(--border-color);
   position: relative;
-  /* No z-index — avoids stacking context that would cap dropdown z-index */
+  /* Must be > main-navigation z-index (900) so dropdowns inside render above the nav */
+  z-index: 1050 !important;
 }
 
 .header-middle-search .search-content {
@@ -177,21 +178,11 @@ html {
   background: #fff;
   box-shadow: 0 12px 40px rgba(0,0,0,0.12);
   border-radius: 0 0 var(--radius-md) var(--radius-md);
-  z-index: 99999;
+  z-index: 9999;
   max-height: 400px;
   overflow-y: auto;
   border: 1px solid var(--border-color);
   border-top: none;
-}
-
-@media (min-width: 992px) {
-  .search-suggestions {
-    position: fixed;
-    left: 50%;
-    transform: translateX(-50%);
-    width: min(640px, calc(100% - 40px));
-    top: 72px;
-  }
 }
 
 .search-suggestion-item {
@@ -859,6 +850,7 @@ html {
   right: 0 !important;
   top: 60px;
   min-width: 320px !important;
+  max-width: 360px !important;
   border-radius: var(--radius-lg) !important;
   box-shadow: 0 16px 50px rgba(0,0,0,0.12) !important;
   border: 1px solid var(--border-color) !important;
@@ -868,22 +860,13 @@ html {
   opacity: 0;
   visibility: hidden;
   transition: all 0.25s ease;
-  z-index: 99999;
-}
-
-@media (min-width: 992px) {
-  .dropdown-cart-menu {
-    position: fixed !important;
-    right: 24px !important;
-    top: 72px !important;
-    max-width: 360px !important;
-  }
+  z-index: 9999;
 }
 
 .dropdown-cart:hover .dropdown-cart-menu {
   opacity: 1 !important;
   visibility: visible !important;
-  top: 48px;
+  top: 50px !important;
 }
 
 .dropdown-cart-header {
