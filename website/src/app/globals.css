@@ -107,7 +107,7 @@ html {
   padding: 12px 0 !important;
   border-bottom: 1px solid var(--border-color);
   position: relative;
-  z-index: 1000;
+  z-index: 1010;
 }
 
 .header-middle-search .search-content {
@@ -279,7 +279,9 @@ html {
   z-index: 990;
 }
 
-.main-navigation .navbar {
+.main-navigation .navbar,
+.navbar {
+  background: #fff !important;
   padding: 0 !important;
 }
 
