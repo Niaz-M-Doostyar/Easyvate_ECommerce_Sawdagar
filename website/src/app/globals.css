@@ -1794,6 +1794,13 @@ a {
 [dir="rtl"] .product-bottom { flex-direction: row-reverse; }
 [dir="rtl"] .product-price { text-align: right; }
 
+/* Quick view + cart button group */
+.product-action-btns {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
 /* Checkout summary */
 [dir="rtl"] .checkout-summary li span:last-child { text-align: left; }
 [dir="rtl"] .shop-cart-summary li { display: flex; flex-direction: row-reverse; }

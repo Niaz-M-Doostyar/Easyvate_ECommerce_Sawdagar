@@ -5,6 +5,7 @@ import { useState, useEffect, memo } from 'react';
 import { useCart } from '@/contexts/CartContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { formatPrice } from '@/lib/currency';
+import QuickViewModal from './CleanQuickViewModal';
 
 function normalizeImg(src) {
   if (!src) return '/assets/img/product/e1.png';
@@ -16,6 +17,7 @@ const MocartProductItem = memo(function MocartProductItem({ product, showBadge =
   const { addToCart } = useCart();
   const { lang } = useLanguage();
   const [isNew, setIsNew] = useState(false);
+  const [showModal, setShowModal] = useState(false);
 
   if (!product) return null;
 
@@ -54,12 +56,9 @@ const MocartProductItem = memo(function MocartProductItem({ product, showBadge =
         </Link>
         <div className="product-action-wrap">
           <div className="product-action">
-            <Link href={`/products/${product.id}`} data-tooltip="tooltip" title="Quick View">
+            <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); setShowModal(true); }} data-tooltip="tooltip" title="Quick View" style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
               <i className="far fa-eye"></i>
-            </Link>
-            <a href="#" data-tooltip="tooltip" title="Add To Wishlist" onClick={e => e.preventDefault()}>
-              <i className="far fa-heart"></i>
-            </a>
+            </button>
           </div>
         </div>
       </div>
@@ -91,6 +90,7 @@ const MocartProductItem = memo(function MocartProductItem({ product, showBadge =
           </button>
         </div>
       </div>
+      {showModal && <QuickViewModal product={product} onClose={() => setShowModal(false)} />}
     </div>
   );
 });

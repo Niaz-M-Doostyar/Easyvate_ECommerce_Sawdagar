@@ -54,6 +54,20 @@ export default function RegisterPage() {
   };
 
   return (
+    <>
+      <div className="site-breadcrumb">
+        <div className="site-breadcrumb-bg" style={{ background: "url(/assets/img/breadcrumb/01.jpg)" }} />
+        <div className="container">
+          <div className="site-breadcrumb-wrap">
+            <h4 className="breadcrumb-title">{t('register')}</h4>
+            <ul className="breadcrumb-menu">
+              <li><Link href="/"><i className="far fa-home"></i> Home</Link></li>
+              <li className="active">{t('register')}</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-primary/5 flex items-center justify-center py-20 px-4">
       <div className="w-full max-w-lg animate-fade-up">
         <div className="text-center mb-8">
@@ -146,5 +160,6 @@ export default function RegisterPage() {
         </div>
       </div>
     </div>
+    </>
   );
 }

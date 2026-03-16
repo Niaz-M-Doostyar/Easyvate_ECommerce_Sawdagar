@@ -71,9 +71,14 @@ export default function ProductCard({ product, layout = 'grid' }) {
           <div className="product-rate">{[1,2,3,4,5].map(i => <span key={i} className={i <= rating ? 'star-filled' : 'star-empty'}>★</span>)}</div>
           <div className="product-bottom mt-2">
             <div className="product-price">{oldPrice && <del>{formatPrice(oldPrice)}</del>}<span>{formatPrice(price)}</span></div>
-            {inStock && <button onClick={handleAdd} className="product-cart-btn" title="Add To Cart">
-              <i className="far fa-shopping-bag"></i>
-            </button>}
+            <div className="product-action-btns">
+              <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); setShowModal(true); }} className="product-cart-btn" title="Quick View">
+                <i className="far fa-eye"></i>
+              </button>
+              {inStock && <button onClick={handleAdd} className="product-cart-btn" title="Add To Cart">
+                <i className="far fa-shopping-bag"></i>
+              </button>}
+            </div>
           </div>
         </div>
       </div>
@@ -109,9 +114,14 @@ export default function ProductCard({ product, layout = 'grid' }) {
         <div className="product-rate">{[1,2,3,4,5].map(i => <span key={i} className={i <= rating ? 'star-filled' : 'star-empty'}>★</span>)}</div>
         <div className="product-bottom">
           <div className="product-price">{oldPrice && <del>{formatPrice(oldPrice)}</del>}<span>{formatPrice(price)}</span></div>
-          {inStock && <button onClick={handleAdd} className="product-cart-btn" title="Add To Cart">
-            <i className="far fa-shopping-bag"></i>
-          </button>}
+          <div className="product-action-btns">
+            <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); setShowModal(true); }} className="product-cart-btn" title="Quick View">
+              <i className="far fa-eye"></i>
+            </button>
+            {inStock && <button onClick={handleAdd} className="product-cart-btn" title="Add To Cart">
+              <i className="far fa-shopping-bag"></i>
+            </button>}
+          </div>
         </div>
       </div>
       {showModal && <QuickViewModal product={product} onClose={() => setShowModal(false)} />}

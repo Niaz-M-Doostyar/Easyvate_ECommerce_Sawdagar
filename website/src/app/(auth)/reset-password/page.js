@@ -29,11 +29,11 @@ function ResetForm() {
     <form onSubmit={handleSubmit} className="space-y-5">
       <div>
         <label className="text-sm font-semibold text-midnight mb-1.5 block font-display">New Password</label>
-        <input type="password" value={form.password} onChange={e => setForm({...form, password: e.target.value})} className="form-field" placeholder="Min 6 characters" required />
+        <input type="password" value={form.password} onChange={e => setForm({...form, password: e.target.value})} className="w-full rounded-lg border border-gray-200 px-4 py-3 text-sm text-midnight placeholder:text-body focus:border-theme-color focus:outline-none focus:ring-2 focus:ring-theme-color/30" placeholder="Min 6 characters" required />
       </div>
       <div>
         <label className="text-sm font-semibold text-midnight mb-1.5 block font-display">Confirm Password</label>
-        <input type="password" value={form.confirmPassword} onChange={e => setForm({...form, confirmPassword: e.target.value})} className="form-field" placeholder="••••••••" required />
+        <input type="password" value={form.confirmPassword} onChange={e => setForm({...form, confirmPassword: e.target.value})} className="w-full rounded-lg border border-gray-200 px-4 py-3 text-sm text-midnight placeholder:text-body focus:border-theme-color focus:outline-none focus:ring-2 focus:ring-theme-color/30" placeholder="••••••••" required />
       </div>
       <button type="submit" disabled={loading} className="theme-btn w-full justify-center text-base py-3.5 disabled:opacity-60">{loading ? "Resetting..." : "Reset Password"}</button>
     </form>

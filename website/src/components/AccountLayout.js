@@ -8,7 +8,6 @@ const menuItems = [
   { href: "/dashboard", icon: "far fa-gauge-high", label: "Dashboard" },
   { href: "/profile", icon: "far fa-user", label: "My Profile" },
   { href: "/orders", icon: "far fa-shopping-bag", label: "Orders" },
-  { href: "/wishlist", icon: "far fa-heart", label: "My Wishlist" },
   { href: "/cart", icon: "far fa-cart-shopping", label: "Cart" },
   { href: "/setting", icon: "far fa-gear", label: "Settings" },
 ];
