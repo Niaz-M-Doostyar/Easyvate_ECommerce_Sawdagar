@@ -184,6 +184,16 @@ html {
   border-top: none;
 }
 
+@media (min-width: 992px) {
+  .search-suggestions {
+    position: fixed;
+    left: 50%;
+    transform: translateX(-50%);
+    width: min(640px, calc(100% - 40px));
+    top: 72px;
+  }
+}
+
 .search-suggestion-item {
   display: flex;
   align-items: center;
@@ -859,6 +869,15 @@ html {
   visibility: hidden;
   transition: all 0.25s ease;
   z-index: 10000;
+}
+
+@media (min-width: 992px) {
+  .dropdown-cart-menu {
+    position: fixed !important;
+    right: 24px !important;
+    top: 72px !important;
+    max-width: 360px !important;
+  }
 }
 
 .dropdown-cart:hover .dropdown-cart-menu {
