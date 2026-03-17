@@ -9,22 +9,26 @@ import QuickViewModal from './CleanQuickViewModal';
 
 function normalizeImg(src) {
   if (!src) return '/assets/img/product/e1.png';
-  if (src.startsWith('http') || src.startsWith('/')) return src;
+  if (src.startsWith('http')) return src;
+  if (src.startsWith('/')) return src;
   return `/${src}`;
 }
+
+const FALLBACK_IMG = '/assets/img/product/e1.png';
 
 const MocartProductItem = memo(function MocartProductItem({ product, showBadge = true }) {
   const { addToCart } = useCart();
   const { lang } = useLanguage();
   const [isNew, setIsNew] = useState(false);
   const [showModal, setShowModal] = useState(false);
+  const [imgError, setImgError] = useState(false);
 
   if (!product) return null;
 
   const name = lang === 'ps' ? (product.namePs || product.nameEn) :
                lang === 'dr' ? (product.nameDr || product.nameEn) : product.nameEn;
 
-  const imgSrc = normalizeImg(product.images?.[0]?.url);
+  const imgSrc = imgError ? FALLBACK_IMG : normalizeImg(product.images?.[0]?.url);
   const price = product.retailPrice || product.suggestedPrice || 0;
   const oldPrice = product.wholesaleCost && product.wholesaleCost > price ? product.wholesaleCost : null;
   const isOutOfStock = product.stock <= 0;
@@ -52,7 +56,7 @@ const MocartProductItem = memo(function MocartProductItem({ product, showBadge =
       <div className="product-img">
         {badge}
         <Link href={`/products/${product.id}`}>
-          <img src={imgSrc} alt={name} loading="lazy" decoding="async" />
+          <img src={imgSrc} alt={name} loading="lazy" decoding="async" onError={() => setImgError(true)} />
         </Link>
         <div className="product-action-wrap">
           <div className="product-action">
@@ -114,7 +118,7 @@ export const MocartProductListItem = memo(function MocartProductListItem({ produ
     <div className="product-list-item">
       <div className="product-list-img">
         <Link href={`/products/${product.id}`}>
-          <img src={listImgUrl} alt={name} loading="lazy" decoding="async" />
+          <img src={listImgUrl} alt={name} loading="lazy" decoding="async" onError={e => { e.target.src = FALLBACK_IMG; }} />
         </Link>
       </div>
       <div className="product-list-content">

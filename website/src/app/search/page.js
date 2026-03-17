@@ -17,6 +17,7 @@ function SearchContent() {
   const cat = searchParams.get("category") || "";
   const sort = searchParams.get("sort") || "";
   const currentPage = parseInt(searchParams.get("page") || "1");
+  const urlInStock = searchParams.get("inStock") === "true";
 
   const [products, setProducts] = useState([]);
   const [totalPages, setTotalPages] = useState(1);
@@ -24,9 +25,12 @@ function SearchContent() {
   const [loading, setLoading] = useState(true);
   const [view, setView] = useState("grid");
   const [priceRange, setPriceRange] = useState([0, 100000]);
-  const [inStock, setInStock] = useState(false);
+  const [inStock, setInStock] = useState(urlInStock);
   const [ratingFilter, setRatingFilter] = useState(0);
   const [showMobileFilter, setShowMobileFilter] = useState(false);
+
+  // Sync inStock from URL on mount / URL change
+  useEffect(() => { setInStock(urlInStock); }, [urlInStock]);
 
   const getName = (item) => siteGetName(item, lang);
 
@@ -130,7 +134,7 @@ function SearchContent() {
           <li>
             <div className="form-check">
               <input className="form-check-input" type="checkbox" id="inStockCheck"
-                checked={inStock} onChange={() => setInStock(!inStock)} />
+                checked={inStock} onChange={() => { const next = !inStock; setInStock(next); updateParam("inStock", next ? "true" : ""); }} />
               <label className="form-check-label" htmlFor="inStockCheck">
                 {t?.('in_stock_only') || 'In Stock'}
               </label>
@@ -163,7 +167,14 @@ function SearchContent() {
       {/* Clear Filters */}
       {hasActiveFilters && (
         <div className="shop-widget">
-          <button onClick={() => { updateParam("category", ""); setPriceRange([0, 100000]); setInStock(false); setRatingFilter(0); }}
+          <button onClick={() => {
+            setPriceRange([0, 100000]);
+            setInStock(false);
+            setRatingFilter(0);
+            const params = new URLSearchParams();
+            if (q) params.set("q", q);
+            router.push(`/search${params.toString() ? '?' + params.toString() : ''}`);
+          }}
             className="theme-btn" style={{ width: '100%' }}>
             <i className="far fa-times me-1"></i> {t?.('clear_filters') || 'Clear All Filters'}
           </button>

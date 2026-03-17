@@ -9,7 +9,6 @@ export default function MocartInit() {
   useEffect(() => {
     let cancelled = false;
     let timer = null;
-    let magnificTimer = null;
 
     function hidePreloader() {
       const pre = document.querySelector('.preloader');
@@ -45,7 +44,7 @@ export default function MocartInit() {
           }, 500);
         });
       } else if (retries > 0) {
-        timer = setTimeout(() => poll(retries - 1), 150);
+        timer = setTimeout(() => poll(retries - 1), 250);
       } else {
         // Ensure preloader doesn't hang indefinitely if jQuery never loads
         hidePreloader();
@@ -112,13 +111,6 @@ export default function MocartInit() {
         // WOW.js
         try { if (window.WOW) new window.WOW({ offset: 100, mobile: false }).init(); } catch (e) {}
 
-        // Magnific Popup (only initialize youtube popups; gallery uses React modal)
-        try {
-          if ($.fn.magnificPopup) {
-            $('.popup-youtube').magnificPopup({ type: 'iframe' });
-          }
-        } catch (e) {}
-
         // Tooltips
         try {
           document.querySelectorAll('[data-tooltip="tooltip"]').forEach(el => {
@@ -148,29 +140,11 @@ export default function MocartInit() {
       }, 150);
     }
 
-    function initMagnific(retries = 40) {
-      if (cancelled) return;
-      const $ = window.jQuery;
-      try {
-        if ($ && $.fn && $.fn.magnificPopup) {
-          $('.popup-youtube').magnificPopup({ type: 'iframe' });
-          $('.popup-gallery').magnificPopup({ delegate: '.popup-img', type: 'image', gallery: { enabled: true } });
-          return;
-        }
-      } catch (e) {}
-
-      if (retries > 0) {
-        magnificTimer = setTimeout(() => initMagnific(retries - 1), 200);
-      }
-    }
-
     poll(40);
-    initMagnific();
 
     return () => {
       cancelled = true;
       if (timer) clearTimeout(timer);
-      if (magnificTimer) clearTimeout(magnificTimer);
     };
   }, [pathname]);
 

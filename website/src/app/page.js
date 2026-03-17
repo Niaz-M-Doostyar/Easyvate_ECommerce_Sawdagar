@@ -3,7 +3,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { useCart } from '@/contexts/CartContext';
 import { useSiteData } from '@/contexts/SiteDataContext';
 import MocartInit from '@/components/MocartInit';
 import MocartProductItem, { MocartProductListItem } from '@/components/MocartProductItem';
@@ -11,7 +10,6 @@ import { formatPrice, CURRENCY_SYMBOL } from '@/lib/currency';
 
 export default function HomePage() {
   const { lang } = useLanguage();
-  const { addToCart } = useCart();
   const { categories, siteContent, getName: siteGetName } = useSiteData();
   const [products, setProducts] = useState([]);
   const [sponsoredProducts, setSponsoredProducts] = useState([]);
@@ -46,11 +44,53 @@ export default function HomePage() {
   ];
   const testimonials = home.testimonials || {};
   const testimonialItems = home.testimonialItems || [];
-  const blogItems = home.blogItems || [];
   const newsletter = home.newsletter || {};
   const brands = home.brands || {};
   const brandItems = home.brandItems || [];
   const instagramItems = home.instagramItems || [];
+
+  const [videoPlaying, setVideoPlaying] = useState(false);
+  const videoUrl = home.video?.videoUrl || 'https://www.youtube.com/watch?v=jLS3DrTJrpI';
+
+  // Extract YouTube video ID
+  const getYouTubeId = (url) => {
+    const m = url.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([^&?\s]+)/);
+    return m ? m[1] : null;
+  };
+
+  const [subscribeEmail, setSubscribeEmail] = useState('');
+  const [subscribeStatus, setSubscribeStatus] = useState(null); // null | 'loading' | 'success' | 'error'
+  const [subscribeMsg, setSubscribeMsg] = useState('');
+  const [blogPosts, setBlogPosts] = useState([]);
+
+  useEffect(() => {
+    fetch('/api/blog?limit=3').then(r => r.json()).then(d => setBlogPosts(d.posts || [])).catch(() => {});
+  }, []);
+
+  const handleSubscribe = async (e) => {
+    e.preventDefault();
+    if (!subscribeEmail) return;
+    setSubscribeStatus('loading');
+    try {
+      const res = await fetch('/api/subscribe', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: subscribeEmail }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setSubscribeStatus('success');
+        setSubscribeMsg(data.couponCode ? `Welcome! Use code ${data.couponCode} for 10% off!` : 'Subscribed successfully!');
+        setSubscribeEmail('');
+      } else {
+        setSubscribeStatus('error');
+        setSubscribeMsg(data.error || 'Something went wrong');
+      }
+    } catch {
+      setSubscribeStatus('error');
+      setSubscribeMsg('Network error. Please try again.');
+    }
+  };
 
   const [galleryOpen, setGalleryOpen] = useState(false);
   const [galleryIndex, setGalleryIndex] = useState(0);
@@ -120,8 +160,8 @@ export default function HomePage() {
                           <Link href={hero.primaryButtonHref || '/search'} className="theme-btn">
                             {hero.primaryButtonLabel || 'Shop Now'}<i className="fas fa-arrow-right"></i>
                           </Link>
-                          <Link href={hero.secondaryButtonHref || '/about'} className="theme-btn theme-btn2">
-                            {hero.secondaryButtonLabel || 'Learn More'}<i className="fas fa-arrow-right"></i>
+                          <Link href={hero.secondaryButtonHref || '/search'} className="theme-btn theme-btn2">
+                            {hero.secondaryButtonLabel || 'Explore Products'}<i className="fas fa-arrow-right"></i>
                           </Link>
                         </div>
                       </div>
@@ -133,7 +173,7 @@ export default function HomePage() {
                             <span>{slide.priceLabel}</span>
                             <span>{slide.priceValue}</span>
                           </div>
-                          <img src={slide.image} alt="" />
+                          <img src={slide.image} alt="" fetchPriority={i === 0 ? "high" : "low"} />
                         </div>
                       </div>
                     </div>
@@ -187,7 +227,7 @@ export default function HomePage() {
             ]).slice(0, 3).map((banner, i) => (
               <div className="col-12 col-md-6 col-lg-4" key={i}>
                 <div className="banner-item">
-                  <img src={banner.image || `/assets/img/banner/mini-banner-${i+1}.jpg`} alt="" />
+                  <img src={banner.image || `/assets/img/banner/mini-banner-${i+1}.jpg`} alt="" loading="lazy" />
                   <div className="banner-content">
                     <p>{banner.label}</p>
                     <h3 dangerouslySetInnerHTML={{ __html: (banner.title || '').replace(/\n/g, '<br/>') }} />
@@ -258,7 +298,7 @@ export default function HomePage() {
                 <div className="col-12 col-md-6 col-lg-3" key={i}>
                   <div className="feature-item">
                     <div className="feature-icon">
-                      <img src={feature.image || `/assets/img/icon/${feature.icon || 'delivery-2.svg'}`} alt="" />
+                      <img src={feature.image || `/assets/img/icon/${feature.icon || 'delivery-2.svg'}`} alt="" loading="lazy" />
                     </div>
                     <div className="feature-content">
                       <h4>{feature.title}</h4>
@@ -279,7 +319,7 @@ export default function HomePage() {
             <div className="col-lg-3">
               <div className="product-banner wow fadeInLeft" data-wow-delay=".25s">
                 <Link href="/search">
-                  <img src={home.productBannerImage || '/assets/img/banner/product-banner.jpg'} alt="" />
+                  <img src={home.productBannerImage || '/assets/img/banner/product-banner.jpg'} alt="" loading="lazy" />
                 </Link>
               </div>
             </div>
@@ -337,7 +377,7 @@ export default function HomePage() {
             {(brandItems.length > 0 ? brandItems : [1,2,3,4,5,6].map(n => ({ image: `/assets/img/brand/0${n}.png` }))).map((brand, i) => (
               <div className="brand-item" key={i}>
                 <Link href="/search">
-                  <img src={brand.image || `/assets/img/brand/0${i+1}.png`} alt={brand.name || ''} />
+                  <img src={brand.image || `/assets/img/brand/0${i+1}.png`} alt={brand.name || ''} loading="lazy" />
                 </Link>
               </div>
             ))}
@@ -391,12 +431,29 @@ export default function HomePage() {
       {/* Video Area */}
       <div className="video-area pt-100">
         <div className="container-fluid px-0">
-          <div className="video-content" style={{ backgroundImage: `url(${home.video?.backgroundImage || '/assets/img/video/01.jpg'})` }}>
-            <div className="video-wrapper">
-              <a className="play-btn popup-youtube" href={home.video?.videoUrl || 'https://www.youtube.com/watch?v=jLS3DrTJrpI'}>
-                <i className="fas fa-play"></i>
-              </a>
-            </div>
+          <div className="video-content" style={{ backgroundImage: !videoPlaying ? `url(${home.video?.backgroundImage || '/assets/img/video/01.jpg'})` : 'none', position: 'relative', overflow: 'hidden' }}>
+            {videoPlaying ? (
+              <div style={{ position: 'relative', width: '100%', paddingBottom: '56.25%' }}>
+                <iframe
+                  src={`https://www.youtube.com/embed/${getYouTubeId(videoUrl)}?autoplay=1&rel=0`}
+                  style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', border: 0 }}
+                  allow="autoplay; encrypted-media"
+                  allowFullScreen
+                  title="Video"
+                />
+              </div>
+            ) : (
+              <div className="video-wrapper">
+                <button
+                  className="play-btn"
+                  onClick={() => setVideoPlaying(true)}
+                  style={{ background: 'none', border: 'none', cursor: 'pointer' }}
+                  aria-label="Play video"
+                >
+                  <i className="fas fa-play"></i>
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -407,20 +464,20 @@ export default function HomePage() {
           <div className="row g-4">
             <div className="col-12 col-md-6 col-lg-6 col-xl-4">
               <div className="product-list-box border">
-                <h2 className="product-list-title">On Sale</h2>
+                <Link href="/search?sort=price_asc" style={{textDecoration:'none'}}><h2 className="product-list-title" style={{cursor:'pointer'}}>On Sale <i className="fas fa-angle-right" style={{fontSize:14,marginLeft:6}}></i></h2></Link>
                 {onSaleProducts.map(p => <MocartProductListItem key={p.id} product={p} />)}
                 {onSaleProducts.length === 0 && products.slice(0, 3).map(p => <MocartProductListItem key={p.id} product={p} />)}
               </div>
             </div>
             <div className="col-12 col-md-6 col-lg-6 col-xl-4">
               <div className="product-list-box border">
-                <h2 className="product-list-title">Best Seller</h2>
+                <Link href="/search?sort=best_seller" style={{textDecoration:'none'}}><h2 className="product-list-title" style={{cursor:'pointer'}}>Best Seller <i className="fas fa-angle-right" style={{fontSize:14,marginLeft:6}}></i></h2></Link>
                 {bestSellerProducts.map(p => <MocartProductListItem key={p.id} product={p} />)}
               </div>
             </div>
             <div className="col-12 col-md-6 col-lg-6 col-xl-4">
               <div className="product-list-box border">
-                <h2 className="product-list-title">Top Rated</h2>
+                <Link href="/search?sort=price_desc" style={{textDecoration:'none'}}><h2 className="product-list-title" style={{cursor:'pointer'}}>Top Rated <i className="fas fa-angle-right" style={{fontSize:14,marginLeft:6}}></i></h2></Link>
                 {topRatedProducts.map(p => <MocartProductListItem key={p.id} product={p} />)}
               </div>
             </div>
@@ -446,14 +503,14 @@ export default function HomePage() {
                       <div className="deal-countdown">
                         <div className="countdown" data-countdown="2027/12/30"></div>
                       </div>
-                      <Link href={dealOfWeek.buttonHref || '/search'} className="theme-btn theme-btn2">
+                      <Link href={dealOfWeek.buttonHref || '/search?sort=price_asc&inStock=true'} className="theme-btn theme-btn2">
                         {dealOfWeek.buttonLabel || 'Shop Now'} <i className="fas fa-arrow-right"></i>
                       </Link>
                     </div>
                   </div>
                   <div className="col-lg-6">
                     <div className="deal-img">
-                      <img src={dealOfWeek.image || '/assets/img/deal/01.png'} alt="" />
+                      <img src={dealOfWeek.image || '/assets/img/deal/01.png'} alt="" loading="lazy" />
                       <div className="deal-discount">
                         <span>{dealOfWeek.discountPercent || '35'}%</span>
                         <span>off</span>
@@ -483,7 +540,7 @@ export default function HomePage() {
               <div className={item.size || 'col-md-4 col-lg-3'} key={i}>
                 <div className="gallery-item wow fadeInDown" data-wow-delay=".25s">
                   <div className="gallery-img">
-                    <img src={item.image} alt="" />
+                    <img src={item.image} alt="" loading="lazy" />
                     <a
                       className="gallery-link"
                       href="#"
@@ -523,7 +580,7 @@ export default function HomePage() {
               <div className="testimonial-item" key={i}>
                 <div className="testimonial-author">
                   <div className="testimonial-author-img">
-                    <img src={t.image || `/assets/img/testimonial/0${i+1}.jpg`} alt="" />
+                    <img src={t.image || `/assets/img/testimonial/0${i+1}.jpg`} alt="" loading="lazy" />
                   </div>
                   <div className="testimonial-author-info">
                     <h4>{t.name}</h4>
@@ -576,34 +633,43 @@ export default function HomePage() {
             </div>
           </div>
           <div className="row g-4">
-            {(blogItems.length > 0 ? blogItems : [
-              { image: '/assets/img/blog/01.jpg', date: 'Aug 12, 2025', author: 'Alicia Davis', comments: '2.5k', title: 'There are many variations of passage available majority suffered.', excerpt: 'There are many variations available the majority have suffered alteration randomised words.' },
-              { image: '/assets/img/blog/02.jpg', date: 'Aug 15, 2025', author: 'Alicia Davis', comments: '3.1k', title: 'Contrary to popular belief making simply random text latin.', excerpt: 'There are many variations available the majority have suffered alteration randomised words.' },
-              { image: '/assets/img/blog/03.jpg', date: 'Aug 18, 2025', author: 'Alicia Davis', comments: '1.6k', title: 'If you are going use passage you need sure there middle text.', excerpt: 'There are many variations available the majority have suffered alteration randomised words.' },
-            ]).slice(0, 3).map((blog, i) => (
-              <div className="col-md-6 col-lg-4" key={i}>
+            {(blogPosts.length > 0 ? blogPosts : [
+              { slug: '#', image: '/assets/img/blog/01.jpg', createdAt: '2025-08-12', authorName: 'Admin', viewCount: 0, titleEn: 'There are many variations of passage available majority suffered.', excerptEn: 'There are many variations available the majority have suffered alteration randomised words.' },
+              { slug: '#', image: '/assets/img/blog/02.jpg', createdAt: '2025-08-15', authorName: 'Admin', viewCount: 0, titleEn: 'Contrary to popular belief making simply random text latin.', excerptEn: 'There are many variations available the majority have suffered alteration randomised words.' },
+              { slug: '#', image: '/assets/img/blog/03.jpg', createdAt: '2025-08-18', authorName: 'Admin', viewCount: 0, titleEn: 'If you are going use passage you need sure there middle text.', excerptEn: 'There are many variations available the majority have suffered alteration randomised words.' },
+            ]).slice(0, 3).map((blog, i) => {
+              const blogTitle = lang === 'ps' ? (blog.titlePs || blog.titleEn) : lang === 'dr' ? (blog.titleDr || blog.titleEn) : blog.titleEn;
+              const blogExcerpt = lang === 'ps' ? (blog.excerptPs || blog.excerptEn) : lang === 'dr' ? (blog.excerptDr || blog.excerptEn) : blog.excerptEn;
+              return (
+              <div className="col-md-6 col-lg-4" key={blog.id || i}>
                 <div className="blog-item wow fadeInUp" data-wow-delay=".25s">
                   <div className="blog-item-img">
-                    <img src={blog.image || `/assets/img/blog/0${i+1}.jpg`} alt="" />
-                    <span className="blog-date"><i className="far fa-calendar-alt"></i> {blog.date}</span>
+                    <img src={blog.image || `/assets/img/blog/0${i+1}.jpg`} alt={blogTitle} loading="lazy" onError={e => { e.target.src = `/assets/img/blog/0${(i%3)+1}.jpg`; }} />
+                    <span className="blog-date"><i className="far fa-calendar-alt"></i> {new Date(blog.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
                   </div>
                   <div className="blog-item-info">
                     <div className="blog-item-meta">
                       <ul>
-                        <li><a href="#"><i className="far fa-user-circle"></i> By {blog.author}</a></li>
-                        <li><a href="#"><i className="far fa-comments"></i> {blog.comments} Comments</a></li>
+                        <li><i className="far fa-user-circle"></i> By {blog.authorName || 'Admin'}</li>
+                        <li><i className="far fa-eye"></i> {blog.viewCount || 0} Views</li>
                       </ul>
                     </div>
                     <h4 className="blog-title">
-                      <a href="#">{blog.title}</a>
+                      <Link href={blog.slug === '#' ? '#' : `/blog/${blog.slug}`}>{blogTitle}</Link>
                     </h4>
-                    <p>{blog.excerpt}</p>
-                    <a className="theme-btn" href="#">Read More<i className="fas fa-arrow-right"></i></a>
+                    <p>{blogExcerpt}</p>
+                    <Link className="theme-btn" href={blog.slug === '#' ? '#' : `/blog/${blog.slug}`}>Read More<i className="fas fa-arrow-right"></i></Link>
                   </div>
                 </div>
               </div>
-            ))}
+              );
+            })}
           </div>
+          {blogPosts.length > 0 && (
+            <div className="text-center mt-4">
+              <Link href="/blog" className="theme-btn">View All Posts <i className="fas fa-arrow-right"></i></Link>
+            </div>
+          )}
         </div>
       </div>
 
@@ -617,12 +683,17 @@ export default function HomePage() {
                   <h3>{newsletter.title ? newsletter.title.split(/(\d+%)/).map((part, i) => /\d+%/.test(part) ? <span key={i}>{part}</span> : part) : <>Get <span>20%</span> Off Discount Coupon</>}</h3>
                   <p>{newsletter.description || 'By Subscribe Our Newsletter'}</p>
                   <div className="subscribe-form">
-                    <form onSubmit={e => e.preventDefault()}>
-                      <input type="email" className="form-control" placeholder="Your Email Address" />
-                      <button className="theme-btn" type="submit">
-                        {newsletter.buttonLabel || 'Subscribe'} <i className="far fa-paper-plane"></i>
-                      </button>
-                    </form>
+                    {subscribeStatus === 'success' ? (
+                      <div className="alert alert-success text-center" style={{ borderRadius: 30, padding: '12px 20px' }}>{subscribeMsg}</div>
+                    ) : (
+                      <form onSubmit={handleSubscribe}>
+                        <input type="email" className="form-control" placeholder="Your Email Address" value={subscribeEmail} onChange={e => setSubscribeEmail(e.target.value)} required />
+                        <button className="theme-btn" type="submit" disabled={subscribeStatus === 'loading'}>
+                          {subscribeStatus === 'loading' ? 'Subscribing...' : (newsletter.buttonLabel || 'Subscribe')} <i className="far fa-paper-plane"></i>
+                        </button>
+                      </form>
+                    )}
+                    {subscribeStatus === 'error' && <p className="text-danger mt-2 text-center" style={{ fontSize: 14 }}>{subscribeMsg}</p>}
                   </div>
                 </div>
               </div>
@@ -642,11 +713,13 @@ export default function HomePage() {
             </div>
           </div>
           <div className="instagram-slider owl-carousel owl-theme">
-            {(instagramItems.length > 0 ? instagramItems : [1,2,3,4,5,6,7].map(n => ({ image: `/assets/img/instagram/0${n}.jpg` }))).map((item, i) => (
+            {(instagramItems.length > 0 ? instagramItems : products.slice(0, 7).map(p => ({ image: p.images?.[0] || `/assets/img/instagram/01.jpg`, link: `/products/${p.slug || p.id}` }))).concat(
+              instagramItems.length === 0 && products.length < 7 ? [1,2,3,4,5,6,7].slice(products.length).map(n => ({ image: `/assets/img/instagram/0${n}.jpg`, link: '#' })) : []
+            ).map((item, i) => (
               <div className="instagram-item" key={i}>
                 <div className="instagram-img">
-                  <img src={item.image || `/assets/img/instagram/0${i+1}.jpg`} alt="" />
-                  <a href="#"><i className="fab fa-instagram"></i></a>
+                  <img src={item.image || `/assets/img/instagram/0${i+1}.jpg`} alt="" loading="lazy" onError={e => { e.target.src = `/assets/img/instagram/0${(i%7)+1}.jpg`; }} />
+                  <Link href={item.link || '#'}><i className="fab fa-instagram"></i></Link>
                 </div>
               </div>
             ))}

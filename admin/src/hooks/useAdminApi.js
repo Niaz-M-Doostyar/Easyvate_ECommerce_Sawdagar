@@ -64,16 +64,6 @@ export function useAdminCategories() {
   return useSWR("/api/categories", fetcher);
 }
 
-export function useSponsorshipPackages() {
-  return useSWR(`${API_BASE}/sponsorships/packages`, fetcher);
-}
-
-export function useSponsorshipRequests(page = 1, limit = 20, status = "") {
-  const params = new URLSearchParams({ page, limit });
-  if (status) params.set("status", status);
-  return useSWR(`${API_BASE}/sponsorships/requests?${params}`, fetcher);
-}
-
 export function useContactMessages(page = 1, limit = 15) {
   return useSWR(`${API_BASE}/contact-messages?page=${page}&limit=${limit}`, fetcher);
 }

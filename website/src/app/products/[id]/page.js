@@ -132,7 +132,7 @@ export default function ProductDetailPage({ params }) {
             <div className="col-lg-6">
               <div className="shop-single-gallery">
                 <div className="shop-single-main-img mb-3">
-                  <img src={images[selectedImage]} alt={productName} onError={(e) => { e.target.src = fallbackImg; }} />
+                  <img src={images[selectedImage]} alt={productName} fetchPriority="high" onError={(e) => { e.target.src = fallbackImg; }} />
                   {product.isSponsored && <span className="badge bg-warning position-absolute" style={{ top: '15px', left: '15px' }}>{t('sponsored') || 'Sponsored'}</span>}
                   {!inStock && <div className="position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center" style={{ background: 'rgba(0,0,0,0.4)' }}><span className="badge bg-danger fs-6 px-3 py-2">{t('out_of_stock') || 'Out of Stock'}</span></div>}
                 </div>

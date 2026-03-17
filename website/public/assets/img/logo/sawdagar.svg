@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 780 220" role="img" aria-label="Sawdagar">
+  <defs>
+    <linearGradient id="blueGrad" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0%" stop-color="#0E41C5" />
+      <stop offset="100%" stop-color="#0A2CA8" />
+    </linearGradient>
+    <style>
+      .brand { font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; font-weight: 800; letter-spacing: -0.02em; }
+      .brand-large { font-size: 72px; }
+      .brand-small { font-size: 34px; }
+      .brand-black { fill: #111; }
+      .brand-blue { fill: url(#blueGrad); }
+    </style>
+  </defs>
+
+  <!-- Bag + cart icon (blue) -->
+  <g transform="translate(10 18)">
+    <path d="M88 20H38a18 18 0 0 0-18 18v92a18 18 0 0 0 18 18h50a18 18 0 0 0 18-18V38a18 18 0 0 0-18-18z" fill="url(#blueGrad)" />
+    <path d="M64 20V10a12 12 0 0 0-12-12H40a12 12 0 0 0-12 12v10" stroke="#0B2E88" stroke-width="10" fill="none" stroke-linecap="round" />
+    <path d="M32 78h72l18 52H14z" fill="none" stroke="#0B2E88" stroke-width="10" stroke-linejoin="round" />
+    <circle cx="32" cy="145" r="10" fill="#0B2E88" />
+    <circle cx="86" cy="145" r="10" fill="#0B2E88" />
+    <path d="M14 80h90" stroke="#0B2E88" stroke-width="10" stroke-linecap="round" />
+  </g>
+
+  <!-- Wordmark -->
+  <text x="170" y="110" class="brand brand-large">
+    <tspan class="brand-blue">S</tspan><tspan class="brand-black">awdagar</tspan>
+  </text>
+
+  <!-- "af" and smile element -->
+  <g transform="translate(170 145)">
+    <text class="brand brand-small brand-black" x="0" y="0">af</text>
+    <path d="M0 14 C40 62, 130 62, 170 14" stroke="#111" stroke-width="8" fill="none" stroke-linecap="round" />
+  </g>
+</svg>

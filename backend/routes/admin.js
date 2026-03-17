@@ -170,6 +170,7 @@ router.post('/products/:id/reject', authenticate, requireRole('admin'), async (r
       await sendProductApprovalEmail(product.supplier.email, product.nameEn, 'rejected');
     }
 
+    await logTransaction(req, 'REJECT_PRODUCT', 'Product', product.id, { name: product.nameEn, reason: req.body.reason });
     res.json({ product: updated });
   } catch (err) {
     res.status(500).json({ error: 'Failed to reject product' });
@@ -230,6 +231,7 @@ router.put('/users/:id', authenticate, requireRole('admin'), async (req, res) =>
       select: { id: true, email: true, fullName: true, role: true, isActive: true, isApproved: true },
     });
 
+    await logTransaction(req, 'UPDATE', 'User', user.id, { email: user.email, changes: updateData });
     res.json({ user });
   } catch (err) {
     res.status(500).json({ error: 'Failed to update user' });
@@ -250,6 +252,7 @@ router.post('/users/:id/resend-verification', authenticate, requireRole('admin')
     const sent = await sendVerificationEmail(user.email, token);
     if (!sent) return res.status(500).json({ error: 'Failed to send verification email' });
 
+    await logTransaction(req, 'RESEND_VERIFICATION', 'User', userId, { email: user.email });
     res.json({ message: 'Verification email sent' });
   } catch (err) {
     res.status(500).json({ error: 'Failed to resend verification email' });
@@ -393,6 +396,7 @@ router.get('/site-content', authenticate, requireRole('admin'), async (req, res)
 router.put('/site-content', authenticate, requireRole('admin'), async (req, res) => {
   try {
     const content = await saveSiteContent(req.body);
+    await logTransaction(req, 'UPDATE', 'SiteContent', null, 'Site content updated');
     res.json({ content });
   } catch (err) {
     res.status(500).json({ error: 'Failed to save site content' });
@@ -550,6 +554,7 @@ router.patch('/contact-messages/:id/read', authenticate, requireRole('admin'), a
       where: { id: parseInt(req.params.id) },
       data: { isRead: true },
     });
+    await logTransaction(req, 'UPDATE', 'ContactMessage', message.id, 'Marked as read');
     res.json({ message });
   } catch {
     res.status(500).json({ error: 'Failed to update message' });
@@ -559,6 +564,7 @@ router.patch('/contact-messages/:id/read', authenticate, requireRole('admin'), a
 router.delete('/contact-messages/:id', authenticate, requireRole('admin'), async (req, res) => {
   try {
     await prisma.contactMessage.delete({ where: { id: parseInt(req.params.id) } });
+    await logTransaction(req, 'DELETE', 'ContactMessage', parseInt(req.params.id), 'Contact message deleted');
     res.json({ success: true });
   } catch {
     res.status(500).json({ error: 'Failed to delete message' });
@@ -631,6 +637,7 @@ router.put('/products/:id', authenticate, requireRole('admin'), async (req, res)
       include: { images: { orderBy: { sortOrder: 'asc' } }, category: true, supplier: { select: { id: true, fullName: true, companyName: true } } },
     });
 
+    await logTransaction(req, 'UPDATE', 'Product', product.id, { name: updated.nameEn || product.nameEn });
     res.json({ product: result });
   } catch (err) {
     console.error('Admin product update error:', err);
@@ -644,6 +651,7 @@ router.delete('/products/:id', authenticate, requireRole('admin'), async (req, r
     const product = await prisma.product.findUnique({ where: { id: parseInt(req.params.id) } });
     if (!product) return res.status(404).json({ error: 'Product not found' });
     await prisma.product.update({ where: { id: product.id }, data: { isDeleted: true } });
+    await logTransaction(req, 'DELETE', 'Product', product.id, { name: product.nameEn });
     res.json({ success: true, message: 'Product soft-deleted' });
   } catch (err) {
     res.status(500).json({ error: 'Failed to delete product' });
@@ -707,6 +715,7 @@ router.put('/users/:id/profile', authenticate, requireRole('admin'), async (req,
       },
     });
 
+    await logTransaction(req, 'UPDATE_PROFILE', 'User', parseInt(req.params.id), { changes: Object.keys(updateData) });
     res.json({ user });
   } catch (err) {
     res.status(500).json({ error: 'Failed to update user profile' });
@@ -1190,9 +1199,155 @@ router.delete('/backups/:filename', authenticate, requireRole('admin'), async (r
     const filepath = path.join(__dirname, '..', 'backups', safeName);
     if (!fs.existsSync(filepath)) return res.status(404).json({ error: 'File not found' });
     fs.unlinkSync(filepath);
+    await logTransaction(req, 'DELETE', 'Backup', null, { filename: safeName });
     res.json({ message: 'Backup deleted' });
   } catch (err) {
     res.status(500).json({ error: 'Failed to delete backup' });
+  }
+});
+
+// ============================================================
+// BLOG MANAGEMENT
+// ============================================================
+
+// GET /api/admin/blog
+router.get('/blog', authenticate, requireRole('admin'), async (req, res) => {
+  try {
+    const { skip, take, page, limit } = paginate(req.query.page, req.query.limit);
+    const [posts, total] = await Promise.all([
+      prisma.blogPost.findMany({ orderBy: { createdAt: 'desc' }, skip, take }),
+      prisma.blogPost.count(),
+    ]);
+    res.json({ posts, total, totalPages: Math.max(1, Math.ceil(total / limit)) });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to fetch blog posts' });
+  }
+});
+
+// POST /api/admin/blog
+router.post('/blog', authenticate, requireRole('admin'), async (req, res) => {
+  try {
+    const { titleEn, titlePs, titleDr, excerptEn, excerptPs, excerptDr, contentEn, contentPs, contentDr, image, category, tags, isPublished } = req.body;
+    if (!titleEn) return res.status(400).json({ error: 'Title (English) is required' });
+    const slug = titleEn.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') + '-' + Date.now().toString(36);
+    const post = await prisma.blogPost.create({
+      data: { titleEn, titlePs, titleDr, slug, excerptEn, excerptPs, excerptDr, contentEn, contentPs, contentDr, image, authorId: req.user.id, authorName: req.user.fullName, category, tags, isPublished: isPublished || false },
+    });
+    await logTransaction(req, 'CREATE', 'BlogPost', post.id, { titleEn });
+    res.json({ post });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to create blog post' });
+  }
+});
+
+// PUT /api/admin/blog/:id
+router.put('/blog/:id', authenticate, requireRole('admin'), async (req, res) => {
+  try {
+    const { titleEn, titlePs, titleDr, excerptEn, excerptPs, excerptDr, contentEn, contentPs, contentDr, image, category, tags, isPublished } = req.body;
+    const post = await prisma.blogPost.update({
+      where: { id: parseInt(req.params.id) },
+      data: { titleEn, titlePs, titleDr, excerptEn, excerptPs, excerptDr, contentEn, contentPs, contentDr, image, category, tags, isPublished },
+    });
+    await logTransaction(req, 'UPDATE', 'BlogPost', post.id, { titleEn });
+    res.json({ post });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to update blog post' });
+  }
+});
+
+// DELETE /api/admin/blog/:id
+router.delete('/blog/:id', authenticate, requireRole('admin'), async (req, res) => {
+  try {
+    await prisma.blogPost.delete({ where: { id: parseInt(req.params.id) } });
+    await logTransaction(req, 'DELETE', 'BlogPost', parseInt(req.params.id), {});
+    res.json({ message: 'Post deleted' });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to delete blog post' });
+  }
+});
+
+// ============================================================
+// SUBSCRIBER MANAGEMENT
+// ============================================================
+
+// GET /api/admin/subscribers
+router.get('/subscribers', authenticate, requireRole('admin'), async (req, res) => {
+  try {
+    const { skip, take, page, limit } = paginate(req.query.page, req.query.limit);
+    const [subscribers, total] = await Promise.all([
+      prisma.subscriber.findMany({ orderBy: { createdAt: 'desc' }, skip, take }),
+      prisma.subscriber.count(),
+    ]);
+    res.json({ subscribers, total, totalPages: Math.max(1, Math.ceil(total / limit)) });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to fetch subscribers' });
+  }
+});
+
+// DELETE /api/admin/subscribers/:id
+router.delete('/subscribers/:id', authenticate, requireRole('admin'), async (req, res) => {
+  try {
+    await prisma.subscriber.delete({ where: { id: parseInt(req.params.id) } });
+    await logTransaction(req, 'DELETE', 'Subscriber', parseInt(req.params.id), 'Subscriber removed');
+    res.json({ message: 'Subscriber removed' });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to delete subscriber' });
+  }
+});
+
+// ============================================================
+// COUPON MANAGEMENT
+// ============================================================
+
+// GET /api/admin/coupons
+router.get('/coupons', authenticate, requireRole('admin'), async (req, res) => {
+  try {
+    const coupons = await prisma.coupon.findMany({ orderBy: { createdAt: 'desc' } });
+    res.json({ coupons });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to fetch coupons' });
+  }
+});
+
+// POST /api/admin/coupons
+router.post('/coupons', authenticate, requireRole('admin'), async (req, res) => {
+  try {
+    const { code, discount, isPercent, minOrder, maxUses, expiresAt } = req.body;
+    if (!code || !discount) return res.status(400).json({ error: 'Code and discount are required' });
+    const coupon = await prisma.coupon.create({
+      data: { code: code.toUpperCase(), discount: parseFloat(discount), isPercent: isPercent !== false, minOrder: parseFloat(minOrder) || 0, maxUses: parseInt(maxUses) || 1, expiresAt: expiresAt ? new Date(expiresAt) : null },
+    });
+    await logTransaction(req, 'CREATE', 'Coupon', coupon.id, { code: coupon.code });
+    res.json({ coupon });
+  } catch (err) {
+    if (err.code === 'P2002') return res.status(400).json({ error: 'Coupon code already exists' });
+    res.status(500).json({ error: 'Failed to create coupon' });
+  }
+});
+
+// PUT /api/admin/coupons/:id
+router.put('/coupons/:id', authenticate, requireRole('admin'), async (req, res) => {
+  try {
+    const { code, discount, isPercent, minOrder, maxUses, isActive, expiresAt } = req.body;
+    const coupon = await prisma.coupon.update({
+      where: { id: parseInt(req.params.id) },
+      data: { code: code?.toUpperCase(), discount: discount != null ? parseFloat(discount) : undefined, isPercent, minOrder: minOrder != null ? parseFloat(minOrder) : undefined, maxUses: maxUses != null ? parseInt(maxUses) : undefined, isActive, expiresAt: expiresAt ? new Date(expiresAt) : null },
+    });
+    await logTransaction(req, 'UPDATE', 'Coupon', coupon.id, { code: coupon.code });
+    res.json({ coupon });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to update coupon' });
+  }
+});
+
+// DELETE /api/admin/coupons/:id
+router.delete('/coupons/:id', authenticate, requireRole('admin'), async (req, res) => {
+  try {
+    await prisma.coupon.delete({ where: { id: parseInt(req.params.id) } });
+    await logTransaction(req, 'DELETE', 'Coupon', parseInt(req.params.id), 'Coupon deleted');
+    res.json({ message: 'Coupon deleted' });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to delete coupon' });
   }
 });
 

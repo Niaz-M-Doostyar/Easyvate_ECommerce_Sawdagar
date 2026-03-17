@@ -101,7 +101,7 @@ export default function Header() {
   const headerContent = siteContent?.header || {};
   const contactEmail = headerContent.email || 'info@sawdagar.af';
   const contactPhone = headerContent.phone || '+93 700 000 000';
-  const logoUrl = (headerContent.logo || '').trim() || '/assets/img/logo/logo.png';
+  const logoUrl = (headerContent.logo || '').trim() || '/assets/img/logo/sawdagar.png';
   const logoStyle = { maxHeight: 65, maxWidth: 240, width: 'auto', height: 'auto', objectFit: 'contain' };
 
   return (
@@ -159,7 +159,7 @@ export default function Header() {
             <div className="col-5 col-lg-3 col-xl-3">
               <div className="header-middle-logo">
                 <Link className="navbar-brand" href="/">
-                  <img src={logoUrl} alt="Sawdagar" style={logoStyle} />
+                  <img src={logoUrl} alt="Sawdagar" style={logoStyle} fetchPriority="high" />
                 </Link>
               </div>
             </div>

@@ -11,8 +11,9 @@ export default function Footer() {
   const getName = (item) => siteGetName(item, lang);
 
   const footer = siteContent?.footer || {};
-  const logoUrl = (siteContent?.header?.logo || "").trim() || "/assets/img/logo/logo-light.png";
-  const logoStyle = { maxHeight: 70, maxWidth: 240, width: 'auto', height: 'auto', objectFit: 'contain' };
+  // Use the PNG logo by default (matches the site’s main logo asset).
+  const logoUrl = (siteContent?.header?.logo || "").trim() || "/assets/img/logo/sawdagar.png";
+  const logoStyle = { maxHeight: 70, maxWidth: 240, width: 'auto', height: 'auto', objectFit: 'contain', filter: 'brightness(0) invert(1)', opacity: 0.95 };
 
   return (
     <footer className="footer-area ft-bg">

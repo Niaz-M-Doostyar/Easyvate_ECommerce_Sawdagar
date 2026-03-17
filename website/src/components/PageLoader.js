@@ -5,13 +5,15 @@ export default function PageLoader() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const timer = setTimeout(() => setLoading(false), 400);
-    const handleLoad = () => setTimeout(() => setLoading(false), 100);
+    // Hide immediately if page already loaded
     if (document.readyState === 'complete') {
       setLoading(false);
       return;
     }
+    const handleLoad = () => setLoading(false);
     window.addEventListener('load', handleLoad);
+    // Safety timeout — never block longer than 200ms
+    const timer = setTimeout(() => setLoading(false), 200);
     return () => {
       clearTimeout(timer);
       window.removeEventListener('load', handleLoad);
@@ -20,7 +22,7 @@ export default function PageLoader() {
 
   if (!loading) return null;
   return (
-    <div className="preloader">
+    <div className="preloader" aria-hidden="true">
       <div className="loader-ripple">
         <div></div>
         <div></div>

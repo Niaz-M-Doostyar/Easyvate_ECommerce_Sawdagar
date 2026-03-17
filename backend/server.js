@@ -54,6 +54,8 @@ const deliveryRoutes = require('./routes/delivery');
 const uploadRoutes = require('./routes/upload');
 const imageRoutes = require('./routes/image');
 const siteContentRoutes = require('./routes/site-content');
+const blogRoutes = require('./routes/blog');
+const subscribeRoutes = require('./routes/subscribe');
 
 app.use('/api/auth', authRoutes);
 app.use('/api/products', productRoutes);
@@ -66,6 +68,8 @@ app.use('/api/delivery', deliveryRoutes);
 app.use('/api/upload', uploadRoutes);
 app.use('/api/image', imageRoutes);
 app.use('/api/site-content', siteContentRoutes);
+app.use('/api/blog', blogRoutes);
+app.use('/api/subscribe', subscribeRoutes);
 
 // Debug endpoints (development only)
 try {

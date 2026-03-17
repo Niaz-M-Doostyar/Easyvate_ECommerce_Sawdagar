@@ -241,3 +241,57 @@ model TransactionLog {
   @@index([createdAt])
   @@map("transaction_logs")
 }
+
+model BlogPost {
+  id          Int      @id @default(autoincrement())
+  titleEn     String   @map("title_en")
+  titlePs     String?  @map("title_ps")
+  titleDr     String?  @map("title_dr")
+  slug        String   @unique
+  excerptEn   String?  @map("excerpt_en") @db.Text
+  excerptPs   String?  @map("excerpt_ps") @db.Text
+  excerptDr   String?  @map("excerpt_dr") @db.Text
+  contentEn   String?  @map("content_en") @db.LongText
+  contentPs   String?  @map("content_ps") @db.LongText
+  contentDr   String?  @map("content_dr") @db.LongText
+  image       String?
+  authorId    Int?     @map("author_id")
+  authorName  String?  @map("author_name")
+  category    String?
+  tags        String?
+  isPublished Boolean  @default(false) @map("is_published")
+  viewCount   Int      @default(0) @map("view_count")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@index([slug])
+  @@index([isPublished])
+  @@index([createdAt])
+  @@map("blog_posts")
+}
+
+model Subscriber {
+  id         Int      @id @default(autoincrement())
+  email      String   @unique
+  isActive   Boolean  @default(true) @map("is_active")
+  couponCode String?  @map("coupon_code")
+  couponUsed Boolean  @default(false) @map("coupon_used")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  @@map("subscribers")
+}
+
+model Coupon {
+  id        Int       @id @default(autoincrement())
+  code      String    @unique
+  discount  Float
+  isPercent Boolean   @default(true) @map("is_percent")
+  minOrder  Float     @default(0) @map("min_order")
+  maxUses   Int       @default(1) @map("max_uses")
+  usedCount Int       @default(0) @map("used_count")
+  isActive  Boolean   @default(true) @map("is_active")
+  expiresAt DateTime? @map("expires_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  @@map("coupons")
+}

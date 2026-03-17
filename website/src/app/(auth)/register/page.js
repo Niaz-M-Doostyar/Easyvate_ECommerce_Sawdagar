@@ -13,7 +13,7 @@ export default function RegisterPage() {
   const router = useRouter();
   const { t } = useLanguage();
   const { siteContent } = useSiteData();
-  const logoUrl = (siteContent?.header?.logo || "").trim() || "/assets/img/logo/logo.png";
+  const logoUrl = (siteContent?.header?.logo || "").trim() || "/assets/img/logo/sawdagar.png";
   const [role, setRole] = useState("customer");
   const [loading, setLoading] = useState(false);
   const [formError, setFormError] = useState("");
@@ -72,8 +72,7 @@ export default function RegisterPage() {
       <div className="w-full max-w-lg animate-fade-up">
         <div className="text-center mb-8">
           <Link href="/" className="inline-flex items-center gap-2.5 mb-6">
-            <img src={logoUrl} alt="Sawdagar" className="h-12 object-contain" />
-            <span className="text-2xl font-extrabold text-midnight font-display">Sawdagar</span>
+            <img src={logoUrl} alt="Sawdagar" style={{height:48,objectFit:'contain',maxWidth:200}} />
           </Link>
           <h2 className="text-2xl font-bold text-midnight font-display">{t('register')}</h2>
           <p className="text-body mt-2">Create your Sawdagar account in seconds</p>

@@ -2499,3 +2499,38 @@ a {
     font-size: 9px;
   }
 }
+
+/* ==========================================
+   Performance — CLS Prevention
+   ========================================== */
+/* Prevent layout shift from Owl Carousel initialization */
+.hero-slider-wrap {
+  min-height: 420px;
+}
+@media (max-width: 991px) {
+  .hero-slider-wrap {
+    min-height: 320px;
+  }
+}
+@media (max-width: 575px) {
+  .hero-slider-wrap {
+    min-height: 220px;
+  }
+}
+
+/* Ensure font icons don't cause CLS during async load */
+[class^="fa-"],
+[class*=" fa-"],
+.far, .fas, .fal, .fad, .fab, .fat {
+  display: inline-block;
+  min-width: 1em;
+  text-align: center;
+}
+
+/* Disable WOW.js animations on mobile for performance */
+@media (max-width: 767px) {
+  .wow {
+    visibility: visible !important;
+    animation: none !important;
+  }
+}
