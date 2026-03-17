@@ -128,19 +128,48 @@ export default function ProductDetailPage({ params }) {
       <div className="shop-single py-100">
         <div className="container">
           <div className="row">
-            {/* Gallery */}
+            {/* Gallery Slider */}
             <div className="col-lg-6">
               <div className="shop-single-gallery">
-                <div className="shop-single-main-img mb-3">
-                  <img src={images[selectedImage]} alt={productName} fetchPriority="high" onError={(e) => { e.target.src = fallbackImg; }} />
-                  {product.isSponsored && <span className="badge bg-warning position-absolute" style={{ top: '15px', left: '15px' }}>{t('sponsored') || 'Sponsored'}</span>}
-                  {!inStock && <div className="position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center" style={{ background: 'rgba(0,0,0,0.4)' }}><span className="badge bg-danger fs-6 px-3 py-2">{t('out_of_stock') || 'Out of Stock'}</span></div>}
+                <div className="shop-single-main-img mb-3" style={{ position: 'relative', overflow: 'hidden' }}>
+                  <div style={{ display: 'flex', transition: 'transform 0.4s ease', transform: `translateX(-${selectedImage * 100}%)` }}>
+                    {images.map((img, i) => (
+                      <img key={i} src={img} alt={i === 0 ? productName : `${productName} ${i + 1}`}
+                        fetchPriority={i === 0 ? "high" : undefined}
+                        loading={i === 0 ? undefined : "lazy"}
+                        style={{ minWidth: '100%', width: '100%', objectFit: 'contain' }}
+                        onError={(e) => { e.target.src = fallbackImg; }} />
+                    ))}
+                  </div>
+                  {images.length > 1 && (
+                    <>
+                      <button onClick={() => setSelectedImage((prev) => (prev === 0 ? images.length - 1 : prev - 1))}
+                        aria-label="Previous image"
+                        style={{ position: 'absolute', top: '50%', left: '10px', transform: 'translateY(-50%)', zIndex: 2, background: 'rgba(255,255,255,0.85)', border: 'none', borderRadius: '50%', width: '40px', height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', boxShadow: '0 2px 8px rgba(0,0,0,0.15)' }}>
+                        <i className="fas fa-chevron-left"></i>
+                      </button>
+                      <button onClick={() => setSelectedImage((prev) => (prev === images.length - 1 ? 0 : prev + 1))}
+                        aria-label="Next image"
+                        style={{ position: 'absolute', top: '50%', right: '10px', transform: 'translateY(-50%)', zIndex: 2, background: 'rgba(255,255,255,0.85)', border: 'none', borderRadius: '50%', width: '40px', height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', boxShadow: '0 2px 8px rgba(0,0,0,0.15)' }}>
+                        <i className="fas fa-chevron-right"></i>
+                      </button>
+                      <div style={{ position: 'absolute', bottom: '10px', left: '50%', transform: 'translateX(-50%)', display: 'flex', gap: '6px', zIndex: 2 }}>
+                        {images.map((_, i) => (
+                          <button key={i} onClick={() => setSelectedImage(i)} aria-label={`Image ${i + 1}`}
+                            style={{ width: '10px', height: '10px', borderRadius: '50%', border: 'none', padding: 0, cursor: 'pointer', background: i === selectedImage ? 'var(--theme-color, #2563eb)' : 'rgba(255,255,255,0.7)', transition: 'background 0.3s' }} />
+                        ))}
+                      </div>
+                    </>
+                  )}
+                  {product.isSponsored && <span className="badge bg-warning position-absolute" style={{ top: '15px', left: '15px', zIndex: 2 }}>{t('sponsored') || 'Sponsored'}</span>}
+                  {!inStock && <div className="position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center" style={{ background: 'rgba(0,0,0,0.4)', zIndex: 2 }}><span className="badge bg-danger fs-6 px-3 py-2">{t('out_of_stock') || 'Out of Stock'}</span></div>}
                 </div>
                 {images.length > 1 && (
-                  <div className="shop-single-nav">
+                  <div className="shop-single-nav" style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '4px' }}>
                     {images.map((img, i) => (
                       <button key={i} onClick={() => setSelectedImage(i)}
-                        className={`shop-single-nav-item${i === selectedImage ? ' active' : ''}`}>
+                        className={`shop-single-nav-item${i === selectedImage ? ' active' : ''}`}
+                        style={{ border: i === selectedImage ? '2px solid var(--theme-color, #2563eb)' : '2px solid transparent', borderRadius: '8px', overflow: 'hidden', flexShrink: 0, transition: 'border-color 0.3s' }}>
                         <img src={img} alt="" onError={(e) => { e.target.src = fallbackImg; }} />
                       </button>
                     ))}
