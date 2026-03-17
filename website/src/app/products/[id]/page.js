@@ -164,17 +164,7 @@ export default function ProductDetailPage({ params }) {
                   {product.isSponsored && <span className="badge bg-warning position-absolute" style={{ top: '15px', left: '15px', zIndex: 2 }}>{t('sponsored') || 'Sponsored'}</span>}
                   {!inStock && <div className="position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center" style={{ background: 'rgba(0,0,0,0.4)', zIndex: 2 }}><span className="badge bg-danger fs-6 px-3 py-2">{t('out_of_stock') || 'Out of Stock'}</span></div>}
                 </div>
-                {images.length > 1 && (
-                  <div className="shop-single-nav" style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '4px' }}>
-                    {images.map((img, i) => (
-                      <button key={i} onClick={() => setSelectedImage(i)}
-                        className={`shop-single-nav-item${i === selectedImage ? ' active' : ''}`}
-                        style={{ border: i === selectedImage ? '2px solid var(--theme-color, #2563eb)' : '2px solid transparent', borderRadius: '8px', overflow: 'hidden', flexShrink: 0, transition: 'border-color 0.3s' }}>
-                        <img src={img} alt="" onError={(e) => { e.target.src = fallbackImg; }} />
-                      </button>
-                    ))}
-                  </div>
-                )}
+
               </div>
             </div>
 
