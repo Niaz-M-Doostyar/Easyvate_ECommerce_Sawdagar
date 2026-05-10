@@ -1,212 +1,202 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { I18nManager } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { I18nManager } from 'react-native';
 
-const en = {
-  site_name: "Sawdagar", home: "Home", products: "Products", categories: "Categories",
-  search: "Search", search_placeholder: "Search products...", cart: "Cart", login: "Login",
-  register: "Register", logout: "Logout", dashboard: "Dashboard", profile: "Profile",
-  orders: "Orders", my_orders: "My Orders", order_history: "Order History", settings: "Settings",
-  email: "Email", password: "Password", confirm_password: "Confirm Password", full_name: "Full Name",
-  phone: "Phone Number", province: "Province", district: "District", village: "Village / Street",
-  landmark: "Landmark", company_name: "Company Name", submit: "Submit", save: "Save",
-  cancel: "Cancel", delete: "Delete", edit: "Edit", view: "View", pending: "Pending",
-  approved: "Approved", rejected: "Rejected", add_to_cart: "Add to Cart", remove_from_cart: "Remove",
-  checkout: "Checkout", place_order: "Place Order", order_total: "Order Total", subtotal: "Subtotal",
-  quantity: "Quantity", price: "Price", retail_price: "Retail Price", stock: "Stock",
-  in_stock: "In Stock", out_of_stock: "Out of Stock", product_name: "Product Name",
-  description: "Description", category: "Category", sponsored: "Sponsored",
-  sponsored_products: "Sponsored Products", new_arrivals: "New Arrivals",
-  featured_categories: "Featured Categories", cash_on_delivery: "Cash on Delivery",
-  cod_note: "Payment is collected in cash upon delivery.",
-  delivery_address: "Delivery Address", order_placed: "Order placed successfully!",
-  order_number: "Order Number", order_status: "Order Status", order_confirmed: "Confirmed",
-  order_shipped: "Shipped", order_delivered: "Delivered", order_cancelled: "Cancelled",
-  payment_status: "Payment Status", paid: "Paid", unpaid: "Unpaid", track_order: "Track Order",
-  total_orders: "Total Orders", loading: "Loading...", error: "An error occurred",
-  success: "Success", welcome: "Welcome to Sawdagar",
-  hero_subtitle: "Afghanistan's Premier E-Commerce Platform",
-  shop_now: "Shop Now", about: "About", contact: "Contact", about_us: "About Us",
-  contact_us: "Contact Us", forgot_password: "Forgot Password?", reset_password: "Reset Password",
-  new_password: "New Password", current_password: "Current Password", change_password: "Change Password",
-  register_as_customer: "Register as Customer", register_as_supplier: "Register as Supplier",
-  already_have_account: "Already have an account?", dont_have_account: "Don't have an account?",
-  view_all: "View All", back: "Back", english: "English", pashto: "پښتو", dari: "دری",
-  select_language: "Select Language", cart_empty: "Your Cart is Empty",
-  cart_empty_desc: "Looks like you haven't added anything to your cart yet",
-  start_shopping: "Start Shopping", clear_cart: "Clear Cart", continue_shopping: "Continue Shopping",
-  cart_summary: "Cart Summary", shipping: "Shipping", free: "Free", total: "Total",
-  please_sign_in: "Please Sign In", sign_in: "Sign In", browse_products: "Browse Products",
-  order_notes: "Order Notes", optional: "Optional", payment_method: "Payment Method",
-  cod: "Cash on Delivery (COD)", cod_desc: "Pay when you receive your order",
-  order_summary: "Order Summary", qty: "Qty", placing_order: "Placing Order...",
-  all: "All", confirmed: "Confirmed", shipped: "Shipped", cancelled: "Cancelled",
-  date: "Date", items: "Items", status: "Status", view_details: "View Details",
-  order_details: "Order Details", order_items: "Order Items", product: "Product",
-  product_details: "Product Details", product_not_found: "Product Not Found",
-  adding: "Adding...", added_to_cart: "Added to cart!", free_delivery: "Free Delivery",
-  details: "Details", seller: "Seller", related_products: "Related Products",
-  all_categories: "All Categories", no_products_found: "No Products Found",
-  no_orders: "No orders yet", amount: "Amount", customer: "Customer", supplier: "Supplier",
-  name: "Name", no_data: "No data", sponsorships: "Sponsorships",
+const LanguageContext = createContext();
+const LANG_KEY = 'sawdagar_lang';
+
+const LANGS = {
+  en: { label: 'English', dir: 'ltr', flag: '🇺🇸' },
+  ps: { label: 'پښتو', dir: 'rtl', flag: '🇦🇫' },
+  dr: { label: 'دری', dir: 'rtl', flag: '🇦🇫' },
 };
 
-const ps = {
-  site_name: "سوداګر", home: "کور", products: "محصولات", categories: "کټګورۍ",
-  search: "لټون", search_placeholder: "محصولات ولټوئ...", cart: "کارټ", login: "ننوتل",
-  register: "راجستر", logout: "وتل", dashboard: "ډشبورډ", profile: "پروفایل",
-  orders: "امرونه", my_orders: "زما امرونه", order_history: "د امرونو تاریخ", settings: "تنظیمات",
-  email: "بریښنالیک", password: "پټنوم", confirm_password: "پټنوم تایید", full_name: "بشپړ نوم",
-  phone: "تلیفون شمیره", province: "ولایت", district: "ولسوالي", village: "کلی / سړک",
-  landmark: "نښه", company_name: "د شرکت نوم", submit: "سپارل", save: "خوندي کول",
-  cancel: "لغوه", delete: "حذف", edit: "سمول", view: "لیدل", pending: "په تمه",
-  approved: "تایید شوی", rejected: "رد شوی", add_to_cart: "کارټ ته اضافه", remove_from_cart: "لرې کول",
-  checkout: "چک اوټ", place_order: "امر ورکول", order_total: "ټول مبلغ", subtotal: "فرعي مجموعه",
-  quantity: "مقدار", price: "قیمت", retail_price: "پرچون قیمت", stock: "ذخیره",
-  in_stock: "شتون لري", out_of_stock: "نه شته", product_name: "د محصول نوم",
-  description: "تفصیل", category: "کټګوري", sponsored: "سپانسر شوی",
-  sponsored_products: "سپانسر شوي محصولات", new_arrivals: "نوي محصولات",
-  featured_categories: "ځانګړې کټګورۍ", cash_on_delivery: "نغدي تحویلي",
-  cod_note: "تادیه د تحویلي پر مهال په نغدو کیږي.",
-  delivery_address: "د تحویلي پته", order_placed: "امر په بریالیتوب ثبت شو!",
-  order_number: "د امر شمیره", order_status: "د امر حالت", order_confirmed: "تایید شوی",
-  order_shipped: "لیږل شوی", order_delivered: "تحویل شوی", order_cancelled: "لغوه شوی",
-  payment_status: "د تادیې حالت", paid: "تادیه شوی", unpaid: "تادیه نشوی",
-  track_order: "امر تعقیب", total_orders: "ټول امرونه", loading: "لوډیږي...",
-  error: "ستونزه رامنځته شوه", success: "بریالیتوب", welcome: "سوداګر ته ښه راغلاست",
-  hero_subtitle: "د افغانستان لومړی برېښنایي سوداګریز پلاتفورم",
-  shop_now: "اوس خریداري", about: "په اړه", contact: "اړیکه", about_us: "زموږ په اړه",
-  contact_us: "موږ سره اړیکه", forgot_password: "پټنوم مو هیر شوی؟", reset_password: "پټنوم بیرته",
-  new_password: "نوی پټنوم", current_password: "اوسنی پټنوم", change_password: "پټنوم بدلول",
-  register_as_customer: "د پیرودونکي ثبت", register_as_supplier: "د عرضه کونکي ثبت",
-  already_have_account: "حساب لرئ؟", dont_have_account: "حساب نلرئ؟",
-  view_all: "ټول وګورئ", back: "شاته", english: "English", pashto: "پښتو", dari: "دری",
-  select_language: "ژبه غوره کړئ", cart_empty: "ستاسو کارټ خالي دی",
-  cart_empty_desc: "داسې بریښي چې تاسو لا کارټ ته هیڅ ندي اضافه کړي",
-  start_shopping: "خریداري پیل کړئ", clear_cart: "کارټ پاک کړئ",
-  continue_shopping: "خریداري ته دوام ورکړئ", cart_summary: "د کارټ لنډیز",
-  shipping: "لیږدول", free: "وړیا", total: "ټول",
-  please_sign_in: "مهرباني وکړئ ننوځئ", sign_in: "ننوتل",
-  browse_products: "محصولات وګورئ", order_notes: "د امر یادونې",
-  optional: "اختیاري", payment_method: "د تادیې طریقه",
-  cod: "نغدي تحویلي (COD)", cod_desc: "کله چې امر ترلاسه کړئ تادیه وکړئ",
-  order_summary: "د امر لنډیز", qty: "مقدار", placing_order: "امر ثبتیږي...",
-  all: "ټول", confirmed: "تایید شوی", shipped: "لیږل شوی", cancelled: "لغوه شوی",
-  date: "نیټه", items: "توکي", status: "حالت", view_details: "تفصیلات",
-  order_details: "د امر تفصیلات", order_items: "د امر توکي", product: "محصول",
-  product_details: "د محصول تفصیلات", product_not_found: "محصول ونه موندل شو",
-  adding: "اضافه کیږي...", added_to_cart: "کارټ ته اضافه شو!",
-  free_delivery: "وړیا لیږدول", details: "تفصیلات", seller: "پلورونکی",
-  related_products: "اړوند محصولات", all_categories: "ټولې کټګورۍ",
-  no_products_found: "محصول ونه موندل شو", no_orders: "لا امر نشته",
-  amount: "مبلغ", customer: "پیرودونکی", supplier: "عرضه کونکی", name: "نوم",
-  no_data: "معلومات نشته", sponsorships: "سپانسرشپ",
+const translations = {
+  en: {
+    home: 'Home', shop: 'Shop', cart: 'Cart', orders: 'Orders', profile: 'Profile',
+    login: 'Login', register: 'Register', logout: 'Logout',
+    deleteAccount: 'Delete Account',
+    deleteAccountTitle: 'Delete your account?',
+    deleteAccountWarning: 'This will permanently remove your account and cannot be undone.',
+    deleteAccountConfirm: 'Your account will be deleted permanently. Do you want to continue?',
+    accountDeleted: 'Account deleted successfully',
+    deleteAccountFailed: 'Failed to delete account',
+    deleting: 'Deleting...',
+    email: 'Email', password: 'Password', fullName: 'Full Name', phone: 'Phone',
+    search: 'Search products...', addToCart: 'Add to Cart', buyNow: 'Buy Now',
+    checkout: 'Checkout', placeOrder: 'Place Order', total: 'Total', subtotal: 'Subtotal',
+    province: 'Province', district: 'District', village: 'Village', landmark: 'Landmark',
+    orderNumber: 'Order #', status: 'Status', pending: 'Pending', confirmed: 'Confirmed',
+    shipped: 'Shipped', delivered: 'Delivered', cancelled: 'Cancelled',
+    editProfile: 'Edit Profile', changePassword: 'Change Password', settings: 'Settings',
+    language: 'Language', theme: 'Theme', about: 'About', contact: 'Contact',
+    blog: 'Blog', wishlist: 'Wishlist', notifications: 'Notifications',
+    supplier: 'Supplier', delivery: 'Delivery', admin: 'Admin',
+    myProducts: 'My Products', myOrders: 'My Orders', sponsorships: 'Sponsorships',
+    forgotPassword: 'Forgot Password?', resetPassword: 'Reset Password',
+    noResults: 'No results found', emptyCart: 'Your cart is empty',
+    startShopping: 'Start Shopping', viewAll: 'View All', seeAll: 'See All',
+    categories: 'Categories', trending: 'Trending', featured: 'Featured',
+    sponsored: 'Sponsored', dealOfWeek: 'Deal of the Week', newArrivals: 'New Arrivals',
+    description: 'Description', details: 'Details', reviews: 'Reviews',
+    relatedProducts: 'Related Products', inStock: 'In Stock', outOfStock: 'Out of Stock',
+    qty: 'Qty', remove: 'Remove', clear: 'Clear', apply: 'Apply',
+    couponCode: 'Coupon Code', deliveryAddress: 'Delivery Address', paymentMethod: 'Payment Method',
+    cashOnDelivery: 'Cash on Delivery', orderSummary: 'Order Summary',
+    currentPassword: 'Current Password', newPassword: 'New Password',
+    confirmPassword: 'Confirm Password', save: 'Save', cancel: 'Cancel',
+    all: 'All', filter: 'Filter', sort: 'Sort', price: 'Price',
+    lowToHigh: 'Low to High', highToLow: 'High to Low', newest: 'Newest',
+    readMore: 'Read More', subscribe: 'Subscribe', newsletter: 'Newsletter',
+    companyName: 'Company Name', role: 'Role', customer: 'Customer',
+    sendResetLink: 'Send Reset Link', createAccount: 'Create Account',
+    alreadyHaveAccount: 'Already have an account?', dontHaveAccount: "Don't have an account?",
+    welcomeBack: 'Welcome Back', createYourAccount: 'Create Your Account',
+    registrationSuccessTitle: 'Registration Successful',
+    registrationVerifyMessageCustomer: 'Your customer account has been created. Please verify your email first, then log in.',
+    registrationVerifyMessageSupplier: 'Your supplier account has been created. Please verify your email first. After verification, wait for admin approval before logging in.',
+    orderPlaced: 'Order placed successfully!', orderDetails: 'Order Details',
+    trackOrder: 'Track Order', items: 'Items', deliveryFee: 'Delivery Fee',
+    markShipped: 'Mark as Shipped', markDelivered: 'Mark as Delivered',
+    shareLocation: 'Share Location', assignedOrders: 'Assigned Orders',
+    addProduct: 'Add Product', editProduct: 'Edit Product',
+    approved: 'Approved', rejected: 'Rejected',
+    notes: 'Notes', optional: 'Optional',
+  },
+  ps: {
+    home: 'کور', shop: 'پلورنځی', cart: 'کارټ', orders: 'سفارښتونه', profile: 'پروفایل',
+    login: 'ننوتل', register: 'نوم لیکنه', logout: 'وتل',
+    deleteAccount: 'حساب ړنګول',
+    deleteAccountTitle: 'خپل حساب ړنګوئ؟',
+    deleteAccountWarning: 'دا به ستاسو حساب دایمي ړنګ کړي او بېرته نه راګرځي.',
+    deleteAccountConfirm: 'ستاسو حساب به په بشپړ ډول ړنګ شي. دوام ورکوئ؟',
+    accountDeleted: 'حساب په بریالیتوب ړنګ شو',
+    deleteAccountFailed: 'د حساب ړنګول ناکام شول',
+    deleting: 'ړنګېږي...',
+    email: 'بریښنالیک', password: 'پاسورډ', fullName: 'بشپړ نوم', phone: 'تلیفون',
+    search: 'محصولات لټول...', addToCart: 'کارټ ته اضافه کړئ', buyNow: 'اوس واخلئ',
+    checkout: 'تادیه', placeOrder: 'سفارښت ورکړئ', total: 'ټول', subtotal: 'فرعي ټول',
+    province: 'ولایت', district: 'ولسوالي', village: 'کلی', landmark: 'نښه',
+    orderNumber: 'د سفارښت نمبر', status: 'حالت', pending: 'پاتې', confirmed: 'تایید شوی',
+    shipped: 'لیږل شوی', delivered: 'تحویل شوی', cancelled: 'لغوه شوی',
+    editProfile: 'پروفایل سمول', changePassword: 'پاسورډ بدلول', settings: 'تنظیمات',
+    language: 'ژبه', theme: 'تم', about: 'په اړه', contact: 'اړیکه',
+    blog: 'بلاګ', wishlist: 'خوښې', notifications: 'خبرتیاوې',
+    supplier: 'عرضه کوونکی', delivery: 'تحویلي', admin: 'اډمین',
+    myProducts: 'زما محصولات', myOrders: 'زما سفارښتونه', sponsorships: 'سپانسرشپ',
+    forgotPassword: 'پاسورډ مو هیر شوی؟', resetPassword: 'پاسورډ بیا ترتیب کړئ',
+    noResults: 'پایلې ونه موندل شوې', emptyCart: 'ستاسو کارټ خالي دی',
+    startShopping: 'پیرود پیل کړئ', viewAll: 'ټول وګورئ', seeAll: 'ټول',
+    categories: 'کټګورۍ', trending: 'ترنډینګ', featured: 'ځانګړي',
+    sponsored: 'سپانسر شوي', dealOfWeek: 'د اونۍ تخفیف', newArrivals: 'نوي',
+    description: 'توضیحات', details: 'جزئیات', reviews: 'بیاکتنې',
+    relatedProducts: 'اړوند محصولات', inStock: 'شتون لري', outOfStock: 'نشته',
+    qty: 'تعداد', remove: 'لرې کول', clear: 'پاکول', apply: 'پلي کول',
+    couponCode: 'د کوپن کوډ', deliveryAddress: 'د تحویلي پته', paymentMethod: 'د تادیې طریقه',
+    cashOnDelivery: 'نغدي تادیه', orderSummary: 'د سفارښت لنډیز',
+    currentPassword: 'اوسنی پاسورډ', newPassword: 'نوی پاسورډ',
+    confirmPassword: 'پاسورډ تایید', save: 'خوندي',  cancel: 'لغوه',
+    all: 'ټول', filter: 'فلټر', sort: 'ترتیب', price: 'قیمت',
+    lowToHigh: 'ټیټ نه لوړ', highToLow: 'لوړ نه ټیټ', newest: 'نوي',
+    readMore: 'نور ولولئ', subscribe: 'ګډون', newsletter: 'خبرپاڼه',
+    companyName: 'د شرکت نوم', role: 'رول', customer: 'پیرودونکی',
+    sendResetLink: 'لینک واستوئ', createAccount: 'حساب جوړ کړئ',
+    alreadyHaveAccount: 'حساب لرئ؟', dontHaveAccount: 'حساب نه لرئ؟',
+    welcomeBack: 'بیرته ښه راغلاست', createYourAccount: 'خپل حساب جوړ کړئ',
+    registrationSuccessTitle: 'نوم لیکنه بریالۍ شوه',
+    registrationVerifyMessageCustomer: 'ستاسو د پېرودونکي حساب جوړ شو. مهرباني وکړئ لومړی خپل برېښنالیک تایید کړئ، بیا ننوتل وکړئ.',
+    registrationVerifyMessageSupplier: 'ستاسو د عرضه کوونکي حساب جوړ شو. مهرباني وکړئ لومړی خپل برېښنالیک تایید کړئ. له تایید وروسته د اډمین منظورۍ ته هم انتظار وکړئ.',
+    orderPlaced: 'سفارښت بریالی و!', orderDetails: 'د سفارښت جزئیات',
+    trackOrder: 'سفارښت تعقیب', items: 'توکي', deliveryFee: 'د تحویلي فیس',
+    markShipped: 'لیږل شوی', markDelivered: 'تحویل شوی',
+    shareLocation: 'موقعیت شریک', assignedOrders: 'ټاکل شوي سفارښتونه',
+    addProduct: 'محصول اضافه', editProduct: 'محصول سمول',
+    approved: 'تایید شوی', rejected: 'رد شوی',
+    notes: 'یادونه', optional: 'اختیاري',
+  },
+  dr: {
+    home: 'خانه', shop: 'فروشگاه', cart: 'سبد', orders: 'سفارشات', profile: 'پروفایل',
+    login: 'ورود', register: 'ثبت نام', logout: 'خروج',
+    deleteAccount: 'حذف حساب',
+    deleteAccountTitle: 'حساب تان حذف شود؟',
+    deleteAccountWarning: 'این کار حساب شما را برای همیشه حذف می کند و قابل برگشت نیست.',
+    deleteAccountConfirm: 'حساب شما به صورت دائمی حذف می شود. ادامه می دهید؟',
+    accountDeleted: 'حساب با موفقیت حذف شد',
+    deleteAccountFailed: 'حذف حساب ناموفق بود',
+    deleting: 'در حال حذف...',
+    email: 'ایمیل', password: 'رمز عبور', fullName: 'نام کامل', phone: 'تلفن',
+    search: 'جستجوی محصولات...', addToCart: 'افزودن به سبد', buyNow: 'خرید فوری',
+    checkout: 'تسویه', placeOrder: 'ثبت سفارش', total: 'مجموع', subtotal: 'جمع فرعی',
+    province: 'ولایت', district: 'ناحیه', village: 'قریه', landmark: 'نشانی',
+    orderNumber: 'شماره سفارش', status: 'وضعیت', pending: 'در انتظار', confirmed: 'تایید شده',
+    shipped: 'ارسال شده', delivered: 'تحویل داده شده', cancelled: 'لغو شده',
+    editProfile: 'ویرایش پروفایل', changePassword: 'تغییر رمز', settings: 'تنظیمات',
+    language: 'زبان', theme: 'تم', about: 'درباره', contact: 'تماس',
+    blog: 'بلاگ', wishlist: 'علاقه‌مندی‌ها', notifications: 'اعلانات',
+    supplier: 'تامین کننده', delivery: 'تحویل', admin: 'مدیر',
+    myProducts: 'محصولات من', myOrders: 'سفارشات من', sponsorships: 'حمایت مالی',
+    forgotPassword: 'رمز را فراموش کردید؟', resetPassword: 'بازنشانی رمز',
+    noResults: 'نتیجه‌ای یافت نشد', emptyCart: 'سبد خرید شما خالی است',
+    startShopping: 'شروع خرید', viewAll: 'مشاهده همه', seeAll: 'همه',
+    categories: 'دسته‌بندی‌ها', trending: 'پرطرفدار', featured: 'ویژه',
+    sponsored: 'حمایت شده', dealOfWeek: 'تخفیف هفته', newArrivals: 'تازه‌ها',
+    description: 'توضیحات', details: 'جزئیات', reviews: 'نظرات',
+    relatedProducts: 'محصولات مرتبط', inStock: 'موجود', outOfStock: 'ناموجود',
+    qty: 'تعداد', remove: 'حذف', clear: 'پاک کردن', apply: 'اعمال',
+    couponCode: 'کد تخفیف', deliveryAddress: 'آدرس تحویل', paymentMethod: 'روش پرداخت',
+    cashOnDelivery: 'پرداخت نقدی', orderSummary: 'خلاصه سفارش',
+    currentPassword: 'رمز فعلی', newPassword: 'رمز جدید',
+    confirmPassword: 'تایید رمز', save: 'ذخیره', cancel: 'لغو',
+    all: 'همه', filter: 'فیلتر', sort: 'مرتب‌سازی', price: 'قیمت',
+    lowToHigh: 'کم به زیاد', highToLow: 'زیاد به کم', newest: 'جدیدترین',
+    readMore: 'بیشتر بخوانید', subscribe: 'اشتراک', newsletter: 'خبرنامه',
+    companyName: 'نام شرکت', role: 'نقش', customer: 'مشتری',
+    sendResetLink: 'ارسال لینک', createAccount: 'ایجاد حساب',
+    alreadyHaveAccount: 'حساب دارید؟', dontHaveAccount: 'حساب ندارید؟',
+    welcomeBack: 'خوش آمدید', createYourAccount: 'حساب خود را بسازید',
+    registrationSuccessTitle: 'ثبت نام موفق بود',
+    registrationVerifyMessageCustomer: 'حساب مشتری شما ساخته شد. لطفا ابتدا ایمیل خود را تایید کنید و سپس وارد شوید.',
+    registrationVerifyMessageSupplier: 'حساب تامین‌کننده شما ساخته شد. لطفا ابتدا ایمیل خود را تایید کنید. پس از تایید، برای ورود باید منتظر تایید مدیر نیز بمانید.',
+    orderPlaced: 'سفارش با موفقیت ثبت شد!', orderDetails: 'جزئیات سفارش',
+    trackOrder: 'پیگیری سفارش', items: 'اقلام', deliveryFee: 'هزینه تحویل',
+    markShipped: 'ارسال شده', markDelivered: 'تحویل شده',
+    shareLocation: 'اشتراک موقعیت', assignedOrders: 'سفارشات تعیین شده',
+    addProduct: 'افزودن محصول', editProduct: 'ویرایش محصول',
+    approved: 'تایید شده', rejected: 'رد شده',
+    notes: 'یادداشت', optional: 'اختیاری',
+  },
 };
-
-const dr = {
-  site_name: "سوداگر", home: "خانه", products: "محصولات", categories: "دسته‌بندی‌ها",
-  search: "جستجو", search_placeholder: "محصولات را جستجو کنید...", cart: "سبد", login: "ورود",
-  register: "ثبت نام", logout: "خروج", dashboard: "داشبورد", profile: "پروفایل",
-  orders: "سفارشات", my_orders: "سفارشات من", order_history: "تاریخچه سفارشات",
-  settings: "تنظیمات", email: "ایمیل", password: "رمز عبور", confirm_password: "تأیید رمز",
-  full_name: "نام کامل", phone: "شماره تلفن", province: "ولایت", district: "ولسوالی",
-  village: "قریه / سرک", landmark: "نشانی", company_name: "نام شرکت", submit: "ارسال",
-  save: "ذخیره", cancel: "لغو", delete: "حذف", edit: "ویرایش", view: "مشاهده",
-  pending: "در انتظار", approved: "تأیید شده", rejected: "رد شده",
-  add_to_cart: "افزودن به سبد", remove_from_cart: "حذف", checkout: "پرداخت",
-  place_order: "ثبت سفارش", order_total: "مبلغ کل", subtotal: "جمع فرعی",
-  quantity: "تعداد", price: "قیمت", retail_price: "قیمت خرده", stock: "موجودی",
-  in_stock: "موجود", out_of_stock: "ناموجود", product_name: "نام محصول",
-  description: "توضیحات", category: "دسته‌بندی", sponsored: "حمایت شده",
-  sponsored_products: "محصولات حمایت شده", new_arrivals: "محصولات جدید",
-  featured_categories: "دسته‌بندی‌های ویژه", cash_on_delivery: "پرداخت نقدی",
-  cod_note: "پرداخت هنگام تحویل به صورت نقدی انجام می‌شود.",
-  delivery_address: "آدرس تحویل", order_placed: "سفارش با موفقیت ثبت شد!",
-  order_number: "شماره سفارش", order_status: "وضعیت سفارش", order_confirmed: "تأیید شده",
-  order_shipped: "ارسال شده", order_delivered: "تحویل داده شده", order_cancelled: "لغو شده",
-  payment_status: "وضعیت پرداخت", paid: "پرداخت شده", unpaid: "پرداخت نشده",
-  track_order: "پیگیری سفارش", total_orders: "کل سفارشات", loading: "در حال بارگذاری...",
-  error: "خطایی رخ داد", success: "موفق", welcome: "به سوداگر خوش آمدید",
-  hero_subtitle: "نخستین پلتفرم تجارت الکترونیکی افغانستان",
-  shop_now: "خرید کنید", about: "درباره", contact: "تماس", about_us: "درباره ما",
-  contact_us: "تماس با ما", forgot_password: "رمز خود را فراموش کردید؟",
-  reset_password: "بازنشانی رمز", new_password: "رمز جدید", current_password: "رمز فعلی",
-  change_password: "تغییر رمز", register_as_customer: "ثبت نام مشتری",
-  register_as_supplier: "ثبت نام تأمین‌کننده", already_have_account: "حساب دارید؟",
-  dont_have_account: "حساب ندارید؟", view_all: "مشاهده همه", back: "بازگشت",
-  english: "English", pashto: "پښتو", dari: "دری", select_language: "انتخاب زبان",
-  cart_empty: "سبد شما خالی است", cart_empty_desc: "هنوز محصولی به سبد اضافه نکرده‌اید",
-  start_shopping: "شروع خرید", clear_cart: "پاک کردن سبد",
-  continue_shopping: "ادامه خرید", cart_summary: "خلاصه سبد",
-  shipping: "ارسال", free: "رایگان", total: "مجموع",
-  please_sign_in: "لطفاً وارد شوید", sign_in: "ورود",
-  browse_products: "مشاهده محصولات", order_notes: "یادداشت سفارش",
-  optional: "اختیاری", payment_method: "روش پرداخت",
-  cod: "پرداخت نقدی (COD)", cod_desc: "هنگام دریافت سفارش پرداخت کنید",
-  order_summary: "خلاصه سفارش", qty: "تعداد", placing_order: "در حال ثبت...",
-  all: "همه", confirmed: "تأیید شده", shipped: "ارسال شده", cancelled: "لغو شده",
-  date: "تاریخ", items: "اقلام", status: "وضعیت", view_details: "جزئیات",
-  order_details: "جزئیات سفارش", order_items: "اقلام سفارش", product: "محصول",
-  product_details: "جزئیات محصول", product_not_found: "محصول یافت نشد",
-  adding: "در حال افزودن...", added_to_cart: "به سبد اضافه شد!",
-  free_delivery: "ارسال رایگان", details: "جزئیات", seller: "فروشنده",
-  related_products: "محصولات مرتبط", all_categories: "همه دسته‌ها",
-  no_products_found: "محصولی یافت نشد", no_orders: "سفارشی ندارید",
-  amount: "مبلغ", customer: "مشتری", supplier: "تأمین‌کننده", name: "نام",
-  no_data: "داده‌ای نیست", sponsorships: "حمایت‌ها",
-};
-
-const translations = { en, ps, dr };
-const rtlLanguages = ['ps', 'dr'];
-
-const LANG_KEY = 'sawdagar_language';
-
-const LanguageContext = createContext(null);
 
 export function LanguageProvider({ children }) {
-  const [language, setLanguageState] = useState('en');
-  const [isRTL, setIsRTL] = useState(false);
+  const [lang, setLangState] = useState('en');
+  const isRTL = LANGS[lang]?.dir === 'rtl';
+  const t = translations[lang] || translations.en;
 
   useEffect(() => {
-    AsyncStorage.getItem(LANG_KEY).then(stored => {
-      if (stored && translations[stored]) {
-        applyLanguage(stored);
-      }
-    });
+    (async () => {
+      const saved = await AsyncStorage.getItem(LANG_KEY);
+      if (saved && LANGS[saved]) setLangState(saved);
+    })();
   }, []);
 
-  const applyLanguage = useCallback((lang) => {
-    const rtl = rtlLanguages.includes(lang);
-    setLanguageState(lang);
-    setIsRTL(rtl);
-    I18nManager.forceRTL(rtl);
-    AsyncStorage.setItem(LANG_KEY, lang);
-  }, []);
+  const setLang = async (l) => {
+    if (!LANGS[l]) return;
+    setLangState(l);
+    await AsyncStorage.setItem(LANG_KEY, l);
+    I18nManager.forceRTL(LANGS[l].dir === 'rtl');
+  };
 
-  const setLanguage = useCallback((lang) => {
-    applyLanguage(lang);
-  }, [applyLanguage]);
+  const getName = (obj, field = 'name') => {
+    if (!obj) return '';
+    if (lang === 'ps' && obj[field + 'Ps']) return obj[field + 'Ps'];
+    if (lang === 'dr' && obj[field + 'Dr']) return obj[field + 'Dr'];
+    return obj[field + 'En'] || obj[field] || '';
+  };
 
-  const t = useCallback((key) => {
-    return translations[language]?.[key] || translations.en[key] || key;
-  }, [language]);
-
-  const getLocalizedName = useCallback((item) => {
-    if (!item) return '';
-    if (language === 'ps' && item.namePs) return item.namePs;
-    if (language === 'dr' && item.nameDr) return item.nameDr;
-    return item.nameEn || item.name || '';
-  }, [language]);
-
-  const getLocalizedDesc = useCallback((item) => {
-    if (!item) return '';
-    if (language === 'ps' && item.descPs) return item.descPs;
-    if (language === 'dr' && item.descDr) return item.descDr;
-    return item.descEn || item.description || '';
-  }, [language]);
+  const getDesc = (obj) => getName(obj, 'desc');
 
   return (
-    <LanguageContext.Provider value={{ language, isRTL, t, setLanguage, getLocalizedName, getLocalizedDesc }}>
+    <LanguageContext.Provider value={{ lang, setLang, t, isRTL, langs: LANGS, getName, getDesc }}>
       {children}
     </LanguageContext.Provider>
   );
@@ -214,6 +204,6 @@ export function LanguageProvider({ children }) {
 
 export function useLanguage() {
   const ctx = useContext(LanguageContext);
-  if (!ctx) throw new Error('useLanguage must be used within LanguageProvider');
+  if (!ctx) throw new Error('useLanguage must be inside LanguageProvider');
   return ctx;
 }

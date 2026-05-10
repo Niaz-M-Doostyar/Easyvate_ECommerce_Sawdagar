@@ -1,0 +1,12 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.ahmadwali.afghan_bazar.afghan_bazar",
+      "sha256_cert_fingerprints": [
+        "DA:31:9C:C0:F4:BA:F6:94:49:A5:B4:21:C4:D6:54:1E:6B:54:9C:66:16:51:7E:7B:5F:AD:26:C2:93:BA:56:34"
+      ]
+    }
+  }
+]

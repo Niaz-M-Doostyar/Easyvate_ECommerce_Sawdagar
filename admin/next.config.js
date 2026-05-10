@@ -1,5 +1,7 @@
 /** @type {import('next').NextConfig} */
 const isProd = process.env.NODE_ENV === 'production';
+const apiOrigin = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+
 module.exports = {
   ...(isProd ? { basePath: '/sawdagar-admin' } : {}),
   reactStrictMode: true,
@@ -23,8 +25,8 @@ module.exports = {
   },
   async rewrites() {
     return [
-      { source: '/api/:path*', destination: 'http://localhost:4000/api/:path*' },
-      { source: '/uploads/:path*', destination: 'http://localhost:4000/uploads/:path*' },
+      { source: '/api/:path*', destination: `${apiOrigin}/api/:path*` },
+      { source: '/uploads/:path*', destination: `${apiOrigin}/uploads/:path*` },
     ];
   },
 };

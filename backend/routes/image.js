@@ -27,7 +27,7 @@ router.get('/', async (req, res) => {
   try {
     const src = req.query.src;
     const width = Math.max(40, Math.min(parseInt(req.query.w, 10) || 800, 2000));
-    const quality = Math.max(40, Math.min(parseInt(req.query.q, 10) || 75, 95));
+    const quality = Math.max(40, Math.min(parseInt(req.query.q, 10) || 60, 95));
     const format = req.query.f === 'jpeg' ? 'jpeg' : 'webp';
 
     const originalPath = normalizeUploadPath(src);

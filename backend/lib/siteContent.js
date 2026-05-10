@@ -144,6 +144,9 @@ const defaultSiteContent = {
     ],
     formTitle: "Send Us a Message",
     successMessage: "Message sent! We'll get back to you soon."
+  },
+  mobileTheme: {
+    activeTheme: "ocean"
   }
 };
 

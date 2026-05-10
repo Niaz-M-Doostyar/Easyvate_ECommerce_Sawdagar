@@ -8,6 +8,59 @@ const { sendVerificationEmail, sendPasswordResetEmail, sendAdminNotification, ge
 const { authenticate } = require('../middleware/auth');
 const { logTransaction } = require('../lib/transactionLog');
 
+const DELETED_CUSTOMER_EMAIL = 'deleted-user@sawdagar.local';
+const DELETED_SUPPLIER_EMAIL = 'deleted-supplier@sawdagar.local';
+
+async function ensureDeletedCustomerUser(tx) {
+  const existing = await tx.user.findUnique({
+    where: { email: DELETED_CUSTOMER_EMAIL },
+    select: { id: true },
+  });
+  if (existing) return existing.id;
+
+  const hashedPassword = await hashPassword(generateUUID());
+  const created = await tx.user.create({
+    data: {
+      email: DELETED_CUSTOMER_EMAIL,
+      password: hashedPassword,
+      fullName: 'Deleted User',
+      role: 'customer',
+      isActive: false,
+      isApproved: true,
+      emailVerified: true,
+    },
+    select: { id: true },
+  });
+
+  return created.id;
+}
+
+async function ensureDeletedSupplierUser(tx) {
+  const existing = await tx.user.findUnique({
+    where: { email: DELETED_SUPPLIER_EMAIL },
+    select: { id: true },
+  });
+  if (existing) return existing.id;
+
+  const hashedPassword = await hashPassword(generateUUID());
+  const created = await tx.user.create({
+    data: {
+      email: DELETED_SUPPLIER_EMAIL,
+      password: hashedPassword,
+      fullName: 'Deleted Supplier',
+      role: 'supplier',
+      companyName: 'Deleted Supplier',
+      contactPerson: 'System',
+      isActive: false,
+      isApproved: true,
+      emailVerified: true,
+    },
+    select: { id: true },
+  });
+
+  return created.id;
+}
+
 // POST /api/auth/register
 router.post('/register', async (req, res) => {
   try {
@@ -144,6 +197,93 @@ router.post('/login', async (req, res) => {
 router.post('/logout', (req, res) => {
   res.cookie('token', '', { httpOnly: true, maxAge: 0, path: '/' });
   res.json({ message: 'Logged out' });
+});
+
+// DELETE /api/auth/account
+router.delete('/account', authenticate, async (req, res) => {
+  try {
+    const currentUser = await prisma.user.findUnique({
+      where: { id: req.user.id },
+      select: { id: true, email: true, role: true },
+    });
+
+    if (!currentUser) return res.status(404).json({ error: 'User not found' });
+    if (currentUser.role === 'admin') {
+      return res.status(403).json({ error: 'Admin account deletion is not allowed' });
+    }
+
+    await prisma.$transaction(async (tx) => {
+      const deletedCustomerId = await ensureDeletedCustomerUser(tx);
+
+      await tx.order.updateMany({
+        where: { userId: currentUser.id },
+        data: {
+          userId: deletedCustomerId,
+          province: null,
+          district: null,
+          village: null,
+          landmark: null,
+          phone: null,
+          notes: null,
+        },
+      });
+
+      await tx.order.updateMany({
+        where: { deliveryPersonId: currentUser.id },
+        data: { deliveryPersonId: null },
+      });
+
+      const ownedProducts = await tx.product.findMany({
+        where: { supplierId: currentUser.id },
+        select: { id: true },
+      });
+      const ownedProductIds = ownedProducts.map((product) => product.id);
+      const supplierRequestCount = await tx.sponsorshipRequest.count({
+        where: { supplierId: currentUser.id },
+      });
+
+      if (ownedProductIds.length > 0 || supplierRequestCount > 0) {
+        const deletedSupplierId = await ensureDeletedSupplierUser(tx);
+
+        if (ownedProductIds.length > 0) {
+          await tx.cartItem.deleteMany({
+            where: { productId: { in: ownedProductIds } },
+          });
+
+          await tx.product.updateMany({
+            where: { id: { in: ownedProductIds } },
+            data: {
+              supplierId: deletedSupplierId,
+              status: 'rejected',
+              isDeleted: true,
+              isSponsored: false,
+            },
+          });
+        }
+
+        await tx.sponsorshipRequest.updateMany({
+          where: { supplierId: currentUser.id },
+          data: { supplierId: deletedSupplierId, status: 'rejected' },
+        });
+      }
+
+      await tx.cartItem.deleteMany({ where: { userId: currentUser.id } });
+      await tx.deliveryLocation.deleteMany({ where: { userId: currentUser.id } });
+
+      await tx.user.delete({ where: { id: currentUser.id } });
+    });
+
+    await logTransaction(req, 'DELETE_ACCOUNT', 'User', currentUser.id, {
+      email: currentUser.email,
+      role: currentUser.role,
+    });
+
+    res.cookie('token', '', { httpOnly: true, maxAge: 0, path: '/' });
+    return res.json({ message: 'Account deleted permanently' });
+  } catch (err) {
+    console.error('Delete account error:', err);
+    return res.status(500).json({ error: 'Failed to delete account' });
+  }
 });
 
 const verifyEmail = async (token, res) => {

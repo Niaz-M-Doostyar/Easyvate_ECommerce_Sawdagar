@@ -1,31 +1,73 @@
-import { Platform } from 'react-native';
+const VPS_ENDPOINTS = {
+  api: 'https://sawdagaraf.com',
+  website: 'https://sawdagaraf.com',
+  admin: 'https://sawdagaraf.com/sawdagar-admin',
+};
 
-// Android emulator uses 10.0.2.2 to access host machine's localhost
-// iOS simulator can use localhost directly
-const DEV_API_URL = Platform.select({
-  android: 'http://10.0.2.2:4000',
-  ios: 'http://localhost:4000',
-  default: 'http://localhost:4000',
-});
-
-export const API_URL = __DEV__ ? DEV_API_URL : 'https://api.sawdagar.com';
+export const API_URL = VPS_ENDPOINTS.api;
+export const WEBSITE_URL = VPS_ENDPOINTS.website;
+export const ADMIN_PORTAL_URL = VPS_ENDPOINTS.admin;
 export const CURRENCY_SYMBOL = '؋';
+export const CURRENCY_CODE = 'AFN';
+
+export function resolvePortalUrl(baseUrl, initialPath = '/') {
+  if (!initialPath) return baseUrl;
+  if (/^https?:\/\//i.test(initialPath)) return initialPath;
+
+  const normalizedBase = baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl;
+  const normalizedPath = initialPath.startsWith('/') ? initialPath : `/${initialPath}`;
+  return `${normalizedBase}${normalizedPath}`;
+}
 
 export function formatPrice(price) {
   if (price == null || isNaN(price)) return `${CURRENCY_SYMBOL}0`;
   return `${CURRENCY_SYMBOL}${Number(price).toLocaleString()}`;
 }
 
-/**
- * Build an optimized image URI via /api/image endpoint.
- * For upload paths, returns WebP resized version. Others pass through.
- */
-export function optimizedImageUri(src, { width = 400, quality = 75 } = {}) {
+function extractImageValue(src) {
   if (!src) return null;
-  const full = src.startsWith('http') ? src : `${API_URL}${src}`;
-  // Only optimize /uploads/ images
-  if (src.startsWith('/uploads/')) {
-    return `${API_URL}/api/image?src=${encodeURIComponent(src)}&w=${width}&q=${quality}`;
+
+  if (typeof src === 'object') {
+    if (src.uri) return extractImageValue(src.uri);
+    if (src.url) return extractImageValue(src.url);
+    if (src.path) return extractImageValue(src.path);
+    if (src.image) return extractImageValue(src.image);
+    if (src.src) return extractImageValue(src.src);
+    return null;
   }
-  return full;
+
+  return typeof src === 'string' ? src : null;
+}
+
+export function buildImageUriCandidates(src) {
+  const rawValue = extractImageValue(src);
+  if (!rawValue) return [];
+
+  const normalizedValue = rawValue.trim().replace(/\\/g, '/');
+  if (!normalizedValue) return [];
+
+  const candidates = [];
+  const push = (value) => {
+    if (!value || candidates.includes(value)) return;
+    candidates.push(value);
+  };
+
+  const uploadMatch = normalizedValue.match(/\/uploads\/[^?#]+/i) || normalizedValue.match(/^uploads\/[^?#]+/i);
+  if (uploadMatch) {
+    const uploadPath = uploadMatch[0].startsWith('/') ? uploadMatch[0] : `/${uploadMatch[0]}`;
+    push(`${API_URL}${uploadPath}`);
+  }
+
+  if (/^https?:\/\//i.test(normalizedValue)) {
+    push(normalizedValue);
+    return candidates;
+  }
+
+  const relativePath = normalizedValue.startsWith('/') ? normalizedValue : `/${normalizedValue.replace(/^\.\//, '')}`;
+  push(`${API_URL}${relativePath}`);
+  return candidates;
+}
+
+export function optimizedImageUri(src) {
+  return buildImageUriCandidates(src)[0] || null;
 }

@@ -1,62 +1,109 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
-import { auth } from '../services/api';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { authApi, setToken, getToken } from '../services/api';
 
-const AuthContext = createContext(null);
+const AuthContext = createContext();
+
+function normalizeUser(user) {
+  if (!user) return null;
+  return {
+    ...user,
+    name: user.name || user.fullName || '',
+  };
+}
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    checkAuth();
+  const clearSession = useCallback(async () => {
+    await setToken(null);
+    setUser(null);
   }, []);
 
-  async function checkAuth() {
+  const fetchMe = useCallback(async () => {
     try {
-      const token = await auth.getToken();
-      if (token) {
-        const data = await auth.getMe();
-        setUser(data.user);
+      const t = await getToken();
+      if (!t) {
+        setUser(null);
+        setLoading(false);
+        return;
       }
-    } catch {
-      await auth.removeToken();
-    } finally {
-      setLoading(false);
-    }
-  }
+      const data = await authApi.me();
+      setUser(normalizeUser(data.user));
+    } catch { await setToken(null); setUser(null); }
+    setLoading(false);
+  }, []);
 
-  async function login(email, password) {
-    const data = await auth.login(email, password);
-    await auth.setToken(data.token);
-    setUser(data.user);
+  useEffect(() => { fetchMe(); }, [fetchMe]);
+
+  const login = async (email, password) => {
+    const data = await authApi.login({ email, password });
+    await setToken(data.token);
+    setUser(normalizeUser(data.user));
     return data;
-  }
+  };
 
-  async function register(formData) {
-    const data = await auth.register(formData);
+  const register = async (body) => {
+    const payload = {
+      ...body,
+      fullName: body.fullName || body.name,
+    };
+    delete payload.name;
+    const data = await authApi.register(payload);
     return data;
-  }
+  };
 
-  async function logout() {
-    await auth.removeToken();
-    setUser(null);
-  }
-
-  async function updateProfile(data) {
-    const result = await auth.updateProfile(data);
-    if (result.user) setUser(result.user);
-    return result;
-  }
-
-  async function refreshUser() {
+  const logout = async () => {
     try {
-      const data = await auth.getMe();
-      setUser(data.user);
+      await authApi.logout();
     } catch {}
-  }
+    await clearSession();
+  };
+
+  const deleteAccount = async () => {
+    const data = await authApi.deleteAccount();
+    await clearSession();
+    return data;
+  };
+
+  const updateProfile = async (body) => {
+    const payload = {
+      ...body,
+      fullName: body.fullName || body.name,
+    };
+    delete payload.name;
+    const data = await authApi.updateProfile(payload);
+    if (data.user) setUser(prev => normalizeUser({ ...prev, ...data.user }));
+    return data;
+  };
+
+  const changePassword = async (body) => {
+    return authApi.changePassword(body);
+  };
+
+  const syncToken = useCallback(async (nextToken) => {
+    if (!nextToken) {
+      await clearSession();
+      return;
+    }
+
+    await setToken(nextToken);
+    await fetchMe();
+  }, [clearSession, fetchMe]);
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, register, logout, updateProfile, refreshUser }}>
+    <AuthContext.Provider value={{
+      user,
+      loading,
+      login,
+      register,
+      logout,
+      deleteAccount,
+      updateProfile,
+      changePassword,
+      refresh: fetchMe,
+      syncToken,
+    }}>
       {children}
     </AuthContext.Provider>
   );
@@ -64,6 +111,6 @@ export function AuthProvider({ children }) {
 
 export function useAuth() {
   const ctx = useContext(AuthContext);
-  if (!ctx) throw new Error('useAuth must be used within AuthProvider');
+  if (!ctx) throw new Error('useAuth must be inside AuthProvider');
   return ctx;
 }

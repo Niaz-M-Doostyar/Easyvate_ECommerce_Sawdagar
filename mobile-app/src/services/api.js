@@ -2,112 +2,148 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { API_URL } from '../config';
 
 const TOKEN_KEY = 'sawdagar_token';
+let _token = null;
 
-async function getToken() {
-  return AsyncStorage.getItem(TOKEN_KEY);
+export async function getToken() {
+  if (_token) return _token;
+  _token = await AsyncStorage.getItem(TOKEN_KEY);
+  return _token;
+}
+export async function setToken(t) { _token = t; if (t) await AsyncStorage.setItem(TOKEN_KEY, t); else await AsyncStorage.removeItem(TOKEN_KEY); }
+
+function toQueryString(params) {
+  if (!params) return '';
+  if (typeof params === 'string') return params.replace(/^\?/, '');
+  if (params instanceof URLSearchParams) return params.toString();
+
+  const normalized = { ...params };
+  if (normalized.categoryId != null && normalized.category == null) {
+    normalized.category = normalized.categoryId;
+  }
+  delete normalized.categoryId;
+
+  const searchParams = new URLSearchParams();
+  Object.entries(normalized).forEach(([key, value]) => {
+    if (value === undefined || value === null || value === '') return;
+    searchParams.append(key, String(value));
+  });
+
+  return searchParams.toString();
 }
 
-async function setToken(token) {
-  return AsyncStorage.setItem(TOKEN_KEY, token);
+function withQuery(path, params) {
+  const query = toQueryString(params);
+  return query ? `${path}?${query}` : path;
 }
 
-async function removeToken() {
-  return AsyncStorage.removeItem(TOKEN_KEY);
-}
-
-async function request(endpoint, options = {}) {
+async function request(path, opts = {}) {
   const token = await getToken();
-  const headers = {
-    'Content-Type': 'application/json',
-    ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    ...options.headers,
-  };
-
-  const url = `${API_URL}/api${endpoint}`;
-  const response = await fetch(url, { ...options, headers });
-  const data = await response.json().catch(() => ({}));
-
-  if (!response.ok) {
-    const error = new Error(data.message || data.error || `Request failed (${response.status})`);
-    error.status = response.status;
+  const headers = { ...(opts.headers || {}) };
+  if (!(opts.body instanceof FormData)) {
+    headers['Content-Type'] = 'application/json';
+  }
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+  const url = path.startsWith('http') ? path : `${API_URL}${path}`;
+  const res = await fetch(url, { ...opts, headers });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    const error = new Error(data.error || data.message || `Request failed (${res.status})`);
+    error.status = res.status;
     error.data = data;
     throw error;
   }
-
   return data;
 }
 
+export const api = {
+  get: (p) => request(p),
+  post: (p, body) => request(p, { method: 'POST', body: JSON.stringify(body) }),
+  put: (p, body) => request(p, { method: 'PUT', body: JSON.stringify(body) }),
+  patch: (p, body) => request(p, { method: 'PATCH', body: JSON.stringify(body) }),
+  del: (p) => request(p, { method: 'DELETE' }),
+};
+
 // Auth
-export const auth = {
-  login: (email, password) => request('/auth/login', {
-    method: 'POST',
-    body: JSON.stringify({ email, password }),
-  }),
-  register: (data) => request('/auth/register', {
-    method: 'POST',
-    body: JSON.stringify(data),
-  }),
-  getMe: () => request('/auth/me'),
-  updateProfile: (data) => request('/auth/me', {
-    method: 'PUT',
-    body: JSON.stringify(data),
-  }),
-  forgotPassword: (email) => request('/auth/forgot-password', {
-    method: 'POST',
-    body: JSON.stringify({ email }),
-  }),
-  setToken,
-  getToken,
-  removeToken,
+export const authApi = {
+  login: (d) => api.post('/api/auth/login', d),
+  register: (d) => api.post('/api/auth/register', d),
+  me: () => api.get('/api/auth/me'),
+  logout: () => api.post('/api/auth/logout', {}),
+  deleteAccount: () => api.del('/api/auth/account'),
+  forgotPassword: (d) => api.post('/api/auth/forgot-password', d),
+  resetPassword: (d) => api.post('/api/auth/reset-password', d),
+  updateProfile: (d) => api.put('/api/auth/profile', d),
+  changePassword: (d) => api.put('/api/auth/change-password', d),
 };
 
 // Products
-export const products = {
-  list: (params = {}) => {
-    const qs = new URLSearchParams(params).toString();
-    return request(`/products?${qs}`);
-  },
-  get: (id) => request(`/products/${id}`),
-  search: (query, limit = 20) => request(`/products?search=${encodeURIComponent(query)}&limit=${limit}`),
-  sponsored: () => request('/products/sponsored'),
+export const productsApi = {
+  list: (params) => api.get(withQuery('/api/products', params)),
+  get: (id) => api.get(`/api/products/${id}`),
+  sponsored: () => api.get('/api/products/sponsored'),
+  search: (params) => api.get(withQuery('/api/products/search', typeof params === 'string' ? { q: params } : params)),
 };
 
 // Categories
-export const categories = {
-  list: () => request('/categories'),
+export const categoriesApi = {
+  list: () => api.get('/api/categories'),
 };
 
 // Cart
-export const cart = {
-  get: () => request('/cart'),
-  add: (productId, quantity = 1) => request('/cart', {
-    method: 'POST',
-    body: JSON.stringify({ productId, quantity }),
-  }),
-  update: (id, quantity) => request(`/cart/${id}`, {
-    method: 'PUT',
-    body: JSON.stringify({ quantity }),
-  }),
-  remove: (id) => request(`/cart/${id}`, { method: 'DELETE' }),
-  clear: () => request('/cart', { method: 'DELETE' }),
+export const cartApi = {
+  get: () => api.get('/api/cart'),
+  add: (d) => api.post('/api/cart', d),
+  update: (id, d) => api.put(`/api/cart/${id}`, d),
+  remove: (id) => api.del(`/api/cart/${id}`),
+  clear: () => api.del('/api/cart'),
 };
 
 // Orders
-export const orders = {
-  list: (page = 1) => request(`/orders?page=${page}`),
-  get: (id) => request(`/orders/${id}`),
-  create: (data) => request('/orders', {
-    method: 'POST',
-    body: JSON.stringify(data),
-  }),
-  tracking: (id) => request(`/orders/${id}/tracking`),
+export const ordersApi = {
+  list: (params) => api.get(withQuery('/api/orders', params)),
+  get: (id) => api.get(`/api/orders/${id}`),
+  create: (d) => api.post('/api/orders', d),
+  tracking: (id) => api.get(`/api/orders/${id}/tracking`),
 };
 
 // Site Content
-export const siteContent = {
-  get: () => request('/site-content'),
-  contact: (data) => request('/site-content/contact', {
-    method: 'POST',
-    body: JSON.stringify(data),
-  }),
+export const siteApi = {
+  content: () => api.get('/api/site-content'),
+  contact: (d) => api.post('/api/site-content/contact', d),
 };
+
+// Blog
+export const blogApi = {
+  list: (params) => api.get(withQuery('/api/blog', params)),
+  get: (slug) => api.get(`/api/blog/${slug}`),
+};
+
+// Subscribe
+export const subscribeApi = {
+  subscribe: (d) => api.post('/api/subscribe', d),
+  validateCoupon: (d) => api.post('/api/subscribe/validate-coupon', typeof d === 'string' ? { code: d } : d),
+};
+
+// Supplier
+export const supplierApi = {
+  products: (params) => api.get(withQuery('/api/supplier/products', params)),
+  getProduct: (id) => api.get(`/api/supplier/products/${id}`),
+  createProduct: (d) => api.post('/api/supplier/products', d),
+  updateProduct: (id, d) => api.put(`/api/supplier/products/${id}`, d),
+  deleteProduct: (id) => api.del(`/api/supplier/products/${id}`),
+  orders: (params) => api.get(withQuery('/api/supplier/orders', params)),
+  sponsorships: () => api.get('/api/supplier/sponsorships'),
+  requestSponsorship: (d) => api.post('/api/supplier/sponsorships', d),
+};
+
+supplierApi.myProducts = supplierApi.products;
+supplierApi.myOrders = supplierApi.orders;
+
+// Delivery
+export const deliveryApi = {
+  orders: (params) => api.get(withQuery('/api/delivery/orders', params)),
+  updateOrder: (id, d) => api.put(`/api/delivery/orders/${id}`, d),
+  shareLocation: (d) => api.post('/api/delivery/location', d),
+};
+
+export default api;

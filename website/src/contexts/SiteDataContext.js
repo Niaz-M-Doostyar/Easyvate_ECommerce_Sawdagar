@@ -4,12 +4,15 @@ import { createContext, useContext, useState, useEffect, useCallback } from 'rea
 
 const SiteDataContext = createContext();
 
-export function SiteDataProvider({ children }) {
-  const [categories, setCategories] = useState([]);
-  const [siteContent, setSiteContent] = useState(null);
-  const [loaded, setLoaded] = useState(false);
+export function SiteDataProvider({ children, initialCategories = [], initialSiteContent = null }) {
+  const hasInitialData = initialCategories.length > 0 || initialSiteContent !== null;
+  const [categories, setCategories] = useState(initialCategories);
+  const [siteContent, setSiteContent] = useState(initialSiteContent);
+  const [loaded, setLoaded] = useState(hasInitialData);
 
   useEffect(() => {
+    if (hasInitialData) return undefined;
+
     let cancelled = false;
     Promise.all([
       fetch('/api/categories').then(r => r.json()).catch(() => null),
@@ -24,7 +27,7 @@ export function SiteDataProvider({ children }) {
       setLoaded(true);
     });
     return () => { cancelled = true; };
-  }, []);
+  }, [hasInitialData]);
 
   const getName = useCallback((item, lang) => {
     if (!item) return '';

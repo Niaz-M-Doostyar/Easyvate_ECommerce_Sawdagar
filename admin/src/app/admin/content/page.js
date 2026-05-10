@@ -98,6 +98,7 @@ export default function AdminContentPage() {
       { key: "about", label: "About" },
       { key: "contact", label: "Contact" },
       { key: "footer", label: "Footer" },
+      { key: "mobileApp", label: "Mobile App" },
     ],
     []
   );
@@ -773,6 +774,50 @@ export default function AdminContentPage() {
                 </Field>
               </div>
             ))}
+          </div>
+        </div>
+      )}
+
+      {/* ═══════════ MOBILE APP TAB ═══════════ */}
+      {tab === "mobileApp" && (
+        <div className="space-y-6">
+          <div className="card card-p">
+            <SectionTitle title="Mobile App Theme" description="Select the active theme for the Sawdagar mobile app. This theme will be applied to all mobile users." />
+            <Field label="Active Theme">
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 mt-2">
+                {[
+                  { key: "midnight", name: "Midnight", mode: "dark", color: "#6C63FF" },
+                  { key: "ocean", name: "Ocean Blue", mode: "light", color: "#2563EB" },
+                  { key: "emerald", name: "Emerald", mode: "light", color: "#059669" },
+                  { key: "sunset", name: "Sunset", mode: "dark", color: "#F97316" },
+                  { key: "rose", name: "Rose", mode: "light", color: "#E11D48" },
+                ].map((th) => {
+                  const isActive = (content.mobileTheme?.activeTheme || "ocean") === th.key;
+                  return (
+                    <button
+                      key={th.key}
+                      type="button"
+                      onClick={() => setValue(["mobileTheme", "activeTheme"], th.key)}
+                      className={`relative rounded-2xl border-2 p-4 text-center transition-all hover:shadow-md ${
+                        isActive ? "border-primary ring-2 ring-primary/20 bg-primary/5" : "border-gray-200 hover:border-gray-300"
+                      }`}
+                    >
+                      <div
+                        className="w-10 h-10 rounded-full mx-auto mb-2"
+                        style={{ backgroundColor: th.color }}
+                      />
+                      <div className="font-semibold text-sm text-navy">{th.name}</div>
+                      <div className="text-xs text-body mt-0.5">{th.mode}</div>
+                      {isActive && (
+                        <div className="absolute top-2 right-2 w-5 h-5 rounded-full bg-primary flex items-center justify-center">
+                          <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" strokeWidth="3" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" /></svg>
+                        </div>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            </Field>
           </div>
         </div>
       )}
