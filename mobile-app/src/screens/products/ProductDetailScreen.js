@@ -131,6 +131,8 @@ export default function ProductDetailScreen({ navigation, route }) {
               <TouchableOpacity key={img?.id || `${img?.url || 'product-image'}-${index}`} activeOpacity={0.95} onPress={() => { setViewerIdx(index); setViewerOpen(true); }}>
                 <RemoteImage
                   source={img?.url || img}
+                  width={Math.round(imageWidth * 2)}
+                  quality={80}
                   style={[styles.mainImg, { width: imageWidth, height: imageHeight }]}
                   fallback={(
                     <View style={[styles.mainImg, { width: imageWidth, height: imageHeight, backgroundColor: c.skeleton, justifyContent: 'center', alignItems: 'center' }]}> 

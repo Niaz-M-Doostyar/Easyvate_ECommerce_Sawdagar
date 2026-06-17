@@ -8,16 +8,19 @@ export default function RemoteImage({
   fallback = null,
   style,
   resizeMode = 'cover',
+  width,
+  quality,
   cache,
   onError,
   onLoad,
   ...rest
 }) {
   const candidates = useMemo(() => {
-    const primary = buildImageUriCandidates(source);
-    const secondary = buildImageUriCandidates(fallbackSource);
+    const options = width ? { width, quality } : undefined;
+    const primary = buildImageUriCandidates(source, options);
+    const secondary = buildImageUriCandidates(fallbackSource, options);
     return Array.from(new Set([...primary, ...secondary]));
-  }, [fallbackSource, source]);
+  }, [fallbackSource, quality, source, width]);
   const [candidateIndex, setCandidateIndex] = useState(0);
   const [exhausted, setExhausted] = useState(false);
 

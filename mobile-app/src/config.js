@@ -45,7 +45,7 @@ function extractImageValue(src) {
   return typeof src === 'string' ? src : null;
 }
 
-export function buildImageUriCandidates(src) {
+export function buildImageUriCandidates(src, options = {}) {
   const rawValue = extractImageValue(src);
   if (!rawValue) return [];
 
@@ -61,6 +61,11 @@ export function buildImageUriCandidates(src) {
   const uploadMatch = normalizedValue.match(/\/uploads\/[^?#]+/i) || normalizedValue.match(/^uploads\/[^?#]+/i);
   if (uploadMatch) {
     const uploadPath = uploadMatch[0].startsWith('/') ? uploadMatch[0] : `/${uploadMatch[0]}`;
+    // Request a resized WebP via the backend resize endpoint when a display width is given.
+    const { width, quality = 75 } = options;
+    if (width) {
+      push(`${API_URL}/api/image?src=${encodeURIComponent(uploadPath)}&w=${width}&q=${quality}&f=webp`);
+    }
     push(`${API_URL}${uploadPath}`);
   }
 
@@ -74,6 +79,6 @@ export function buildImageUriCandidates(src) {
   return candidates;
 }
 
-export function optimizedImageUri(src) {
-  return buildImageUriCandidates(src)[0] || null;
+export function optimizedImageUri(src, options = {}) {
+  return buildImageUriCandidates(src, options)[0] || null;
 }

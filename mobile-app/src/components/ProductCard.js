@@ -71,8 +71,8 @@ export default function ProductCard({ product, onPress, style }) {
           {primaryImage ? (
             <RemoteImage
               source={primaryImage}
-              fallbackSource={secondaryImage}
-              style={styles.img}
+              fallbackSource={secondaryImage}              width={400}
+              quality={72}              style={styles.img}
               fallback={(
                 <View style={[styles.img, styles.imageFallback, { backgroundColor: c.skeleton }]}> 
                   <MaterialCommunityIcons name="image-outline" size={34} color={c.textMuted} />
