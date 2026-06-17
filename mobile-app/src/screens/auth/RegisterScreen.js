@@ -46,7 +46,9 @@ export default function RegisterScreen({ navigation }) {
 
   const handleBack = () => {
     const parent = navigation.getParent();
-    if (navigation.canGoBack && navigation.canGoBack()) {
+    const authIndex = navigation.getState?.()?.index ?? 0;
+
+    if (authIndex > 0 && navigation.canGoBack && navigation.canGoBack()) {
       navigation.goBack();
       return;
     }

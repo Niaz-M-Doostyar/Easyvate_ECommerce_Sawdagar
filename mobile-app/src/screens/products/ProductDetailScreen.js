@@ -33,6 +33,21 @@ export default function ProductDetailScreen({ navigation, route }) {
   const [tab, setTab] = useState('desc');
   const [adding, setAdding] = useState(false);
 
+  const handleBack = () => {
+    const parent = navigation.getParent?.();
+    if (navigation.canGoBack?.()) {
+      navigation.goBack();
+      return;
+    }
+    if (parent?.canGoBack?.()) {
+      parent.goBack();
+      return;
+    }
+    if (parent?.navigate) {
+      parent.navigate('Main');
+    }
+  };
+
   useEffect(() => {
     productsApi.get(route.params?.id).then((data) => {
       setProduct(data.product || data);
@@ -128,7 +143,7 @@ export default function ProductDetailScreen({ navigation, route }) {
           </ScrollView>
 
           <View style={styles.topActions}>
-            <TouchableOpacity onPress={() => navigation.goBack()} style={[styles.floatBtn, { backgroundColor: c.card }]}> 
+            <TouchableOpacity onPress={handleBack} hitSlop={{ top: 12, left: 12, right: 12, bottom: 12 }} style={[styles.floatBtn, { backgroundColor: c.card }]}> 
               <MaterialCommunityIcons name="arrow-left" size={22} color={c.text} />
             </TouchableOpacity>
             <TouchableOpacity onPress={() => openTab('CartTab')} style={[styles.floatBtn, { backgroundColor: c.card }]}> 
@@ -271,7 +286,7 @@ export default function ProductDetailScreen({ navigation, route }) {
             </ScrollView>
 
             <View style={{ position: 'absolute', top: 24, left: 12, right: 12, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-              <TouchableOpacity onPress={() => setViewerOpen(false)} style={[styles.floatBtn, { backgroundColor: 'rgba(0,0,0,0.4)' }]}> 
+              <TouchableOpacity onPress={() => setViewerOpen(false)} hitSlop={{ top: 12, left: 12, right: 12, bottom: 12 }} style={[styles.floatBtn, { backgroundColor: 'rgba(0,0,0,0.4)' }]}> 
                 <MaterialCommunityIcons name="close" size={22} color="#FFF" />
               </TouchableOpacity>
             </View>
@@ -306,7 +321,7 @@ const styles = StyleSheet.create({
   imgWrapTablet: { alignItems: 'center', paddingTop: spacing.base },
   imageFrame: { position: 'relative', overflow: 'hidden' },
   mainImg: {},
-  topActions: { position: 'absolute', top: 12, left: 16, right: 16, flexDirection: 'row', justifyContent: 'space-between' },
+  topActions: { position: 'absolute', top: 12, left: 16, right: 16, flexDirection: 'row', justifyContent: 'space-between', zIndex: 4, elevation: 4 },
   floatBtn: { width: 42, height: 42, borderRadius: 21, justifyContent: 'center', alignItems: 'center', ...shadows.md },
   overlayBadges: { position: 'absolute', left: 16, right: 16, bottom: 44, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   overlayPill: { paddingHorizontal: 12, paddingVertical: 8, borderRadius: borderRadius.full },

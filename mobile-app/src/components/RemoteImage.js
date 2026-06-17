@@ -8,7 +8,7 @@ export default function RemoteImage({
   fallback = null,
   style,
   resizeMode = 'cover',
-  cache = 'reload',
+  cache = 'force-cache',
   onError,
   onLoad,
   ...rest

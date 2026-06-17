@@ -28,6 +28,7 @@ export default function LoginScreen({ navigation, route }) {
 
   const closeAuthModal = () => {
     const parent = navigation.getParent?.();
+    const authIndex = navigation.getState?.()?.index ?? 0;
 
     // If a redirect target was provided, navigate the root to that tab
     // then close the auth modal (if possible) to avoid stacked navigation actions.
@@ -36,21 +37,20 @@ export default function LoginScreen({ navigation, route }) {
         screen: redirectTo.tab,
         params: redirectTo.params,
       });
-      if (navigation.canGoBack?.()) {
-        navigation.goBack();
-      } else if (parent?.canGoBack?.()) {
+      if (parent?.canGoBack?.()) {
         parent.goBack();
+      } else if (authIndex > 0 && navigation.canGoBack?.()) {
+        navigation.goBack();
       }
       return;
     }
 
-    // Otherwise prefer a single goBack on the current navigator, then parent.
-    if (navigation.canGoBack?.()) {
-      navigation.goBack();
-      return;
-    }
     if (parent?.canGoBack?.()) {
       parent.goBack();
+      return;
+    }
+    if (authIndex > 0 && navigation.canGoBack?.()) {
+      navigation.goBack();
       return;
     }
     if (parent?.navigate) {
@@ -60,7 +60,9 @@ export default function LoginScreen({ navigation, route }) {
 
   const handleBack = () => {
     const parent = navigation.getParent?.();
-    if (navigation.canGoBack?.()) {
+    const authIndex = navigation.getState?.()?.index ?? 0;
+
+    if (authIndex > 0 && navigation.canGoBack?.()) {
       navigation.goBack();
       return;
     }
