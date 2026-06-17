@@ -163,6 +163,20 @@ export default function HomeScreen({ navigation }) {
     });
   }, [bigBanner?.image, promoBanners]);
 
+  useEffect(() => {
+    const visibleProductUris = [
+      ...featured.slice(0, 6),
+      ...sponsored.slice(0, 4),
+      ...newArrivals.slice(0, 4),
+    ]
+      .map((product) => buildImageUriCandidates(product?.images?.[0]?.url || product?.image || product?.thumbnail)[0])
+      .filter(Boolean);
+
+    Array.from(new Set(visibleProductUris)).forEach((uri) => {
+      Image.prefetch(uri).catch(() => {});
+    });
+  }, [featured, newArrivals, sponsored]);
+
   const openPromo = (href, title) => {
     const [, queryString = ''] = String(href || '/search').split('?');
     const query = new URLSearchParams(queryString);

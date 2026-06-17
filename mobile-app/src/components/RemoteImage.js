@@ -8,7 +8,7 @@ export default function RemoteImage({
   fallback = null,
   style,
   resizeMode = 'cover',
-  cache = 'force-cache',
+  cache,
   onError,
   onLoad,
   ...rest
@@ -33,7 +33,7 @@ export default function RemoteImage({
 
   return (
     <Image
-      source={{ uri, cache }}
+      source={cache ? { uri, cache } : { uri }}
       style={style}
       resizeMode={resizeMode}
       progressiveRenderingEnabled
