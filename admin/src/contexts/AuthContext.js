@@ -28,9 +28,18 @@ export function AuthProvider({ children }) {
     if (r.ok) { setUser(d.user); return { success: true, user: d.user }; }
     return { success: false, error: d.error || "Login failed" };
   };
-  const logout = async () => {
-    await fetch("/api/auth/logout", { method: "POST", credentials: "include" });
-    setUser(null);
+  const logout = async (redirectTo = "/login") => {
+    try {
+      await fetch("/api/auth/logout", { method: "POST", credentials: "include" });
+    } catch {
+      // Clear the local session even if the logout request fails.
+    } finally {
+      setUser(null);
+
+      if (redirectTo && typeof window !== "undefined") {
+        window.location.replace(redirectTo);
+      }
+    }
   };
   return <Ctx.Provider value={{ user, loading, login, logout, fetchUser }}>{children}</Ctx.Provider>;
 }

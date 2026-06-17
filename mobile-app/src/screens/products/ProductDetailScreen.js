@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator, useWindowDimensions } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator, useWindowDimensions, Modal } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useTheme } from '../../contexts/ThemeContext';
@@ -7,13 +7,14 @@ import { useLanguage } from '../../contexts/LanguageContext';
 import { useCart } from '../../contexts/CartContext';
 import { useToast } from '../../contexts/ToastContext';
 import Button from '../../components/Button';
+import QuantityInput from '../../components/QuantityInput';
 import RemoteImage from '../../components/RemoteImage';
 import { productsApi } from '../../services/api';
 import { formatPrice } from '../../config';
 import { spacing, fontSize, fontWeight, borderRadius, shadows } from '../../theme';
 
 export default function ProductDetailScreen({ navigation, route }) {
-  const { width: viewportWidth } = useWindowDimensions();
+  const { width: viewportWidth, height: viewportHeight } = useWindowDimensions();
   const { theme } = useTheme();
   const { t, getName, getDesc } = useLanguage();
   const { addItem } = useCart();
@@ -26,6 +27,8 @@ export default function ProductDetailScreen({ navigation, route }) {
   const [product, setProduct] = useState(route.params?.product || null);
   const [loading, setLoading] = useState(!product);
   const [imgIdx, setImgIdx] = useState(0);
+  const [viewerOpen, setViewerOpen] = useState(false);
+  const [viewerIdx, setViewerIdx] = useState(0);
   const [qty, setQty] = useState(1);
   const [tab, setTab] = useState('desc');
   const [adding, setAdding] = useState(false);
@@ -45,11 +48,6 @@ export default function ProductDetailScreen({ navigation, route }) {
     }
 
     navigation.navigate(tabName);
-  };
-
-  const adjustQty = (delta) => {
-    const maxQty = product?.stock && product.stock > 0 ? product.stock : Number.MAX_SAFE_INTEGER;
-    setQty((prev) => Math.min(maxQty, Math.max(1, prev + delta)));
   };
 
   const handleAdd = async () => {
@@ -96,8 +94,10 @@ export default function ProductDetailScreen({ navigation, route }) {
   const hasDiscount = product.wholesaleCost && product.retailPrice && product.wholesaleCost > product.retailPrice;
   const discount = hasDiscount ? Math.round((1 - product.retailPrice / product.wholesaleCost) * 100) : 0;
   const available = product.stock == null || product.stock > 0;
+  const maxQty = Number.isFinite(product.stock) && product.stock > 0 ? product.stock : undefined;
   const categoryName = product.category ? getName(product.category) : 'Selected item';
-  const supplierName = product.supplier?.name || null;
+  const supplierName = product.supplier?.companyName || product.supplier?.fullName || null;
+  const supplierVerified = !!product.supplier?.supplierVerified;
   const orderTotal = (product.retailPrice || 0) * qty;
 
   return (
@@ -113,16 +113,17 @@ export default function ProductDetailScreen({ navigation, route }) {
             onMomentumScrollEnd={(event) => setImgIdx(Math.round(event.nativeEvent.contentOffset.x / imageWidth))}
           >
             {images.length > 0 ? images.map((img, index) => (
-              <RemoteImage
-                key={img?.id || `${img?.url || 'product-image'}-${index}`}
-                source={img?.url || img}
-                style={[styles.mainImg, { width: imageWidth, height: imageHeight }]}
-                fallback={(
-                  <View style={[styles.mainImg, { width: imageWidth, height: imageHeight, backgroundColor: c.skeleton, justifyContent: 'center', alignItems: 'center' }]}>
-                    <MaterialCommunityIcons name="image-outline" size={48} color={c.textMuted} />
-                  </View>
-                )}
-              />
+              <TouchableOpacity key={img?.id || `${img?.url || 'product-image'}-${index}`} activeOpacity={0.95} onPress={() => { setViewerIdx(index); setViewerOpen(true); }}>
+                <RemoteImage
+                  source={img?.url || img}
+                  style={[styles.mainImg, { width: imageWidth, height: imageHeight }]}
+                  fallback={(
+                    <View style={[styles.mainImg, { width: imageWidth, height: imageHeight, backgroundColor: c.skeleton, justifyContent: 'center', alignItems: 'center' }]}> 
+                      <MaterialCommunityIcons name="image-outline" size={48} color={c.textMuted} />
+                    </View>
+                  )}
+                />
+              </TouchableOpacity>
             )) : <View style={[styles.mainImg, { width: imageWidth, height: imageHeight, backgroundColor: c.skeleton, justifyContent: 'center', alignItems: 'center' }]}><MaterialCommunityIcons name="image-outline" size={48} color={c.textMuted} /></View>}
           </ScrollView>
 
@@ -153,9 +154,17 @@ export default function ProductDetailScreen({ navigation, route }) {
         <View style={[styles.body, isTablet && { width: contentWidth, alignSelf: 'center' }]}> 
           <View style={[styles.infoCard, { backgroundColor: c.card, borderColor: c.border }]}> 
             <View style={styles.headingRow}>
-              <View style={{ flex: 1, marginRight: spacing.md }}>
+                <View style={{ flex: 1, marginRight: spacing.md }}>
                 <Text style={[styles.name, { color: c.text }]}>{getName(product)}</Text>
-                <Text style={[styles.subhead, { color: c.textSecondary }]}>{supplierName ? `Sold by ${supplierName}` : 'Curated by Sawdagar'}</Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 6 }}>
+                  <Text style={[styles.subhead, { color: c.textSecondary }]}>{supplierName ? `Sold by ${supplierName}` : 'Curated by Sawdagar'}</Text>
+                  {supplierVerified ? (
+                    <View style={[styles.supplierVerifiedPill, { backgroundColor: c.primary + '16' }]}>
+                      <MaterialCommunityIcons name="shield-check-outline" size={13} color={c.primary} />
+                      <Text style={[styles.supplierVerifiedText, { color: c.primary }]}>Verified</Text>
+                    </View>
+                  ) : null}
+                </View>
               </View>
               <View style={[styles.stockBadge, { backgroundColor: available ? c.success + '18' : c.error + '18' }]}> 
                 <MaterialCommunityIcons name={available ? 'check-circle-outline' : 'close-circle-outline'} size={14} color={available ? c.success : c.error} />
@@ -180,15 +189,17 @@ export default function ProductDetailScreen({ navigation, route }) {
           </View>
 
           <View style={[styles.qtyCard, { backgroundColor: c.card, borderColor: c.border }]}> 
-            <View>
-              <Text style={[styles.qtyHeading, { color: c.text }]}>Quantity</Text>
-              <Text style={[styles.qtySubhead, { color: c.textSecondary }]}>{available ? 'Adjust before adding to cart.' : 'This item is currently unavailable.'}</Text>
+            <View style={styles.qtyCopy}>
+              <Text style={[styles.qtyHeading, { color: c.text }]}>{t.qty}</Text>
+              <Text style={[styles.qtySubhead, { color: c.textSecondary }]}>{available && maxQty ? `Stock: ${maxQty}` : available ? 'Ready to add' : 'Currently unavailable'}</Text>
             </View>
-            <View style={[styles.qtyStepper, { borderColor: c.border, backgroundColor: c.surfaceElevated }]}> 
-              <TouchableOpacity onPress={() => adjustQty(-1)} style={styles.qtyBtn}><MaterialCommunityIcons name="minus" size={20} color={c.text} /></TouchableOpacity>
-              <Text style={[styles.qtyVal, { color: c.text }]}>{qty}</Text>
-              <TouchableOpacity onPress={() => adjustQty(1)} disabled={!available} style={styles.qtyBtn}><MaterialCommunityIcons name="plus" size={20} color={available ? c.text : c.textMuted} /></TouchableOpacity>
-            </View>
+            <QuantityInput
+              value={qty}
+              onChange={setQty}
+              max={maxQty}
+              disabled={!available}
+              liveUpdate
+            />
           </View>
 
           <View style={[styles.tabsCard, { backgroundColor: c.card, borderColor: c.border }]}> 
@@ -242,6 +253,31 @@ export default function ProductDetailScreen({ navigation, route }) {
           />
         </View>
       </View>
+      <Modal visible={viewerOpen} transparent={false} animationType="slide" onRequestClose={() => setViewerOpen(false)}>
+        <SafeAreaView style={{ flex: 1, backgroundColor: '#000' }}>
+          <View style={{ flex: 1 }}>
+            <ScrollView
+              horizontal
+              pagingEnabled
+              contentOffset={{ x: viewerIdx * viewportWidth }}
+              showsHorizontalScrollIndicator={false}
+              style={{ flex: 1 }}
+            >
+              {images.length > 0 ? images.map((img, index) => (
+                <View key={img?.id || `${img?.url || 'product-image'}-${index}`} style={{ width: viewportWidth, height: viewportHeight, justifyContent: 'center', alignItems: 'center', backgroundColor: '#000' }}>
+                  <RemoteImage source={img?.url || img} style={{ width: viewportWidth, height: viewportHeight }} resizeMode="contain" />
+                </View>
+              )) : null}
+            </ScrollView>
+
+            <View style={{ position: 'absolute', top: 24, left: 12, right: 12, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+              <TouchableOpacity onPress={() => setViewerOpen(false)} style={[styles.floatBtn, { backgroundColor: 'rgba(0,0,0,0.4)' }]}> 
+                <MaterialCommunityIcons name="close" size={22} color="#FFF" />
+              </TouchableOpacity>
+            </View>
+          </View>
+        </SafeAreaView>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -284,6 +320,8 @@ const styles = StyleSheet.create({
   headingRow: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between' },
   name: { fontSize: fontSize.xl, fontWeight: fontWeight.bold, lineHeight: 30 },
   subhead: { fontSize: fontSize.sm, marginTop: 8 },
+  supplierVerifiedPill: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 8, paddingVertical: 4, borderRadius: borderRadius.full, marginLeft: 8 },
+  supplierVerifiedText: { fontSize: fontSize.xs, fontWeight: fontWeight.bold },
   priceRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: spacing.md },
   price: { fontSize: fontSize.xxl, fontWeight: '800' },
   oldPrice: { fontSize: fontSize.md, textDecorationLine: 'line-through' },
@@ -292,12 +330,10 @@ const styles = StyleSheet.create({
   featureRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginTop: spacing.lg },
   featureTile: { flexDirection: 'row', alignItems: 'center', gap: 6, borderRadius: borderRadius.full, paddingHorizontal: 12, paddingVertical: 9, backgroundColor: '#111317' },
   featureText: { color: '#D6E5FF', fontSize: fontSize.xs, fontWeight: fontWeight.bold },
-  qtyCard: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', borderWidth: 1, borderRadius: borderRadius.xl, padding: spacing.lg, marginTop: spacing.base },
+  qtyCard: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: spacing.md, borderWidth: 1, borderRadius: borderRadius.xl, padding: spacing.lg, marginTop: spacing.base },
+  qtyCopy: { flex: 1 },
   qtyHeading: { fontSize: fontSize.base, fontWeight: fontWeight.bold },
   qtySubhead: { fontSize: fontSize.sm, marginTop: 4 },
-  qtyStepper: { flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderRadius: borderRadius.full, paddingHorizontal: 4, paddingVertical: 4 },
-  qtyBtn: { width: 38, height: 38, borderRadius: 19, justifyContent: 'center', alignItems: 'center' },
-  qtyVal: { paddingHorizontal: 16, fontSize: fontSize.md, fontWeight: '600' },
   tabsCard: { borderWidth: 1, borderRadius: borderRadius.xl, padding: spacing.md, marginTop: spacing.base },
   tabs: { flexDirection: 'row', borderRadius: borderRadius.full, padding: 4, marginBottom: spacing.md },
   tab: { flex: 1, paddingVertical: 12, alignItems: 'center', borderRadius: borderRadius.full },

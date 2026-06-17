@@ -11,6 +11,12 @@ export default function Footer() {
   const getName = (item) => siteGetName(item, lang);
 
   const footer = siteContent?.footer || {};
+  const phoneToWhatsApp = (phone) => {
+    const digits = (phone || '').toString().replace(/\D/g, '');
+    if (!digits) return '#';
+    const normalized = digits.replace(/^0+/, '');
+    return `https://wa.me/${normalized}`;
+  };
   // Use the PNG logo by default (matches the site’s main logo asset).
   const logoUrl = (siteContent?.header?.logo || "").trim() || "/assets/img/logo/sawdagar.png";
   const logoStyle = { maxHeight: 70, maxWidth: 240, width: 'auto', height: 'auto', objectFit: 'contain', filter: 'brightness(0) invert(1)', opacity: 0.95 };
@@ -29,7 +35,7 @@ export default function Footer() {
                   {footer.aboutText || "Afghanistan's premier online marketplace connecting suppliers, retailers, and customers nationwide."}
                 </p>
                 <ul className="footer-contact">
-                  <li><a href={`tel:${footer.phone || '+93 700 000 000'}`}><i className="far fa-phone"></i>{footer.phone || '+93 700 000 000'}</a></li>
+                  <li><a href={phoneToWhatsApp(footer.phone || '+93 700 000 000')} target="_blank" rel="noopener noreferrer"><i className="far fa-phone"></i>{footer.phone || '+93 700 000 000'}</a></li>
                   <li><i className="far fa-map-marker-alt"></i>{footer.address || 'Kabul, Afghanistan'}</li>
                   <li><a href={`mailto:${footer.email || 'info@sawdagar.af'}`}><i className="far fa-envelope"></i>{footer.email || 'info@sawdagar.af'}</a></li>
                   <li><i className="far fa-clock"></i>{footer.hours || 'Sat-Thu (8:00AM - 5:00PM)'}</li>
@@ -80,14 +86,14 @@ export default function Footer() {
                 <div className="footer-download">
                   <h5 style={{ fontSize: 13, fontWeight: 600, marginBottom: 12, opacity: 0.7 }}>Download Our Mobile App</h5>
                   <div className="footer-download-btn">
-                    <a href={footer.googlePlayUrl || '#'}>
+                    <a href={footer.playStoreUrl || footer.googlePlayUrl || '#'} target="_blank" rel="noopener noreferrer">
                       <i className="fab fa-google-play"></i>
                       <div className="download-btn-info">
                         <span>Get It On</span>
                         <h6>Google Play</h6>
                       </div>
                     </a>
-                    <a href={footer.appStoreUrl || '#'}>
+                    <a href={footer.appStoreUrl || '#'} target="_blank" rel="noopener noreferrer">
                       <i className="fab fa-app-store"></i>
                       <div className="download-btn-info">
                         <span>Get It On</span>

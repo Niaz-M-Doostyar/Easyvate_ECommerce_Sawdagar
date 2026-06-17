@@ -17,9 +17,28 @@ const backupUpload = multer({
     else cb(new Error('Only .sql files are allowed'));
   }
 });
-const { sendVerificationEmail, sendProductApprovalEmail, sendOrderStatusUpdate, sendSponsorshipStatusEmail } = require('../lib/email');
+const {
+  sendVerificationEmail,
+  sendProductApprovalEmail,
+  sendOrderStatusUpdate,
+  sendSponsorshipStatusEmail,
+  sendSupplierAccountStatusEmail,
+  getLastEmailError,
+} = require('../lib/email');
 const { getSiteContent, saveSiteContent } = require('../lib/siteContent');
 const { logTransaction } = require('../lib/transactionLog');
+
+async function notifySupplierStatusChange(previousUser, updatedUser) {
+  if (!previousUser || !updatedUser) return null;
+  if (updatedUser.role !== 'supplier') return null;
+  if (previousUser.isApproved === updatedUser.isApproved) return null;
+
+  const status = updatedUser.isApproved ? 'approved' : 'rejected';
+  const sent = await sendSupplierAccountStatusEmail(updatedUser.email, status);
+  if (sent) return null;
+
+  return getLastEmailError()?.message || `Supplier ${status} email could not be sent.`;
+}
 
 // GET /api/admin/stats
 router.get('/stats', authenticate, requireRole('admin'), async (req, res) => {
@@ -108,7 +127,7 @@ router.get('/products', authenticate, requireRole('admin'), async (req, res) => 
         include: {
           images: { orderBy: { sortOrder: 'asc' }, take: 1 },
           category: true,
-          supplier: { select: { id: true, fullName: true, companyName: true } },
+          supplier: { select: { id: true, fullName: true, companyName: true, supplierVerified: true } },
         },
         orderBy: { createdAt: 'desc' },
         skip,
@@ -200,7 +219,7 @@ router.get('/users', authenticate, requireRole('admin'), async (req, res) => {
         where,
         select: {
           id: true, email: true, fullName: true, phone: true, role: true,
-          isActive: true, isApproved: true, emailVerified: true, companyName: true, createdAt: true,
+          isActive: true, isApproved: true, emailVerified: true, supplierVerified: true, companyName: true, createdAt: true,
         },
         orderBy: { createdAt: 'desc' },
         skip,
@@ -219,20 +238,30 @@ router.get('/users', authenticate, requireRole('admin'), async (req, res) => {
 // PUT /api/admin/users/:id
 router.put('/users/:id', authenticate, requireRole('admin'), async (req, res) => {
   try {
-    const { isActive, isApproved, role } = req.body;
+    const userId = parseInt(req.params.id);
+    const { isActive, isApproved, supplierVerified, role } = req.body;
+    const previousUser = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true, email: true, role: true, isApproved: true },
+    });
+    if (!previousUser) return res.status(404).json({ error: 'User not found' });
+
     const updateData = {};
     if (isActive !== undefined) updateData.isActive = isActive;
     if (isApproved !== undefined) updateData.isApproved = isApproved;
+    if (supplierVerified !== undefined && previousUser.role === 'supplier') updateData.supplierVerified = supplierVerified;
     if (role) updateData.role = role;
 
     const user = await prisma.user.update({
-      where: { id: parseInt(req.params.id) },
+      where: { id: userId },
       data: updateData,
-      select: { id: true, email: true, fullName: true, role: true, isActive: true, isApproved: true },
+      select: { id: true, email: true, fullName: true, role: true, isActive: true, isApproved: true, supplierVerified: true },
     });
 
+    const emailWarning = await notifySupplierStatusChange(previousUser, user);
+
     await logTransaction(req, 'UPDATE', 'User', user.id, { email: user.email, changes: updateData });
-    res.json({ user });
+    res.json({ user, ...(emailWarning ? { emailWarning } : {}) });
   } catch (err) {
     res.status(500).json({ error: 'Failed to update user' });
   }
@@ -579,7 +608,7 @@ router.get('/products/:id', authenticate, requireRole('admin'), async (req, res)
       include: {
         images: { orderBy: { sortOrder: 'asc' } },
         category: true,
-        supplier: { select: { id: true, fullName: true, companyName: true, email: true, phone: true } },
+        supplier: { select: { id: true, fullName: true, companyName: true, email: true, phone: true, supplierVerified: true } },
       },
     });
     if (!product) return res.status(404).json({ error: 'Product not found' });
@@ -634,7 +663,7 @@ router.put('/products/:id', authenticate, requireRole('admin'), async (req, res)
 
     const result = await prisma.product.findUnique({
       where: { id: product.id },
-      include: { images: { orderBy: { sortOrder: 'asc' } }, category: true, supplier: { select: { id: true, fullName: true, companyName: true } } },
+      include: { images: { orderBy: { sortOrder: 'asc' } }, category: true, supplier: { select: { id: true, fullName: true, companyName: true, supplierVerified: true } } },
     });
 
     await logTransaction(req, 'UPDATE', 'Product', product.id, { name: updated.nameEn || product.nameEn });
@@ -665,7 +694,7 @@ router.get('/users/:id', authenticate, requireRole('admin'), async (req, res) =>
       where: { id: parseInt(req.params.id) },
       select: {
         id: true, email: true, fullName: true, phone: true, role: true,
-        isActive: true, isApproved: true, emailVerified: true,
+        isActive: true, isApproved: true, emailVerified: true, supplierVerified: true,
         province: true, district: true, village: true, landmark: true,
         companyName: true, contactPerson: true, taxId: true, businessLicense: true,
         createdAt: true, updatedAt: true,
@@ -682,11 +711,18 @@ router.get('/users/:id', authenticate, requireRole('admin'), async (req, res) =>
 // ─── Enhanced User Update (full profile) ───
 router.put('/users/:id/profile', authenticate, requireRole('admin'), async (req, res) => {
   try {
+    const userId = parseInt(req.params.id);
     const {
-      fullName, phone, role, isActive, isApproved, emailVerified,
+      fullName, phone, role, isActive, isApproved, emailVerified, supplierVerified,
       province, district, village, landmark,
       companyName, contactPerson, taxId, businessLicense,
     } = req.body;
+
+    const previousUser = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true, email: true, role: true, isApproved: true },
+    });
+    if (!previousUser) return res.status(404).json({ error: 'User not found' });
 
     const updateData = {};
     if (fullName !== undefined) updateData.fullName = fullName;
@@ -695,6 +731,7 @@ router.put('/users/:id/profile', authenticate, requireRole('admin'), async (req,
     if (isActive !== undefined) updateData.isActive = isActive;
     if (isApproved !== undefined) updateData.isApproved = isApproved;
     if (emailVerified !== undefined) updateData.emailVerified = emailVerified;
+    if (supplierVerified !== undefined && previousUser.role === 'supplier') updateData.supplierVerified = supplierVerified;
     if (province !== undefined) updateData.province = province || null;
     if (district !== undefined) updateData.district = district || null;
     if (village !== undefined) updateData.village = village || null;
@@ -705,18 +742,20 @@ router.put('/users/:id/profile', authenticate, requireRole('admin'), async (req,
     if (businessLicense !== undefined) updateData.businessLicense = businessLicense || null;
 
     const user = await prisma.user.update({
-      where: { id: parseInt(req.params.id) },
+      where: { id: userId },
       data: updateData,
       select: {
         id: true, email: true, fullName: true, phone: true, role: true,
-        isActive: true, isApproved: true, emailVerified: true,
+        isActive: true, isApproved: true, emailVerified: true, supplierVerified: true,
         province: true, district: true, village: true, landmark: true,
         companyName: true, contactPerson: true, taxId: true, businessLicense: true,
       },
     });
 
-    await logTransaction(req, 'UPDATE_PROFILE', 'User', parseInt(req.params.id), { changes: Object.keys(updateData) });
-    res.json({ user });
+    const emailWarning = await notifySupplierStatusChange(previousUser, user);
+
+    await logTransaction(req, 'UPDATE_PROFILE', 'User', userId, { changes: Object.keys(updateData) });
+    res.json({ user, ...(emailWarning ? { emailWarning } : {}) });
   } catch (err) {
     res.status(500).json({ error: 'Failed to update user profile' });
   }

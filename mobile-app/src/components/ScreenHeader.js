@@ -11,7 +11,7 @@ export default function ScreenHeader({ title, onBack, right, showBack = true, st
   return (
     <View style={[styles.header, { borderBottomColor: c.border }, style]}>
       {showBack ? (
-        <TouchableOpacity onPress={onBack} style={styles.iconBtn}>
+        <TouchableOpacity onPress={() => onBack && onBack()} style={styles.iconBtn} hitSlop={{ top: 10, left: 10, right: 10, bottom: 10 }} accessibilityRole="button" accessibilityLabel="Back">
           <MaterialCommunityIcons name="arrow-left" size={24} color={c.text} />
         </TouchableOpacity>
       ) : (

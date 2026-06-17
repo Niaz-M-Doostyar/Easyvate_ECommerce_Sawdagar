@@ -129,11 +129,11 @@ export default function AdminUsers() {
             <thead>
               <tr>
                 <th>{t("name")}</th><th>{t("email")}</th><th>{t("phone")}</th><th>Role</th>
-                <th>Verified</th><th>{t("active")}</th><th>Approved</th><th>{t("date")}</th><th>{t("actions")}</th>
+                <th>Email Verified</th><th>{t("active")}</th><th>Approved</th><th>Supplier Sign</th><th>{t("date")}</th><th>{t("actions")}</th>
               </tr>
             </thead>
             <tbody>
-              {users.length === 0 && <tr><td colSpan={9} className="text-center py-12 text-body">{t("no_data")}</td></tr>}
+              {users.length === 0 && <tr><td colSpan={10} className="text-center py-12 text-body">{t("no_data")}</td></tr>}
               {users.map(u => (
                 <tr key={u.id}>
                   <td>
@@ -159,6 +159,12 @@ export default function AdminUsers() {
                   <td>
                     {u.role === "supplier"
                       ? <button onClick={() => toggleUser(u.id, "isApproved", !u.isApproved)} className={`badge cursor-pointer ${u.isApproved ? "badge-green" : "badge-yellow"}`}>{u.isApproved ? t("approved") : t("pending")}</button>
+                      : "—"
+                    }
+                  </td>
+                  <td>
+                    {u.role === "supplier"
+                      ? <button onClick={() => toggleUser(u.id, "supplierVerified", !u.supplierVerified)} className={`badge cursor-pointer ${u.supplierVerified ? "badge-green" : "badge-gray"}`}>{u.supplierVerified ? "Verified Sign" : "No Sign"}</button>
                       : "—"
                     }
                   </td>
@@ -199,7 +205,8 @@ export default function AdminUsers() {
             <div className="grid grid-cols-2 gap-3 text-sm">
               <div><span className="text-body">{t("phone")}:</span> <strong>{detail.phone || "—"}</strong></div>
               <div><span className="text-body">Company:</span> <strong>{detail.companyName || "—"}</strong></div>
-              <div><span className="text-body">Verified:</span> <strong className={detail.emailVerified ? "text-green" : "text-red"}>{detail.emailVerified ? "Yes" : "No"}</strong></div>
+              <div><span className="text-body">Email Verified:</span> <strong className={detail.emailVerified ? "text-green" : "text-red"}>{detail.emailVerified ? "Yes" : "No"}</strong></div>
+              {detail.role === "supplier" && <div><span className="text-body">Supplier Sign:</span> <strong className={detail.supplierVerified ? "text-green" : "text-red"}>{detail.supplierVerified ? "Yes" : "No"}</strong></div>}
               <div><span className="text-body">{t("active")}:</span> <strong className={detail.isActive ? "text-green" : "text-red"}>{detail.isActive ? "Yes" : "No"}</strong></div>
               <div><span className="text-body">Province:</span> <strong>{detail.province || "—"}</strong></div>
               <div><span className="text-body">District:</span> <strong>{detail.district || "—"}</strong></div>
@@ -217,6 +224,12 @@ export default function AdminUsers() {
                 className={`btn btn-sm ${detail.isActive ? "btn-danger" : "btn-success"}`}>
                 {detail.isActive ? "Deactivate" : "Activate"}
               </button>
+              {detail.role === "supplier" && (
+                <button onClick={() => { toggleUser(detail.id, "supplierVerified", !detail.supplierVerified); setDetail(null); }}
+                  className={`btn btn-sm ${detail.supplierVerified ? "btn-outline" : "btn-success"}`}>
+                  {detail.supplierVerified ? "Remove Supplier Sign" : "Give Supplier Sign"}
+                </button>
+              )}
               <button onClick={() => { setDetail(null); openEdit(detail); }} className="btn btn-sm btn-primary">{t("edit")} Profile</button>
             </div>
           </div>

@@ -135,7 +135,12 @@ export default function AdminProducts() {
                     <div className="text-xs text-body">{p.category?.nameEn || ""}</div>
                     {p.isSponsored && <span className="badge badge-yellow text-[10px] mt-0.5">★ Sponsored</span>}
                   </td>
-                  <td className="text-sm">{p.supplier?.companyName || p.supplier?.fullName || "N/A"}</td>
+                  <td className="text-sm">
+                    <div className="flex items-center gap-2">
+                      <span>{p.supplier?.companyName || p.supplier?.fullName || "N/A"}</span>
+                      {p.supplier?.supplierVerified && <span className="badge badge-green text-[10px]">✓ Verified</span>}
+                    </div>
+                  </td>
                   <td className="font-semibold">{CURRENCY_SYMBOL}{p.wholesaleCost}</td>
                   <td className="text-body">{CURRENCY_SYMBOL}{p.suggestedPrice || "—"}</td>
                   <td className="font-semibold text-green">{p.retailPrice ? `${CURRENCY_SYMBOL}${p.retailPrice}` : "—"}</td>
@@ -210,7 +215,14 @@ export default function AdminProducts() {
         {modal?.type === "edit" && (
           <div className="space-y-6">
             {/* Images */}
-            <ImageUploader images={editImages} onChange={setEditImages} max={8} label="Product Images" />
+            <ImageUploader
+              images={editImages}
+              onChange={setEditImages}
+              max={8}
+              label="Product Images"
+              transformMode="product"
+              helperText="Product uploads use BiRefNet cleanup, optional IC-Light studio styling, and sharp finishing before they are saved."
+            />
 
             {/* Multilingual Fields */}
             <MultilingualTabs activeTab={langTab} onTabChange={setLangTab}>

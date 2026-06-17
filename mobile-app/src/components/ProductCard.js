@@ -87,6 +87,11 @@ export default function ProductCard({ product, onPress, style }) {
           <View style={styles.viewChip}>
             <MaterialCommunityIcons name="arrow-top-right" size={16} color="#FFFFFF" />
           </View>
+          {product.supplier?.supplierVerified ? (
+            <View style={[styles.verifiedBadge, { backgroundColor: c.success || '#2ecc71' }]}>
+              <MaterialCommunityIcons name="shield-check-outline" size={14} color="#FFFFFF" />
+            </View>
+          ) : null}
           {product.isSponsored && <View style={[styles.badge, { backgroundColor: c.accent }]}><Text style={styles.badgeText}>Featured</Text></View>}
           {discount > 0 && <View style={[styles.discBadge, { backgroundColor: c.error }]}><Text style={styles.badgeText}>-{discount}%</Text></View>}
         </View>
@@ -140,6 +145,7 @@ const styles = StyleSheet.create({
   badge: { position: 'absolute', top: 10, left: 10, paddingHorizontal: 10, paddingVertical: 4, borderRadius: borderRadius.full },
   discBadge: { position: 'absolute', bottom: 10, right: 10, paddingHorizontal: 10, paddingVertical: 4, borderRadius: borderRadius.full },
   badgeText: { color: '#FFF', fontSize: fontSize.xs, fontWeight: fontWeight.bold },
+  verifiedBadge: { position: 'absolute', bottom: 10, left: 10, paddingHorizontal: 8, paddingVertical: 4, borderRadius: borderRadius.full, zIndex: 4 },
   info: { paddingHorizontal: spacing.md, paddingTop: spacing.md, paddingBottom: spacing.base },
   category: { fontSize: fontSize.xs, fontWeight: fontWeight.semibold, textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 6 },
   name: { fontSize: fontSize.base, fontWeight: fontWeight.semibold, marginBottom: 8, lineHeight: 21 },

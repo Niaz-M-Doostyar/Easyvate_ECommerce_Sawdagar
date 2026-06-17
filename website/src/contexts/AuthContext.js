@@ -68,10 +68,19 @@ export function AuthProvider({ children }) {
     return { success: false, error: data.error };
   };
 
-  const logout = async () => {
-    await fetch('/api/auth/logout', { method: 'POST', headers: authHeaders() });
-    localStorage.removeItem(TOKEN_KEY);
-    setUser(null);
+  const logout = async (redirectTo = '/login') => {
+    try {
+      await fetch('/api/auth/logout', { method: 'POST', headers: authHeaders() });
+    } catch {
+      // Clear the local session even if the logout request fails.
+    } finally {
+      localStorage.removeItem(TOKEN_KEY);
+      setUser(null);
+
+      if (redirectTo && typeof window !== 'undefined') {
+        window.location.replace(redirectTo);
+      }
+    }
   };
 
   return (

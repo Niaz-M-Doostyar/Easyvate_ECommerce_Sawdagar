@@ -101,6 +101,12 @@ export default function Header() {
   const headerContent = siteContent?.header || {};
   const contactEmail = headerContent.email || 'info@sawdagar.af';
   const contactPhone = headerContent.phone || '+93 700 000 000';
+  const getWhatsAppHref = (phone) => {
+    const digits = (phone || '').toString().replace(/\D/g, '');
+    if (!digits) return '#';
+    const normalized = digits.replace(/^0+/, '');
+    return `https://wa.me/${normalized}`;
+  };
   const logoUrl = (headerContent.logo || '').trim() || '/assets/img/logo/sawdagar.png';
   const logoStyle = { maxHeight: 65, maxWidth: 240, width: 'auto', height: 'auto', objectFit: 'contain' };
 
@@ -120,9 +126,9 @@ export default function Header() {
                       </a>
                     </li>
                     <li>
-                      <a href={`tel:${contactPhone}`}>
-                        <i className="fas fa-headset"></i> {contactPhone}
-                      </a>
+                      <a href={getWhatsAppHref(contactPhone)} target="_blank" rel="noopener noreferrer">
+                          <i className="fas fa-headset"></i> {contactPhone}
+                        </a>
                     </li>
                     <li className="help">
                       <Link href="/contact">

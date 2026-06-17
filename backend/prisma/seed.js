@@ -27,7 +27,7 @@ async function main() {
 
   const supplier = await prisma.user.upsert({
     where: { email: 'supplier@sawdagar.af' },
-    update: {},
+    update: { supplierVerified: true },
     create: {
       email: 'supplier@sawdagar.af',
       password: supplierPassword,
@@ -37,6 +37,7 @@ async function main() {
       isActive: true,
       isApproved: true,
       emailVerified: true,
+      supplierVerified: true,
       companyName: 'Afghan Goods Co.',
       contactPerson: 'Ahmad',
       province: 'Kabul',

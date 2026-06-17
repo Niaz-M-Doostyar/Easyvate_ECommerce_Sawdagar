@@ -62,7 +62,7 @@ router.get('/', optionalAuth, async (req, res) => {
         include: {
           images: { orderBy: { sortOrder: 'asc' }, take: 5 },
           category: true,
-          supplier: { select: { id: true, companyName: true, fullName: true } },
+          supplier: { select: { id: true, companyName: true, fullName: true, supplierVerified: true } },
         },
         orderBy,
         skip,
@@ -119,7 +119,11 @@ router.get('/search', async (req, res) => {
     const [products, total] = await Promise.all([
       prisma.product.findMany({
         where,
-        include: { images: { orderBy: { sortOrder: 'asc' }, take: 5 }, category: true },
+        include: {
+          images: { orderBy: { sortOrder: 'asc' }, take: 5 },
+          category: true,
+          supplier: { select: { id: true, companyName: true, fullName: true, supplierVerified: true } },
+        },
         orderBy,
         skip,
         take,
@@ -144,7 +148,11 @@ router.get('/sponsored', async (req, res) => {
   try {
     const products = await prisma.product.findMany({
       where: { isSponsored: true, status: 'approved', isDeleted: false },
-      include: { images: { orderBy: { sortOrder: 'asc' }, take: 5 }, category: true },
+      include: {
+        images: { orderBy: { sortOrder: 'asc' }, take: 5 },
+        category: true,
+        supplier: { select: { id: true, companyName: true, fullName: true, supplierVerified: true } },
+      },
       take: 8,
     });
     res.json({ products });
@@ -161,7 +169,7 @@ router.get('/:id', async (req, res) => {
       include: {
         images: { orderBy: { sortOrder: 'asc' } },
         category: true,
-        supplier: { select: { id: true, companyName: true, fullName: true } },
+        supplier: { select: { id: true, companyName: true, fullName: true, supplierVerified: true } },
       },
     });
 
@@ -176,7 +184,10 @@ router.get('/:id', async (req, res) => {
         status: 'approved',
         isDeleted: false,
       },
-      include: { images: { take: 1 } },
+      include: {
+        images: { take: 1 },
+        supplier: { select: { id: true, companyName: true, fullName: true, supplierVerified: true } },
+      },
       take: 4,
     });
 

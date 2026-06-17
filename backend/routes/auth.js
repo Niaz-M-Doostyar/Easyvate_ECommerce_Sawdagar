@@ -10,6 +10,7 @@ const { logTransaction } = require('../lib/transactionLog');
 
 const DELETED_CUSTOMER_EMAIL = 'deleted-user@sawdagar.local';
 const DELETED_SUPPLIER_EMAIL = 'deleted-supplier@sawdagar.local';
+const autoApproveSupplier = process.env.AUTO_APPROVE_SUPPLIER !== 'false';
 
 async function ensureDeletedCustomerUser(tx) {
   const existing = await tx.user.findUnique({
@@ -100,6 +101,7 @@ router.post('/register', async (req, res) => {
     // By default, users must verify their email to login.
     const autoVerify = process.env.AUTO_VERIFY_CUSTOMER === 'true';
     const verificationToken = autoVerify ? null : generateUUID();
+    const supplierApprovedOnCreate = userRole === 'supplier' && autoVerify && autoApproveSupplier;
 
     const user = await prisma.user.create({
       data: {
@@ -119,7 +121,7 @@ router.post('/register', async (req, res) => {
         businessLicense: businessLicense || null,
         taxId: taxId || null,
         verifyToken: verificationToken,
-        isApproved: userRole === 'customer',
+        isApproved: userRole === 'customer' || supplierApprovedOnCreate,
       },
     });
 
@@ -134,13 +136,23 @@ router.post('/register', async (req, res) => {
     }
 
     if (userRole === 'supplier') {
-      await sendAdminNotification('New supplier registration', `${user.fullName} (${user.email}) registered as a supplier.`);
+      const adminNotified = await sendAdminNotification('New supplier registration', `${user.fullName} (${user.email}) registered as a supplier.`);
+      if (!adminNotified) {
+        console.warn('Supplier registration admin notification failed:', getLastEmailError()?.message || 'unknown error');
+      }
     }
 
     await logTransaction(req, 'REGISTER', 'User', user.id, { email: user.email, role: userRole });
 
     if (autoVerify) {
       res.status(201).json({ message: 'Registration successful! You can now log in.' });
+    } else if (userRole === 'supplier') {
+      res.status(201).json({
+        message: autoApproveSupplier
+          ? 'Registration successful. Please verify your email. After verification, you can log in.'
+          : 'Registration successful. Please verify your email. After verification, an admin must approve your supplier account before you can log in.',
+        pendingApproval: !autoApproveSupplier,
+      });
     } else {
       res.status(201).json({ message: 'Registration successful. Please verify your email.' });
     }
@@ -293,13 +305,25 @@ const verifyEmail = async (token, res) => {
     const user = await prisma.user.findFirst({ where: { verifyToken: token } });
     if (!user) return res.status(400).json({ error: 'Invalid or expired token' });
 
-    await prisma.user.update({
+    const updatedUser = await prisma.user.update({
       where: { id: user.id },
-      data: { emailVerified: true, isActive: true },
+      data: {
+        emailVerified: true,
+        isActive: true,
+        isApproved: user.role === 'supplier' && autoApproveSupplier ? true : user.isApproved,
+      },
       // Keep verifyToken in the database so the link remains usable if clicked again.
     });
 
-    res.json({ message: 'Email verified successfully' });
+    const pendingApproval = updatedUser.role === 'supplier' && !updatedUser.isApproved;
+    res.json({
+      message: pendingApproval
+        ? 'Email verified successfully. Your supplier account is pending admin approval.'
+        : updatedUser.role === 'supplier'
+          ? 'Email verified successfully. Your supplier account is approved. You can now log in.'
+          : 'Email verified successfully',
+      pendingApproval,
+    });
   } catch (err) {
     res.status(500).json({ error: 'Verification failed' });
   }
@@ -462,7 +486,7 @@ router.post('/test-email', async (req, res) => {
     } else {
       const err = (typeof getLastEmailError === 'function' ? getLastEmailError() : null);
       return res.status(500).json({
-        error: 'Failed to send email. Check SMTP_USER and SMTP_PASS in .env',
+        error: 'Failed to send email. Check SMTP settings in .env',
         details: err ? (err.message || String(err)) : undefined,
       });
     }

@@ -52,6 +52,7 @@ export default function HomeScreen({ navigation }) {
   const [heroContent, setHeroContent] = useState(null);
   const [promoBanners, setPromoBanners] = useState([]);
   const [bigBanner, setBigBanner] = useState(null);
+  const [audienceMessage, setAudienceMessage] = useState('');
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(true);
 
@@ -70,6 +71,8 @@ export default function HomeScreen({ navigation }) {
       setSponsored(spon.products || spon || []);
       const homeContent = siteData?.content?.home || siteData?.home || {};
       setHeroContent(homeContent.hero || null);
+      const mobileContent = siteData?.content?.mobileApp || siteData?.mobileApp || {};
+      setAudienceMessage(mobileContent.audienceMessage || homeContent.advertText || '');
       setPromoBanners(
         (homeContent.promoBanners || []).slice(0, 3).map((banner, index) => ({
           ...banner,
@@ -258,6 +261,15 @@ export default function HomeScreen({ navigation }) {
           <MaterialCommunityIcons name="magnify" size={20} color={c.textMuted} />
           <Text style={[styles.searchText, { color: c.placeholder }]}>{t.search}</Text>
         </TouchableOpacity>
+
+        {audienceMessage ? (
+          <View style={[styles.audienceMessage, { backgroundColor: c.card, borderColor: c.border }]}>
+            <View style={[styles.audienceIcon, { backgroundColor: c.primary + '18' }]}>
+              <MaterialCommunityIcons name="bullhorn-outline" size={18} color={c.primary} />
+            </View>
+            <Text style={[styles.audienceText, { color: c.text }]} numberOfLines={3}>{audienceMessage}</Text>
+          </View>
+        ) : null}
 
         <SectionReveal delay={20}>
           <HomeHeroCarousel
@@ -518,6 +530,9 @@ const styles = StyleSheet.create({
   promoTitle: { fontSize: fontSize.lg, fontWeight: '800', lineHeight: 26, marginTop: spacing.sm },
   promoButton: { alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center', gap: 6, borderWidth: 1, borderRadius: borderRadius.full, paddingHorizontal: 14, paddingVertical: 10, marginTop: spacing.lg },
   promoButtonText: { fontSize: fontSize.sm, fontWeight: '700' },
+  audienceMessage: { flexDirection: 'row', alignItems: 'flex-start', gap: 10, marginHorizontal: spacing.base, borderRadius: borderRadius.lg, padding: spacing.md, marginTop: spacing.sm, borderWidth: 1 },
+  audienceIcon: { width: 34, height: 34, borderRadius: 17, justifyContent: 'center', alignItems: 'center' },
+  audienceText: { flex: 1, fontSize: fontSize.sm, lineHeight: 20, fontWeight: fontWeight.semibold },
   actionCard: { marginRight: 12, borderRadius: borderRadius.xl, borderWidth: 1, padding: spacing.lg, overflow: 'hidden' },
   actionStripe: { position: 'absolute', left: 0, top: 0, bottom: 0, width: 5 },
   actionIcon: { width: 44, height: 44, borderRadius: 22, justifyContent: 'center', alignItems: 'center', marginBottom: spacing.base },

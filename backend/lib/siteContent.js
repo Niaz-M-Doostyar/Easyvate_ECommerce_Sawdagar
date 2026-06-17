@@ -35,6 +35,7 @@ const defaultSiteContent = {
     copyrightText: "Sawdagar"
   },
   home: {
+    advertText: "",
     hero: {
       badge: "Start From $15.99",
       titleLines: ["Explore", "Unique", "Products"],
@@ -147,6 +148,9 @@ const defaultSiteContent = {
   },
   mobileTheme: {
     activeTheme: "ocean"
+  },
+  mobileApp: {
+    audienceMessage: ""
   }
 };
 

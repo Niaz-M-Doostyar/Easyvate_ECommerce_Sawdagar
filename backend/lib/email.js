@@ -1,29 +1,48 @@
 const nodemailer = require('nodemailer');
 
-const smtpHost = process.env.SMTP_HOST || 'smtp.gmail.com';
+const configuredSmtpHost = (process.env.SMTP_HOST || '').trim();
+const smtpUser = (process.env.SMTP_USER || '').trim();
+const smtpPass = process.env.SMTP_PASS || '';
+const smtpHasAuth = Boolean(smtpUser && smtpPass);
+const smtpHost = configuredSmtpHost || (smtpHasAuth ? 'smtp.gmail.com' : null);
 const smtpPort = parseInt(process.env.SMTP_PORT, 10) || 587;
 const smtpSecure = process.env.SMTP_SECURE === 'true' || smtpPort === 465;
-const smtpUser = process.env.SMTP_USER;
-const smtpPass = process.env.SMTP_PASS;
-
-const smtpConfigured = smtpUser && smtpPass;
+const smtpAllowUnauth = process.env.SMTP_ALLOW_UNAUTH === 'true'
+  || ['localhost', '127.0.0.1', '::1'].includes(smtpHost || '');
+const smtpRequireTls = process.env.SMTP_REQUIRE_TLS === 'true'
+  || (process.env.SMTP_REQUIRE_TLS !== 'false' && (smtpSecure || smtpHasAuth));
+const smtpIgnoreTls = process.env.SMTP_IGNORE_TLS === 'true'
+  || (!smtpSecure && !smtpHasAuth && ['localhost', '127.0.0.1', '::1'].includes(smtpHost || '') && process.env.SMTP_REQUIRE_TLS !== 'true');
+const smtpConfigured = Boolean(smtpHost && (smtpHasAuth || smtpAllowUnauth));
 
 let transporter = null;
 if (smtpConfigured) {
-  transporter = nodemailer.createTransport({
+  const transportOptions = {
     host: smtpHost,
     port: smtpPort,
     secure: smtpSecure,
-    requireTLS: true,
-    auth: {
-      user: smtpUser,
-      pass: smtpPass,
-    },
     pool: true,
     maxConnections: 3,
-  });
+  };
+
+  if (smtpRequireTls) {
+    transportOptions.requireTLS = true;
+  }
+
+  if (smtpIgnoreTls) {
+    transportOptions.ignoreTLS = true;
+  }
+
+  if (smtpHasAuth) {
+    transportOptions.auth = {
+      user: smtpUser,
+      pass: smtpPass,
+    };
+  }
+
+  transporter = nodemailer.createTransport(transportOptions);
 } else {
-  console.warn('SMTP is not configured. Emails will not be sent. Set SMTP_USER and SMTP_PASS in your environment.');
+  console.warn('SMTP is not configured. Set authenticated SMTP credentials, or configure a local relay with SMTP_HOST=localhost and SMTP_ALLOW_UNAUTH=true.');
 }
 
 function emailWrapper(title, body) {
@@ -50,8 +69,13 @@ function emailWrapper(title, body) {
 let lastEmailError = null;
 let lastEmail = null;
 
+function getFrontendUrl() {
+  return (process.env.FRONTEND_URL || 'http://localhost:3000').replace(/\/+$/, '');
+}
+
 const sendEmail = async (to, subject, html) => {
-  const fromAddress = process.env.SMTP_FROM || `Sawdagar NoReply <noreply@sawdagaraf.com>`;
+  const fromAddress = process.env.SMTP_FROM || (smtpUser ? `Sawdagar <${smtpUser}>` : 'Sawdagar NoReply <noreply@sawdagaraf.com>');
+  const replyToAddress = process.env.SMTP_REPLY_TO || process.env.ADMIN_EMAIL || smtpUser || fromAddress;
 
   if (!transporter) {
     const err = new Error('SMTP not configured. Set SMTP_USER and SMTP_PASS.');
@@ -63,7 +87,7 @@ const sendEmail = async (to, subject, html) => {
   try {
     await transporter.sendMail({
       from: fromAddress,
-      replyTo: 'noreply@sawdagaraf.com',
+      replyTo: replyToAddress,
       to,
       subject,
       html,
@@ -82,7 +106,7 @@ const getLastEmailError = () => lastEmailError;
 const getLastEmail = () => lastEmail;
 
 const sendVerificationEmail = async (email, token) => {
-  const url = `${process.env.FRONTEND_URL}/verify-email?token=${token}`;
+  const url = `${getFrontendUrl()}/verify-email?token=${token}`;
   const body = `
     <h2 style="color:#1a1a1a;margin:0 0 16px;">Welcome to Sawdagar! 🎉</h2>
     <p style="color:#555;font-size:15px;line-height:1.6;">Thank you for creating your account. Please verify your email address by clicking the button below:</p>
@@ -97,7 +121,7 @@ const sendVerificationEmail = async (email, token) => {
 };
 
 const sendPasswordResetEmail = async (email, token) => {
-  const url = `${process.env.FRONTEND_URL}/reset-password?token=${token}`;
+  const url = `${getFrontendUrl()}/reset-password?token=${token}`;
   const body = `
     <h2 style="color:#1a1a1a;margin:0 0 16px;">Password Reset</h2>
     <p style="color:#555;font-size:15px;line-height:1.6;">We received a request to reset your password. Click the button below to set a new one:</p>
@@ -148,14 +172,43 @@ const sendSponsorshipStatusEmail = async (email, status) => {
   return sendEmail(email, `Sponsorship Request ${status}`, emailWrapper(`Sponsorship ${status}`, body));
 };
 
+const sendSupplierAccountStatusEmail = async (email, status) => {
+  const loginUrl = `${getFrontendUrl()}/login`;
+  const approved = status === 'approved';
+  const subject = approved
+    ? 'Your Sawdagar supplier account is approved'
+    : 'Update on your Sawdagar supplier account';
+  const body = approved
+    ? `
+      <h2 style="color:#1a1a1a;margin:0 0 16px;">Supplier Account Approved</h2>
+      <p style="color:#555;font-size:15px;line-height:1.6;">Your supplier account has been approved by the Sawdagar team. You can now sign in and start managing your supplier portal.</p>
+      <div style="text-align:center;margin:28px 0;">
+        <a href="${loginUrl}" style="background:#059669;color:#fff;padding:14px 36px;border-radius:8px;display:inline-block;text-decoration:none;font-weight:bold;font-size:16px;">Sign In</a>
+      </div>
+      <p style="color:#888;font-size:13px;word-break:break-all;">${loginUrl}</p>
+    `
+    : `
+      <h2 style="color:#1a1a1a;margin:0 0 16px;">Supplier Account Update</h2>
+      <p style="color:#555;font-size:15px;line-height:1.6;">Your supplier account has not been approved at this time. If you believe this is a mistake, please contact the Sawdagar support team for more information.</p>
+    `;
+
+  return sendEmail(email, subject, emailWrapper(subject, body));
+};
+
 const sendAdminNotification = async (subject, message) => {
+  const adminEmail = (process.env.ADMIN_EMAIL || smtpUser || '').trim();
+  if (!adminEmail) {
+    lastEmailError = new Error('ADMIN_EMAIL is not configured.');
+    return false;
+  }
+
   const body = `<p style="color:#555;font-size:15px;">${message}</p>`;
-  return sendEmail(process.env.SMTP_USER || 'admin@sawdagar.af', subject, emailWrapper(subject, body));
+  return sendEmail(adminEmail, subject, emailWrapper(subject, body));
 };
 
 module.exports = {
   sendEmail, sendVerificationEmail, sendPasswordResetEmail,
   sendOrderConfirmation, sendOrderStatusUpdate,
-  sendProductApprovalEmail, sendSponsorshipStatusEmail, sendAdminNotification,
+  sendProductApprovalEmail, sendSponsorshipStatusEmail, sendSupplierAccountStatusEmail, sendAdminNotification,
   getLastEmailError, getLastEmail,
 };

@@ -18,13 +18,33 @@ export default function EditProfileScreen({ navigation }) {
   const c = theme.colors;
   const [name, setName] = useState(user?.fullName || user?.name || '');
   const [phone, setPhone] = useState(user?.phone || '');
+  const [companyName, setCompanyName] = useState(user?.companyName || '');
+  const [contactPerson, setContactPerson] = useState(user?.contactPerson || '');
+  const [taxId, setTaxId] = useState(user?.taxId || '');
+  const [province, setProvince] = useState(user?.province || '');
+  const [district, setDistrict] = useState(user?.district || '');
+  const [village, setVillage] = useState(user?.village || '');
+  const [landmark, setLandmark] = useState(user?.landmark || '');
   const [loading, setLoading] = useState(false);
 
   const handleSave = async () => {
     if (!name.trim()) { toast.error('Name is required'); return; }
     setLoading(true);
-    try { await updateProfile({ fullName: name.trim(), phone: phone.trim() }); toast.success('Profile updated'); navigation.goBack(); }
-    catch (err) { toast.error(err.message || 'Failed'); }
+    try {
+      await updateProfile({
+        fullName: name.trim(),
+        phone: phone.trim(),
+        companyName: companyName ? companyName.trim() : undefined,
+        contactPerson: contactPerson ? contactPerson.trim() : undefined,
+        taxId: taxId ? taxId.trim() : undefined,
+        province: province ? province.trim() : undefined,
+        district: district ? district.trim() : undefined,
+        village: village ? village.trim() : undefined,
+        landmark: landmark ? landmark.trim() : undefined,
+      });
+      toast.success('Profile updated');
+      navigation.goBack();
+    } catch (err) { toast.error(err.message || 'Failed'); }
     setLoading(false);
   };
 
@@ -36,6 +56,17 @@ export default function EditProfileScreen({ navigation }) {
           <Input label={t.fullName} icon="person-outline" value={name} onChangeText={setName} />
           <Input label={t.email} icon="mail-outline" value={user?.email || ''} editable={false} />
           <Input label={t.phone} icon="call-outline" value={phone} onChangeText={setPhone} keyboardType="phone-pad" />
+          {user?.role === 'supplier' && (
+            <>
+              <Input label={t.companyName || 'Company name'} icon="business-outline" value={companyName} onChangeText={setCompanyName} />
+              <Input label="Contact person" icon="account" value={contactPerson} onChangeText={setContactPerson} />
+              <Input label="Tax ID" icon="identifier" value={taxId} onChangeText={setTaxId} />
+              <Input label="Province" icon="map-marker-outline" value={province} onChangeText={setProvince} />
+              <Input label="District" icon="map-marker-radius" value={district} onChangeText={setDistrict} />
+              <Input label="Village / City" icon="city" value={village} onChangeText={setVillage} />
+              <Input label="Landmark" icon="map-marker" value={landmark} onChangeText={setLandmark} />
+            </>
+          )}
           <Button title={t.save} onPress={handleSave} loading={loading} style={{ marginTop: spacing.lg }} />
         </ScrollView>
       </KeyboardAvoidingView>

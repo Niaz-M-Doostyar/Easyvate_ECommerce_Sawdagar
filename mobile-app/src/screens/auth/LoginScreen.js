@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, ScrollView, KeyboardAvoidingView, Platform, TouchableOpacity, StyleSheet, useWindowDimensions } from 'react-native';
+import { View, Text, ScrollView, KeyboardAvoidingView, Platform, TouchableOpacity, StyleSheet, Alert, useWindowDimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useAuth } from '../../contexts/AuthContext';
@@ -8,6 +8,7 @@ import { useToast } from '../../contexts/ToastContext';
 import Input from '../../components/Input';
 import Button from '../../components/Button';
 import BrandLogo from '../../components/BrandLogo';
+import ScreenHeader from '../../components/ScreenHeader';
 import { spacing, fontSize, fontWeight, borderRadius } from '../../theme';
 
 export default function LoginScreen({ navigation, route }) {
@@ -56,6 +57,22 @@ export default function LoginScreen({ navigation, route }) {
     }
   };
 
+  const handleBack = () => {
+    const parent = navigation.getParent();
+    if (parent && typeof parent.goBack === 'function') {
+      parent.goBack();
+      return;
+    }
+    if (navigation.canGoBack && navigation.canGoBack()) {
+      navigation.goBack();
+      return;
+    }
+    if (parent && typeof parent.navigate === 'function') {
+      parent.navigate('Main');
+      return;
+    }
+  };
+
   const validate = () => {
     const e = {};
     if (!email.trim()) e.email = 'Email is required';
@@ -73,7 +90,9 @@ export default function LoginScreen({ navigation, route }) {
       toast.success('Welcome back!');
       closeAuthModal();
     } catch (err) {
-      toast.error(err.message || 'Login failed');
+      const msg = err?.message || 'Login failed';
+      Alert.alert('Login failed', msg);
+      toast.error(msg);
     } finally {
       setLoading(false);
     }
@@ -81,6 +100,7 @@ export default function LoginScreen({ navigation, route }) {
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: c.background }]} edges={['top', 'bottom']}>
+      <ScreenHeader title={t.welcomeBack || ''} onBack={handleBack} />
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined} keyboardVerticalOffset={Platform.OS === 'ios' ? 18 : 0}>
         <ScrollView contentContainerStyle={[styles.scroll, isTablet && styles.scrollTablet]} keyboardShouldPersistTaps="handled">
           <View style={[styles.content, { maxWidth: contentWidth }]}> 

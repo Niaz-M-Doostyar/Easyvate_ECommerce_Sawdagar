@@ -8,6 +8,7 @@ import { supplierApi, categoriesApi } from '../../services/api';
 import Input from '../../components/Input';
 import Button from '../../components/Button';
 import ScreenHeader from '../../components/ScreenHeader';
+import MultiImagePicker from '../../components/MultiImagePicker';
 import { spacing, fontSize, fontWeight, borderRadius } from '../../theme';
 
 export default function SupplierAddProductScreen({ navigation, route }) {
@@ -23,6 +24,7 @@ export default function SupplierAddProductScreen({ navigation, route }) {
     wholesaleCost: String(editing?.wholesaleCost || ''),
     suggestedPrice: String(editing?.suggestedPrice || ''), stock: String(editing?.stock || ''),
     unit: editing?.unit || '', categoryId: String(editing?.categoryId || ''),
+    images: editing?.images ? (editing.images.map(i => i.url)) : [],
   });
   const [loading, setLoading] = useState(false);
   const set = (k, v) => setForm(p => ({ ...p, [k]: v }));
@@ -45,6 +47,7 @@ export default function SupplierAddProductScreen({ navigation, route }) {
         suggestedPrice: form.suggestedPrice ? Number(form.suggestedPrice) : undefined,
         stock: Number(form.stock) || 0,
         categoryId: Number(form.categoryId),
+        images: form.images && form.images.length > 0 ? form.images : undefined,
       };
       if (editing) await supplierApi.updateProduct(editing.id, body);
       else await supplierApi.createProduct(body);
@@ -84,6 +87,9 @@ export default function SupplierAddProductScreen({ navigation, route }) {
               </TouchableOpacity>
             ))}
           </View>
+
+          <Text style={[styles.section, { color: c.textSecondary }]}>IMAGES</Text>
+          <MultiImagePicker value={form.images} onChange={(imgs) => set('images', imgs)} />
 
           <Button title={editing ? 'Update Product' : 'Create Product'} onPress={handleSave} loading={loading} style={{ marginTop: spacing.xl }} />
           <View style={{ height: spacing.xxl }} />

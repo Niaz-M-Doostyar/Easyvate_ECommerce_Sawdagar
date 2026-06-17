@@ -147,3 +147,69 @@ export const deliveryApi = {
 };
 
 export default api;
+
+// Upload helpers (use FormData to send files)
+function extensionForMime(type) {
+  const mime = String(type || '').toLowerCase();
+  if (mime.includes('png')) return 'png';
+  if (mime.includes('webp')) return 'webp';
+  if (mime.includes('gif')) return 'gif';
+  if (mime.includes('heic')) return 'heic';
+  if (mime.includes('heif')) return 'heif';
+  return 'jpg';
+}
+
+function normalizeUploadFile(file, fallbackName) {
+  const uri = typeof file === 'string' ? file : file?.uri;
+  if (!uri) throw new Error('Selected image is missing a file URI');
+
+  const type = file?.type || 'image/jpeg';
+  const rawName = file?.fileName || file?.name || fallbackName || `photo.${extensionForMime(type)}`;
+  const hasExtension = /\.[a-z0-9]+$/i.test(rawName);
+  const name = hasExtension ? rawName : `${rawName}.${extensionForMime(type)}`;
+
+  return { uri, name, type };
+}
+
+export const uploadApi = {
+  single: async (file) => {
+    const token = await getToken();
+    const form = new FormData();
+    form.append('file', normalizeUploadFile(file, 'photo.jpg'));
+
+    const res = await fetch(`${API_URL}/api/upload`, {
+      method: 'POST',
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      body: form,
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      const error = new Error(data.error || data.message || `Upload failed (${res.status})`);
+      error.status = res.status;
+      error.data = data;
+      throw error;
+    }
+    return data;
+  },
+  multiple: async (files) => {
+    const token = await getToken();
+    const form = new FormData();
+    files.forEach((file, idx) => {
+      form.append('files', normalizeUploadFile(file, `photo_${idx}.jpg`));
+    });
+
+    const res = await fetch(`${API_URL}/api/upload/multiple`, {
+      method: 'POST',
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      body: form,
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      const error = new Error(data.error || data.message || `Upload failed (${res.status})`);
+      error.status = res.status;
+      error.data = data;
+      throw error;
+    }
+    return data;
+  },
+};

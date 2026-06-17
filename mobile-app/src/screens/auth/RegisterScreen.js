@@ -8,6 +8,7 @@ import { useToast } from '../../contexts/ToastContext';
 import Input from '../../components/Input';
 import Button from '../../components/Button';
 import BrandLogo from '../../components/BrandLogo';
+import ScreenHeader from '../../components/ScreenHeader';
 import { spacing, fontSize, fontWeight } from '../../theme';
 
 export default function RegisterScreen({ navigation }) {
@@ -19,15 +20,41 @@ export default function RegisterScreen({ navigation }) {
   const c = theme.colors;
   const isTablet = width >= 768;
   const contentWidth = Math.min(width - spacing.lg * 2, 620);
-  const [form, setForm] = useState({ name: '', email: '', phone: '', password: '', confirmPassword: '', role: 'customer' });
+  const [form, setForm] = useState({ name: '', email: '', phone: '', password: '', confirmPassword: '', role: 'customer', companyName: '', province: '', district: '', village: '', landmark: '' });
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
 
   const set = (k, v) => setForm(prev => ({ ...prev, [k]: v }));
 
   const navigateToLogin = () => {
-    if (navigation.canGoBack?.()) navigation.goBack();
-    else navigation.navigate('Login');
+    // Prefer navigating within the Auth stack to the Login screen
+    if (navigation && typeof navigation.navigate === 'function') {
+      navigation.navigate('Login');
+      return;
+    }
+    if (navigation.canGoBack?.()) {
+      navigation.goBack();
+      return;
+    }
+    const parent = navigation.getParent();
+    if (parent && typeof parent.goBack === 'function') {
+      parent.goBack();
+      return;
+    }
+  };
+
+  const handleBack = () => {
+    const parent = navigation.getParent();
+    if (navigation.canGoBack && navigation.canGoBack()) {
+      navigation.goBack();
+      return;
+    }
+    if (parent && typeof parent.goBack === 'function') {
+      parent.goBack();
+      return;
+    }
+    // fallback to main
+    if (parent && typeof parent.navigate === 'function') parent.navigate('Main');
   };
 
   const validate = () => {
@@ -55,6 +82,10 @@ export default function RegisterScreen({ navigation }) {
         password: form.password,
         role: form.role,
         companyName: form.role === 'supplier' ? (form.companyName || '').trim() : undefined,
+        province: form.province ? form.province.trim() : undefined,
+        district: form.district ? form.district.trim() : undefined,
+        village: form.village ? form.village.trim() : undefined,
+        landmark: form.landmark ? form.landmark.trim() : undefined,
       });
 
       const successMessage = form.role === 'supplier'
@@ -68,7 +99,9 @@ export default function RegisterScreen({ navigation }) {
         { cancelable: false },
       );
     } catch (err) {
-      toast.error(err.message || 'Registration failed');
+      const msg = err?.message || 'Registration failed';
+      Alert.alert('Registration failed', msg);
+      toast.error(msg);
     } finally {
       setLoading(false);
     }
@@ -81,6 +114,7 @@ export default function RegisterScreen({ navigation }) {
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: c.background }]} edges={['top', 'bottom']}>
+      <ScreenHeader title={''} onBack={handleBack} />
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined} keyboardVerticalOffset={Platform.OS === 'ios' ? 18 : 0}>
         <ScrollView contentContainerStyle={[styles.scroll, isTablet && styles.scrollTablet]} keyboardShouldPersistTaps="handled">
           <View style={[styles.content, { maxWidth: contentWidth }]}> 
@@ -103,16 +137,24 @@ export default function RegisterScreen({ navigation }) {
             <Input label={t.fullName} icon="person-outline" value={form.name} onChangeText={v => set('name', v)} error={errors.name} placeholder="Your full name" />
             <Input label={t.email} icon="mail-outline" value={form.email} onChangeText={v => set('email', v)} error={errors.email} keyboardType="email-address" autoCapitalize="none" placeholder="you@example.com" />
             <Input label={t.phone} icon="call-outline" value={form.phone} onChangeText={v => set('phone', v)} error={errors.phone} keyboardType="phone-pad" placeholder="+93 7XX XXX XXX" />
-            {form.role === 'supplier' && <Input label={t.companyName} icon="business-outline" value={form.companyName || ''} onChangeText={v => set('companyName', v)} error={errors.companyName} placeholder="Required for suppliers" />}
+            {form.role === 'supplier' && (
+              <>
+                <Input label={t.companyName} icon="business-outline" value={form.companyName || ''} onChangeText={v => set('companyName', v)} error={errors.companyName} placeholder="Required for suppliers" />
+                <Input label="Province" icon="map-marker-outline" value={form.province || ''} onChangeText={v => set('province', v)} placeholder="Province / State" />
+                <Input label="District" icon="map-marker-radius" value={form.district || ''} onChangeText={v => set('district', v)} placeholder="District" />
+                <Input label="Village / City" icon="city" value={form.village || ''} onChangeText={v => set('village', v)} placeholder="Village or City" />
+                <Input label="Landmark" icon="map-marker" value={form.landmark || ''} onChangeText={v => set('landmark', v)} placeholder="Landmark / Address" />
+              </>
+            )}
             <Input label={t.password} icon="lock-closed-outline" value={form.password} onChangeText={v => set('password', v)} error={errors.password} secureTextEntry placeholder="Min 6 characters" />
             <Input label={t.confirmPassword} icon="lock-closed-outline" value={form.confirmPassword} onChangeText={v => set('confirmPassword', v)} error={errors.confirmPassword} secureTextEntry placeholder="Repeat password" />
             <Button title={t.createAccount} onPress={handleRegister} loading={loading} style={{ marginTop: spacing.base }} />
           </View>
           <View style={styles.footer}>
             <Text style={[styles.footerText, { color: c.textSecondary }]}>{t.alreadyHaveAccount} </Text>
-            <TouchableOpacity onPress={() => navigation.goBack()}>
-              <Text style={[styles.footerLink, { color: c.primary }]}>{t.login}</Text>
-            </TouchableOpacity>
+            <TouchableOpacity onPress={navigateToLogin}>
+                <Text style={[styles.footerLink, { color: c.primary }]}>{t.login}</Text>
+              </TouchableOpacity>
           </View>
           </View>
         </ScrollView>

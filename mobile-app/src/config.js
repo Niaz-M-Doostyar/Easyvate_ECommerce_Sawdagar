@@ -1,9 +1,15 @@
+import { Platform } from 'react-native';
+
 const VPS_ENDPOINTS = {
   api: 'https://sawdagaraf.com',
   website: 'https://sawdagaraf.com',
   admin: 'https://sawdagaraf.com/sawdagar-admin',
 };
 
+const LOCAL_API_URL = Platform.OS === 'android' ? 'http://10.0.2.2:4000' : 'http://localhost:4000';
+
+// Default to the online Sawdagar API. To use a local backend during development,
+// change this to `LOCAL_API_URL` or implement an env/config toggle.
 export const API_URL = VPS_ENDPOINTS.api;
 export const WEBSITE_URL = VPS_ENDPOINTS.website;
 export const ADMIN_PORTAL_URL = VPS_ENDPOINTS.admin;

@@ -1,9 +1,11 @@
 "use client";
 import { useState, useRef } from "react";
+import { useToast } from "@/contexts/ToastContext";
 
-export default function ImageUploader({ images = [], onChange, max = 10, label = "Images" }) {
+export default function ImageUploader({ images = [], onChange, max = 10, label = "Images", transformMode = null, helperText = "" }) {
   const [uploading, setUploading] = useState(false);
   const fileRef = useRef(null);
+  const toast = useToast();
 
   const upload = async (files) => {
     if (!files || files.length === 0) return;
@@ -13,15 +15,23 @@ export default function ImageUploader({ images = [], onChange, max = 10, label =
       for (const file of Array.from(files).slice(0, max - images.length)) {
         const formData = new FormData();
         formData.append("file", file);
+        if (transformMode) formData.append("transformMode", transformMode);
         const res = await fetch("/api/upload", { method: "POST", credentials: "include", body: formData });
         if (res.ok) {
           const data = await res.json();
           newImages.push(data.url);
+          if (data.processed === false && data.processingError) {
+            toast.error(data.processingError);
+          }
+        } else {
+          const data = await res.json().catch(() => ({}));
+          toast.error(data.error || "Upload failed");
         }
       }
       onChange(newImages);
     } catch (err) {
       console.error("Upload failed:", err);
+      toast.error("Upload failed");
     } finally {
       setUploading(false);
       if (fileRef.current) fileRef.current.value = "";
@@ -80,6 +90,7 @@ export default function ImageUploader({ images = [], onChange, max = 10, label =
       </div>
       <input ref={fileRef} type="file" accept="image/*" multiple className="hidden" onChange={(e) => upload(e.target.files)} />
       <p className="text-xs text-body">{images.length}/{max} images. JPEG, PNG, WebP up to 5MB.</p>
+      {helperText ? <p className="text-xs text-body mt-1">{helperText}</p> : null}
     </div>
   );
 }

@@ -113,8 +113,25 @@ export default function ProfileScreen({ navigation }) {
               <Text style={styles.avatarText}>{user.name?.charAt(0).toUpperCase()}</Text>
             </View>
             <View style={styles.heroUserCopy}>
-              <Text style={styles.userName}>{user.name}</Text>
-              <Text style={styles.userEmail}>{user.email}</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <Text style={styles.userName}>{user.name}</Text>
+                {user?.emailVerified ? <MaterialCommunityIcons name="check-circle" size={16} color={c.primary} style={{ marginLeft: 8 }} /> : null}
+              </View>
+              <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 4 }}>
+                <Text style={styles.userEmail}>{user.email}</Text>
+                {user?.emailVerified ? <MaterialCommunityIcons name="shield-check-outline" size={14} color={c.primary} style={{ marginLeft: 8 }} /> : null}
+              </View>
+              {user.role === 'supplier' && user.companyName ? (
+                <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 6 }}>
+                  <Text style={{ color: '#D6E5FF', fontSize: 14, fontWeight: '600' }}>{user.companyName}</Text>
+                  {user?.emailVerified ? <MaterialCommunityIcons name="badge-account" size={14} color={c.primary} style={{ marginLeft: 8 }} /> : null}
+                </View>
+              ) : null}
+              {user.role === 'supplier' && (user.province || user.district || user.village || user.landmark) ? (
+                <View style={{ marginTop: 8 }}>
+                  <Text style={{ color: c.textSecondary }}>{[user.companyName, user.province, user.district, user.village, user.landmark].filter(Boolean).join(', ')}</Text>
+                </View>
+              ) : null}
             </View>
           </View>
           <View style={styles.summaryRow}>

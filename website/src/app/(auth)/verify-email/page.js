@@ -7,6 +7,7 @@ function VerifyContent() {
   const searchParams = useSearchParams();
   const token = searchParams.get("token") || "";
   const [status, setStatus] = useState("loading");
+  const [successMessage, setSuccessMessage] = useState("Your email has been verified successfully. You can now sign in.");
   const [error, setError] = useState("");
   const [resendEmail, setResendEmail] = useState("");
   const [resendStatus, setResendStatus] = useState("");
@@ -27,6 +28,8 @@ function VerifyContent() {
     try {
       const hasVerified = window.localStorage.getItem(`sawdagar_verified_${token}`);
       if (hasVerified) {
+        const storedMessage = window.localStorage.getItem(`sawdagar_verified_${token}_message`);
+        if (storedMessage) setSuccessMessage(storedMessage);
         setStatus("success");
         return;
       }
@@ -36,20 +39,25 @@ function VerifyContent() {
 
     fetch(`/api/auth/verify-email?token=${token}`)
       .then(async (r) => {
+        const data = await r.json().catch(() => ({}));
+
         if (r.ok) {
           verifiedRef.current = true;
           try {
             window.localStorage.setItem(`sawdagar_verified_${token}`, "1");
+            if (data.message) {
+              window.localStorage.setItem(`sawdagar_verified_${token}_message`, data.message);
+            }
           } catch {
             // ignore
           }
+          setSuccessMessage(data.message || "Your email has been verified successfully. You can now sign in.");
           setStatus("success");
           return;
         }
 
         if (verifiedRef.current) return;
 
-        const data = await r.json().catch(() => ({}));
         setError(data.error || "The link is invalid or has expired. Try registering again.");
         setStatus("error");
       })
@@ -73,7 +81,7 @@ function VerifyContent() {
         <>
           <div className="w-16 h-16 bg-green/10 rounded-full flex items-center justify-center mx-auto mb-4"><svg className="w-8 h-8 text-green" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg></div>
           <h3 className="text-lg font-bold text-midnight mb-2">Email Verified!</h3>
-          <p className="text-body text-sm mb-6">Your email has been verified successfully. You can now sign in.</p>
+          <p className="text-body text-sm mb-6">{successMessage}</p>
           <Link href="/login" className="theme-btn inline-flex">Sign In</Link>
         </>
       )}
