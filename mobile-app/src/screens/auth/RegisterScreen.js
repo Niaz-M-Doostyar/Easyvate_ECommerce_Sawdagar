@@ -29,7 +29,8 @@ export default function RegisterScreen({ navigation }) {
   const navigateToLogin = () => {
     // Prefer navigating within the Auth stack to the Login screen
     if (navigation && typeof navigation.navigate === 'function') {
-      navigation.navigate('Login');
+      // Use replace to avoid stacking Login on top of Register for smoother back behavior
+      navigation.replace('Login');
       return;
     }
     if (navigation.canGoBack?.()) {

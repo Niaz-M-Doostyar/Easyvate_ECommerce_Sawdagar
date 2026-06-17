@@ -27,47 +27,48 @@ export default function LoginScreen({ navigation, route }) {
   const [errors, setErrors] = useState({});
 
   const closeAuthModal = () => {
-    const parent = navigation.getParent();
+    const parent = navigation.getParent?.();
+
+    // If a redirect target was provided, navigate the root to that tab
+    // then close the auth modal (if possible) to avoid stacked navigation actions.
     if (redirectTo && parent?.navigate) {
       parent.navigate('Main', {
         screen: redirectTo.tab,
         params: redirectTo.params,
       });
-    }
-
-    if (parent?.canGoBack?.()) {
-      parent.goBack();
-      return;
-    }
-
-    if (parent?.navigate) {
-      if (redirectTo) {
-        parent.navigate('Main', {
-          screen: redirectTo.tab,
-          params: redirectTo.params,
-        });
-      } else {
-        parent.navigate('Main');
+      if (navigation.canGoBack?.()) {
+        navigation.goBack();
+      } else if (parent?.canGoBack?.()) {
+        parent.goBack();
       }
       return;
     }
 
+    // Otherwise prefer a single goBack on the current navigator, then parent.
     if (navigation.canGoBack?.()) {
       navigation.goBack();
+      return;
+    }
+    if (parent?.canGoBack?.()) {
+      parent.goBack();
+      return;
+    }
+    if (parent?.navigate) {
+      parent.navigate('Main');
     }
   };
 
   const handleBack = () => {
-    const parent = navigation.getParent();
-    if (parent && typeof parent.goBack === 'function') {
-      parent.goBack();
-      return;
-    }
-    if (navigation.canGoBack && navigation.canGoBack()) {
+    const parent = navigation.getParent?.();
+    if (navigation.canGoBack?.()) {
       navigation.goBack();
       return;
     }
-    if (parent && typeof parent.navigate === 'function') {
+    if (parent?.canGoBack?.()) {
+      parent.goBack();
+      return;
+    }
+    if (parent?.navigate) {
       parent.navigate('Main');
       return;
     }
