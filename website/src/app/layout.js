@@ -67,11 +67,7 @@ export default async function RootLayout({ children }) {
           </LanguageProvider>
         </ToastProvider>
 
-        <Script src="/assets/js/jquery-3.7.1.min.js" strategy="afterInteractive" />
         <Script src="/assets/js/bootstrap.bundle.min.js" strategy="afterInteractive" />
-        <Script src="/assets/js/owl.carousel.min.js" strategy="afterInteractive" />
-        <Script src="/assets/js/wow.min.js" strategy="afterInteractive" />
-        <Script src="/assets/js/countdown.min.js" strategy="afterInteractive" />
       </body>
     </html>
   );

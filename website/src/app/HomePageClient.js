@@ -4,8 +4,8 @@ import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useSiteData } from '@/contexts/SiteDataContext';
-import MocartInit from '@/components/MocartInit';
 import MocartProductItem, { MocartProductListItem } from '@/components/MocartProductItem';
+import { DealCountdown, StorefrontCarousel, StorefrontHero } from '@/components/StorefrontCarousel';
 import { formatPrice, CURRENCY_SYMBOL } from '@/lib/currency';
 
 export default function HomePageClient({
@@ -152,61 +152,8 @@ export default function HomePageClient({
 
   return (
     <>
-      {/* Initialize Mocart JS plugins (owl carousel, magnific popup, etc.) */}
-      <MocartInit />
-
       {/* Hero Slider */}
-      <div className="hero-section hs-1" style={{ marginTop: 0 }}>
-        <div className="container">
-          <div className="hero-slider owl-carousel owl-theme">
-            {heroSlides.map((slide, i) => (
-              <div className="hero-single" key={i}>
-                <div className="container">
-                  <div className="row align-items-center">
-                    <div className="col-lg-6">
-                      <div className="hero-content">
-                        <h6 className="hero-sub-title" data-animation="fadeInUp" data-delay=".25s">
-                          {slide.subtitle}
-                        </h6>
-                        <h1 className="hero-title" data-animation="fadeInRight" data-delay=".50s">
-                          {slide.title.split(' ').map((word, wi) => {
-                            if (word.toLowerCase() === 'products' || word.toLowerCase() === 'unique') {
-                              return <span key={wi}>{word} </span>;
-                            }
-                            return word + ' ';
-                          })}
-                        </h1>
-                        <p data-animation="fadeInLeft" data-delay=".75s">
-                          {slide.description || hero.description || 'There are many variations of passages available but the majority have suffered alteration in some form.'}
-                        </p>
-                        <div className="hero-btn" data-animation="fadeInUp" data-delay="1s">
-                          <Link href={hero.primaryButtonHref || '/search'} className="theme-btn">
-                            {hero.primaryButtonLabel || 'Shop Now'}<i className="fas fa-arrow-right"></i>
-                          </Link>
-                          <Link href={hero.secondaryButtonHref || '/search'} className="theme-btn theme-btn2">
-                            {hero.secondaryButtonLabel || 'Explore Products'}<i className="fas fa-arrow-right"></i>
-                          </Link>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="col-lg-6">
-                      <div className="hero-right" data-animation="fadeInRight" data-delay=".25s">
-                        <div className="hero-img">
-                          <div className="hero-img-price">
-                            <span>{slide.priceLabel}</span>
-                            <span>{slide.priceValue}</span>
-                          </div>
-                          <img src={slide.image} alt="" fetchPriority={i === 0 ? 'high' : 'low'} />
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
+      <StorefrontHero slides={heroSlides} hero={hero} currencySymbol={CURRENCY_SYMBOL} />
 
       {/* Category Area */}
       <div className="category-area pt-80 pb-100">
@@ -219,7 +166,7 @@ export default function HomePageClient({
               </div>
             </div>
           </div>
-          <div className="category-slider owl-carousel owl-theme wow fadeInUp" data-wow-delay=".25s">
+          <StorefrontCarousel className="storefront-category-carousel" label="categories">
             {categories.map(cat => (
               <div className="category-item" key={cat.id}>
                 <Link href={`/categories/${cat.slug}`}>
@@ -235,7 +182,7 @@ export default function HomePageClient({
                 </Link>
               </div>
             ))}
-          </div>
+          </StorefrontCarousel>
         </div>
       </div>
 
@@ -275,11 +222,11 @@ export default function HomePageClient({
             </div>
           </div>
           <div className="product-wrap item-2 wow fadeInUp" data-wow-delay=".25s">
-            <div className="product-slider owl-carousel owl-theme">
+            <StorefrontCarousel className="storefront-product-carousel" label="trending products">
               {trendingProducts.map(p => (
                 <MocartProductItem key={p.id} product={p} />
               ))}
-            </div>
+            </StorefrontCarousel>
           </div>
         </div>
       </div>
@@ -297,11 +244,11 @@ export default function HomePageClient({
               </div>
             </div>
             <div className="product-wrap item-2 wow fadeInUp" data-wow-delay=".25s">
-              <div className="product-slider owl-carousel owl-theme">
+              <StorefrontCarousel className="storefront-product-carousel" label="sponsored products">
                 {sponsoredProducts.map(p => (
                   <MocartProductItem key={p.id} product={p} />
                 ))}
-              </div>
+              </StorefrontCarousel>
             </div>
           </div>
         </div>
@@ -396,7 +343,7 @@ export default function HomePageClient({
               </div>
             </div>
           </div>
-          <div className="brand-slider owl-carousel owl-theme">
+          <StorefrontCarousel className="storefront-brand-carousel" label="brands">
             {(brandItems.length > 0 ? brandItems : [1, 2, 3, 4, 5, 6].map(n => ({ image: `/assets/img/brand/0${n}.png` }))).map((brand, i) => (
               <div className="brand-item" key={i}>
                 <Link href="/search">
@@ -404,7 +351,7 @@ export default function HomePageClient({
                 </Link>
               </div>
             ))}
-          </div>
+          </StorefrontCarousel>
         </div>
       </div>
 
@@ -442,11 +389,11 @@ export default function HomePageClient({
             </div>
           </div>
           <div className="product-wrap item-2 wow fadeInUp" data-wow-delay=".25s">
-            <div className="product-slider owl-carousel owl-theme">
+            <StorefrontCarousel className="storefront-product-carousel" label="featured products">
               {featuredProducts.map(p => (
                 <MocartProductItem key={p.id} product={p} />
               ))}
-            </div>
+            </StorefrontCarousel>
           </div>
         </div>
       </div>
@@ -513,7 +460,7 @@ export default function HomePageClient({
         <div className="deal-text-shape">Deal</div>
         <div className="container">
           <div className="deal-wrap wow fadeInUp" data-wow-delay=".25s">
-            <div className="deal-slider owl-carousel owl-theme">
+            <div className="storefront-deal">
               <div className="deal-item">
                 <div className="row align-items-center">
                   <div className="col-lg-6">
@@ -523,9 +470,7 @@ export default function HomePageClient({
                         <h1>{dealOfWeek.title || 'Best Deal For This Week'}</h1>
                         <p>{dealOfWeek.description || 'There are many variations of passages available but the majority have suffered alteration in some form.'}</p>
                       </div>
-                      <div className="deal-countdown">
-                        <div className="countdown" data-countdown="2027/12/30"></div>
-                      </div>
+                      <div className="deal-countdown"><DealCountdown target={dealOfWeek.endsAt || '2027-12-30T00:00:00'} /></div>
                       <Link href={dealOfWeek.buttonHref || '/search?sort=price_asc&inStock=true'} className="theme-btn theme-btn2">
                         {dealOfWeek.buttonLabel || 'Shop Now'} <i className="fas fa-arrow-right"></i>
                       </Link>
@@ -593,7 +538,7 @@ export default function HomePageClient({
               </div>
             </div>
           </div>
-          <div className="testimonial-slider owl-carousel owl-theme wow fadeInUp" data-wow-delay=".25s">
+          <StorefrontCarousel className="storefront-testimonial-carousel" label="customer testimonials">
             {(testimonialItems.length > 0 ? testimonialItems : [
               { name: 'Sylvia H Green', role: 'Customer', image: '/assets/img/testimonial/01.jpg', text: 'There are many variations of long passages available but the content majority have suffered to the editor page when looking at its layout alteration in some injected.' },
               { name: 'Gordo Novak', role: 'Customer', image: '/assets/img/testimonial/02.jpg', text: 'There are many variations of long passages available but the content majority have suffered to the editor page when looking at its layout alteration in some injected.' },
@@ -619,7 +564,7 @@ export default function HomePageClient({
                 <div className="testimonial-quote-icon"><img src="/assets/img/icon/quote.svg" alt="" /></div>
               </div>
             ))}
-          </div>
+          </StorefrontCarousel>
         </div>
       </div>
 
@@ -735,18 +680,18 @@ export default function HomePageClient({
               </div>
             </div>
           </div>
-          <div className="instagram-slider owl-carousel owl-theme">
+          <StorefrontCarousel className="storefront-instagram-carousel" label="Instagram products">
             {(instagramItems.length > 0 ? instagramItems : products.slice(0, 7).map(p => ({ image: p.images?.[0] || `/assets/img/instagram/01.jpg`, link: `/products/${p.slug || p.id}` }))).concat(
               instagramItems.length === 0 && products.length < 7 ? [1, 2, 3, 4, 5, 6, 7].slice(products.length).map(n => ({ image: `/assets/img/instagram/0${n}.jpg`, link: '#' })) : []
             ).map((item, i) => (
               <div className="instagram-item" key={i}>
                 <div className="instagram-img">
-                  <img src={item.image || `/assets/img/instagram/0${i + 1}.jpg`} alt="" loading="lazy" onError={e => { e.target.src = `/assets/img/instagram/0${(i % 7) + 1}.jpg`; }} />
+                  <img src={(typeof item.image === 'string' ? item.image : item.image?.url) || `/assets/img/instagram/0${i + 1}.jpg`} alt="" loading="lazy" onError={e => { e.target.src = `/assets/img/instagram/0${(i % 7) + 1}.jpg`; }} />
                   <Link href={item.link || '#'}><i className="fab fa-instagram"></i></Link>
                 </div>
               </div>
             ))}
-          </div>
+          </StorefrontCarousel>
         </div>
       </div>
     </>
