@@ -112,9 +112,12 @@ export function DealCountdown({ target = '2027-12-30T00:00:00' }) {
       secs: Math.floor((remaining / 1000) % 60),
     };
   };
-  const [time, setTime] = useState(calculate);
+  // Keep server and first client render identical. Calculating with Date.now()
+  // during SSR produces different HTML on every request and can break hydration.
+  const [time, setTime] = useState({ days: '--', hours: '--', mins: '--', secs: '--' });
 
   useEffect(() => {
+    setTime(calculate());
     const timer = window.setInterval(() => setTime(calculate()), 1000);
     return () => window.clearInterval(timer);
   }, [target]);
