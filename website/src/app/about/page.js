@@ -182,12 +182,7 @@ export default function AboutPage() {
       <section className="counter-area f2-about-stats">
         <div className="container">
           <div className="row f2-about-stats__grid">
-            {(content.stats && content.stats.length > 0 ? content.stats : [
-              { value: "5,000+", label: "Products Available" },
-              { value: "1,200+", label: "Happy Customers" },
-              { value: "34", label: "Provinces Served" },
-              { value: "500+", label: "Verified Sellers" },
-            ]).map((item, i) => (
+            {(content.stats || []).map((item, i) => (
               <div key={i} className="col-lg-3 col-sm-6">
                 <div className="counter-box f2-about-stat">
                   <div className="icon">
