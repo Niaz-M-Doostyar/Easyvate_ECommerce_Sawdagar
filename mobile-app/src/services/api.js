@@ -2,6 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { API_URL } from '../config';
 
 const TOKEN_KEY = 'sawdagar_token';
+const USER_KEY = 'sawdagar_user';
 let _token = null;
 
 export async function getToken() {
@@ -10,6 +11,15 @@ export async function getToken() {
   return _token;
 }
 export async function setToken(t) { _token = t; if (t) await AsyncStorage.setItem(TOKEN_KEY, t); else await AsyncStorage.removeItem(TOKEN_KEY); }
+export async function getStoredUser() {
+  const value = await AsyncStorage.getItem(USER_KEY);
+  if (!value) return null;
+  try { return JSON.parse(value); } catch { return null; }
+}
+export async function setStoredUser(user) {
+  if (user) await AsyncStorage.setItem(USER_KEY, JSON.stringify(user));
+  else await AsyncStorage.removeItem(USER_KEY);
+}
 
 function toQueryString(params) {
   if (!params) return '';

@@ -9,7 +9,7 @@ import { siteApi } from '../../services/api';
 import Input from '../../components/Input';
 import Button from '../../components/Button';
 import ScreenHeader from '../../components/ScreenHeader';
-import { spacing, fontSize, fontWeight } from '../../theme';
+import { spacing, fontSize, fontWeight, borderRadius } from '../../theme';
 
 export default function ContactScreen({ navigation }) {
   const { theme } = useTheme();
@@ -35,10 +35,12 @@ export default function ContactScreen({ navigation }) {
         <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
           <Ionicons name="chatbubbles-outline" size={48} color={c.primary} style={{ alignSelf: 'center', marginBottom: spacing.base }} />
           <Text style={[styles.subTitle, { color: c.textSecondary }]}>We'd love to hear from you</Text>
-          <Input label={t.fullName} icon="person-outline" value={form.name} onChangeText={v => set('name', v)} />
-          <Input label={t.email} icon="mail-outline" value={form.email} onChangeText={v => set('email', v)} keyboardType="email-address" autoCapitalize="none" />
-          <Input label="Message" icon="chatbubble-outline" value={form.message} onChangeText={v => set('message', v)} multiline numberOfLines={5} />
-          <Button title="Send Message" onPress={handleSend} loading={loading} style={{ marginTop: spacing.md }} />
+          <View style={[styles.formCard, { backgroundColor: c.card, borderColor: c.border }]}>
+            <Input label={t.fullName} icon="person-outline" value={form.name} onChangeText={v => set('name', v)} />
+            <Input label={t.email} icon="mail-outline" value={form.email} onChangeText={v => set('email', v)} keyboardType="email-address" autoCapitalize="none" />
+            <Input label="Message" icon="chatbubble-outline" value={form.message} onChangeText={v => set('message', v)} multiline numberOfLines={5} />
+            <Button title="Send Message" onPress={handleSend} loading={loading} style={{ marginTop: spacing.md }} />
+          </View>
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -47,6 +49,7 @@ export default function ContactScreen({ navigation }) {
 
 const styles = StyleSheet.create({
   safe: { flex: 1 },
-  scroll: { padding: spacing.lg },
+  scroll: { width: '100%', maxWidth: 620, alignSelf: 'center', padding: spacing.lg, paddingBottom: 120 },
   subTitle: { fontSize: fontSize.base, textAlign: 'center', marginBottom: spacing.xl },
+  formCard: { borderRadius: borderRadius.xl, borderWidth: 1, padding: spacing.lg },
 });

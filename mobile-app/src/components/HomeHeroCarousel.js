@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { View, Text, TouchableOpacity, Image, StyleSheet, Animated, useWindowDimensions } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useTheme } from '../contexts/ThemeContext';
+import { useLanguage } from '../contexts/LanguageContext';
 import BrandLogo from './BrandLogo';
 import { optimizedImageUri } from '../config';
 import { spacing, fontSize, fontWeight, borderRadius, shadows } from '../theme';
@@ -18,6 +19,7 @@ export default function HomeHeroCarousel({
   height: propHeight,
 }) {
   const { theme } = useTheme();
+  const { isRTL } = useLanguage();
   const c = theme.colors;
   const { width } = useWindowDimensions();
   const listRef = useRef(null);
@@ -25,13 +27,14 @@ export default function HomeHeroCarousel({
   const currentIndexRef = useRef(0);
   const [activeIndex, setActiveIndex] = useState(0);
 
-  const cardWidth = useMemo(() => Math.max(width - (spacing.base * 2) - 8, 280), [width]);
+  const cardWidth = useMemo(() => Math.min(820, Math.max(width - (spacing.base * 2) - 8, 280)), [width]);
+  const carouselInset = useMemo(() => Math.max(spacing.base, (width - cardWidth) / 2), [cardWidth, width]);
   const snapInterval = cardWidth + GAP;
 
   const defaultHeight = useMemo(() => {
     // Keep enough vertical room so headline, description, and CTA row never clip.
-    const h = Math.round(cardWidth * 0.86);
-    return Math.min(440, Math.max(320, h));
+    const h = Math.round(cardWidth * 0.92);
+    return Math.min(460, Math.max(400, h));
   }, [cardWidth]);
 
   const slideHeight = propHeight || defaultHeight;
@@ -81,7 +84,7 @@ export default function HomeHeroCarousel({
         decelerationRate="fast"
         disableIntervalMomentum
         showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.contentContainer}
+        contentContainerStyle={[styles.contentContainer, { paddingHorizontal: carouselInset }]}
         ItemSeparatorComponent={() => <View style={{ width: GAP }} />}
         keyExtractor={(item, index) => `${item.title || 'slide'}-${index}`}
         scrollEventThrottle={16}
@@ -104,6 +107,7 @@ export default function HomeHeroCarousel({
             onSecondaryPress={onSecondaryPress}
             colors={c}
             isDarkTheme={theme.dark}
+            isRTL={isRTL}
           />
         )}
       />
@@ -139,6 +143,7 @@ function HeroSlide({
   onSecondaryPress,
   colors,
   isDarkTheme,
+  isRTL,
 }) {
   const inputRange = [
     (index - 1) * snapInterval,
@@ -221,17 +226,17 @@ function HeroSlide({
   });
 
   const imageUri = slide.image ? optimizedImageUri(slide.image, { width: 1200 }) : null;
-  const compactLayout = height < 360;
+  const compactLayout = width < 420;
   const cardBackground = isDarkTheme ? colors.secondary : colors.brandSurfaceStrong;
-  const titleColor = isDarkTheme ? '#FFFFFF' : colors.text;
-  const descriptionColor = isDarkTheme ? '#D6E5FF' : colors.textSecondary;
+  const titleColor = isDarkTheme ? colors.heroText : colors.text;
+  const descriptionColor = isDarkTheme ? colors.heroTextMuted : colors.textSecondary;
   const badgeBackground = isDarkTheme ? 'rgba(255,255,255,0.12)' : 'rgba(33,68,200,0.14)';
-  const badgeTextColor = isDarkTheme ? '#D6E5FF' : colors.primaryDark;
+  const badgeTextColor = isDarkTheme ? colors.heroTextMuted : colors.primaryDark;
   const secondaryBorder = isDarkTheme ? 'rgba(255,255,255,0.34)' : 'rgba(33,68,200,0.22)';
   const secondaryBackground = isDarkTheme ? 'transparent' : 'rgba(255,255,255,0.72)';
-  const secondaryTextColor = isDarkTheme ? '#FFFFFF' : colors.primaryDark;
-  const primaryBackground = isDarkTheme ? '#FFFFFF' : colors.primary;
-  const primaryTextColor = isDarkTheme ? colors.primary : '#FFFFFF';
+  const secondaryTextColor = isDarkTheme ? colors.heroText : colors.primaryDark;
+  const primaryBackground = isDarkTheme ? colors.white : colors.primary;
+  const primaryTextColor = isDarkTheme ? colors.primary : colors.white;
   const glowSecondaryBackground = isDarkTheme ? 'rgba(255,255,255,0.06)' : 'rgba(33,68,200,0.08)';
   const priceCardBackground = isDarkTheme ? '#FFFFFF' : 'rgba(255,255,255,0.95)';
 
@@ -293,22 +298,20 @@ function HeroSlide({
         ]}
       >
         <View style={[styles.badge, { backgroundColor: badgeBackground }]}>
-          <Text style={[styles.badgeText, { color: badgeTextColor }]}>{slide.subtitle}</Text>
+          <Text numberOfLines={1} maxFontSizeMultiplier={1.15} style={[styles.badgeText, { color: badgeTextColor }]}>{slide.subtitle}</Text>
         </View>
-        <Text style={[styles.title, compactLayout ? styles.titleCompact : null, { color: titleColor }]} numberOfLines={3}>{slide.title}</Text>
-        <Text style={[styles.description, { color: descriptionColor }]} numberOfLines={compactLayout ? 1 : 2}>{slide.description}</Text>
+        <Text maxFontSizeMultiplier={1.15} style={[styles.title, compactLayout ? styles.titleCompact : null, { color: titleColor }]} numberOfLines={compactLayout ? 4 : 3}>{slide.title}</Text>
+        <Text maxFontSizeMultiplier={1.15} style={[styles.description, compactLayout ? styles.descriptionCompact : null, { color: descriptionColor }]} numberOfLines={compactLayout ? 3 : 2}>{slide.description}</Text>
 
         <View style={[styles.buttonRow, compactLayout ? styles.buttonRowCompact : null]}>
-          <TouchableOpacity activeOpacity={0.9} onPress={onPrimaryPress} style={[styles.primaryButton, { backgroundColor: primaryBackground }]}> 
-            <Text style={[styles.primaryButtonText, { color: primaryTextColor }]}>{primaryLabel}</Text>
-            <MaterialCommunityIcons name="arrow-right" size={16} color={primaryTextColor} />
+          <TouchableOpacity activeOpacity={0.86} onPress={onPrimaryPress} accessibilityRole="button" accessibilityLabel={primaryLabel} style={[styles.primaryButton, { backgroundColor: primaryBackground }]}>
+            <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.82} maxFontSizeMultiplier={1.15} style={[styles.primaryButtonText, { color: primaryTextColor }]}>{primaryLabel}</Text>
+            <MaterialCommunityIcons name={isRTL ? 'arrow-left' : 'arrow-right'} size={16} color={primaryTextColor} />
           </TouchableOpacity>
-          {!compactLayout ? (
-            <TouchableOpacity activeOpacity={0.9} onPress={onSecondaryPress} style={[styles.secondaryButton, { borderColor: secondaryBorder, backgroundColor: secondaryBackground }]}> 
-              <Text style={[styles.secondaryButtonText, { color: secondaryTextColor }]}>{secondaryLabel}</Text>
-              <MaterialCommunityIcons name="chevron-right" size={16} color={secondaryTextColor} />
-            </TouchableOpacity>
-          ) : null}
+          <TouchableOpacity activeOpacity={0.86} onPress={onSecondaryPress} accessibilityRole="button" accessibilityLabel={secondaryLabel} style={[styles.secondaryButton, { borderColor: secondaryBorder, backgroundColor: secondaryBackground }]}>
+            <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.82} maxFontSizeMultiplier={1.15} style={[styles.secondaryButtonText, { color: secondaryTextColor }]}>{secondaryLabel}</Text>
+            <MaterialCommunityIcons name={isRTL ? 'chevron-left' : 'chevron-right'} size={16} color={secondaryTextColor} />
+          </TouchableOpacity>
         </View>
       </Animated.View>
 
@@ -322,15 +325,15 @@ function HeroSlide({
           shadows.md,
         ]}
       >
-        <Text style={[styles.priceLabel, { color: colors.textMuted }]}>{slide.priceLabel}</Text>
-        <Text style={[styles.priceValue, { color: colors.primary }]}>{slide.priceValue}</Text>
+        <Text numberOfLines={1} maxFontSizeMultiplier={1.15} style={[styles.priceLabel, { color: colors.textMuted }]}>{slide.priceLabel}</Text>
+        <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.85} maxFontSizeMultiplier={1.15} style={[styles.priceValue, { color: colors.primary }]}>{slide.priceValue}</Text>
       </Animated.View>
     </Animated.View>
   );
 }
 
 const styles = StyleSheet.create({
-  contentContainer: { paddingHorizontal: spacing.base },
+  contentContainer: {},
   slide: {
     borderRadius: borderRadius.xxl,
     overflow: 'hidden',
@@ -364,7 +367,7 @@ const styles = StyleSheet.create({
     zIndex: 2,
   },
   copyWrapCompact: {
-    width: '64%',
+    width: '68%',
   },
   badge: {
     alignSelf: 'flex-start',
@@ -385,13 +388,18 @@ const styles = StyleSheet.create({
     marginTop: spacing.base,
   },
   titleCompact: {
-    fontSize: fontSize.xxxl,
-    lineHeight: 40,
+    fontSize: 27,
+    lineHeight: 32,
   },
   description: {
     fontSize: fontSize.base,
     lineHeight: 24,
     marginTop: spacing.base,
+  },
+  descriptionCompact: {
+    fontSize: fontSize.sm,
+    lineHeight: 19,
+    marginTop: spacing.sm,
   },
   buttonRow: {
     flexDirection: 'row',
@@ -401,32 +409,45 @@ const styles = StyleSheet.create({
   },
   buttonRowCompact: {
     marginTop: spacing.md,
+    maxWidth: 250,
   },
   primaryButton: {
+    height: 44,
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
     gap: 6,
     backgroundColor: '#FFFFFF',
     borderRadius: borderRadius.full,
     paddingHorizontal: 15,
-    paddingVertical: 11,
+    paddingVertical: 0,
   },
   primaryButtonText: {
     fontSize: fontSize.sm,
+    lineHeight: 18,
     fontWeight: fontWeight.bold,
+    includeFontPadding: false,
+    textAlign: 'center',
+    textAlignVertical: 'center',
   },
   secondaryButton: {
+    height: 44,
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
     gap: 6,
     borderWidth: 1.5,
     borderRadius: borderRadius.full,
     paddingHorizontal: 15,
-    paddingVertical: 11,
+    paddingVertical: 0,
   },
   secondaryButtonText: {
     fontSize: fontSize.sm,
+    lineHeight: 18,
     fontWeight: fontWeight.bold,
+    includeFontPadding: false,
+    textAlign: 'center',
+    textAlignVertical: 'center',
   },
   productImage: {
     position: 'absolute',

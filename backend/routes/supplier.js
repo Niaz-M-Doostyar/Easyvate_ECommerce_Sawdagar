@@ -3,11 +3,16 @@ const router = express.Router();
 const prisma = require('../lib/prisma');
 const { authenticate, requireRole } = require('../middleware/auth');
 const { paginate, getProductName } = require('../lib/utils');
+const { validateCompleteProduct } = require('../lib/productValidation');
 
 // GET /api/supplier/products
 router.get('/products', authenticate, requireRole('supplier'), async (req, res) => {
   try {
-    const { skip, take, page, limit } = paginate(req.query.page, req.query.limit);
+    const pagination = paginate(req.query.page, req.query.limit);
+    const showAll = req.query.all === 'true' || req.query.all === '1';
+    const { page, limit } = pagination;
+    const skip = showAll ? undefined : pagination.skip;
+    const take = showAll ? undefined : pagination.take;
 
     const where = { supplierId: req.user.id, isDeleted: false };
     const status = req.query.status;
@@ -27,7 +32,7 @@ router.get('/products', authenticate, requireRole('supplier'), async (req, res) 
       prisma.product.count({ where }),
     ]);
 
-    const totalPages = Math.max(1, Math.ceil(total / limit));
+    const totalPages = showAll ? 1 : Math.max(1, Math.ceil(total / limit));
     res.json({ products, total, totalPages, pagination: { page, limit, total, totalPages } });
   } catch (err) {
     res.status(500).json({ error: 'Failed to fetch products' });
@@ -59,17 +64,20 @@ router.post('/products', authenticate, requireRole('supplier'), async (req, res)
       wholesaleCost, suggestedPrice, categoryId, stock, images, attributes,
     } = req.body;
 
-    if (!nameEn || !wholesaleCost || !categoryId) {
-      return res.status(400).json({ error: 'Name (EN), wholesale cost, and category are required' });
+    const missing = validateCompleteProduct(req.body, images);
+    if (missing.length > 0) {
+      return res.status(400).json({ error: `Complete all required product fields: ${missing.join(', ')}`, missing });
     }
+    const category = await prisma.category.findUnique({ where: { id: Number(categoryId) }, select: { id: true } });
+    if (!category) return res.status(400).json({ error: 'Please select a valid category' });
 
     const product = await prisma.product.create({
       data: {
-        nameEn, namePs: namePs || null, nameDr: nameDr || null,
-        descEn: descEn || null, descPs: descPs || null, descDr: descDr || null,
+        nameEn: nameEn.trim(), namePs: namePs.trim(), nameDr: nameDr.trim(),
+        descEn: descEn.trim(), descPs: descPs.trim(), descDr: descDr.trim(),
         wholesaleCost: parseFloat(wholesaleCost),
-        suggestedPrice: suggestedPrice ? parseFloat(suggestedPrice) : null,
-        stock: parseInt(stock) || 0,
+        suggestedPrice: parseFloat(suggestedPrice),
+        stock: parseInt(stock, 10),
         categoryId: parseInt(categoryId),
         supplierId: req.user.id,
         status: 'pending',
@@ -93,6 +101,7 @@ router.put('/products/:id', authenticate, requireRole('supplier'), async (req, r
   try {
     const product = await prisma.product.findFirst({
       where: { id: parseInt(req.params.id), supplierId: req.user.id, isDeleted: false },
+      include: { images: { select: { url: true } } },
     });
     if (!product) return res.status(404).json({ error: 'Product not found' });
 
@@ -100,6 +109,27 @@ router.put('/products/:id', authenticate, requireRole('supplier'), async (req, r
       nameEn, namePs, nameDr, descEn, descPs, descDr,
       wholesaleCost, suggestedPrice, categoryId, stock, images, attributes,
     } = req.body;
+
+    const effectiveImages = Array.isArray(images) ? images : product.images.map((image) => image.url);
+    const merged = {
+      ...product,
+      nameEn: nameEn !== undefined ? nameEn : product.nameEn,
+      namePs: namePs !== undefined ? namePs : product.namePs,
+      nameDr: nameDr !== undefined ? nameDr : product.nameDr,
+      descEn: descEn !== undefined ? descEn : product.descEn,
+      descPs: descPs !== undefined ? descPs : product.descPs,
+      descDr: descDr !== undefined ? descDr : product.descDr,
+      wholesaleCost: wholesaleCost !== undefined ? wholesaleCost : product.wholesaleCost,
+      suggestedPrice: suggestedPrice !== undefined ? suggestedPrice : product.suggestedPrice,
+      categoryId: categoryId !== undefined ? categoryId : product.categoryId,
+      stock: stock !== undefined ? stock : product.stock,
+    };
+    const missing = validateCompleteProduct(merged, effectiveImages);
+    if (missing.length > 0) {
+      return res.status(400).json({ error: `Complete all required product fields: ${missing.join(', ')}`, missing });
+    }
+    const category = await prisma.category.findUnique({ where: { id: Number(merged.categoryId) }, select: { id: true } });
+    if (!category) return res.status(400).json({ error: 'Please select a valid category' });
 
     const updateData = {};
     if (nameEn !== undefined) updateData.nameEn = nameEn;
@@ -167,7 +197,11 @@ router.delete('/products/:id', authenticate, requireRole('supplier'), async (req
 // GET /api/supplier/orders
 router.get('/orders', authenticate, requireRole('supplier'), async (req, res) => {
   try {
-    const { skip, take, page, limit } = paginate(req.query.page, req.query.limit);
+    const pagination = paginate(req.query.page, req.query.limit);
+    const showAll = req.query.all === 'true' || req.query.all === '1';
+    const { page, limit } = pagination;
+    const skip = showAll ? undefined : pagination.skip;
+    const take = showAll ? undefined : pagination.take;
 
     const orders = await prisma.order.findMany({
       where: {
@@ -176,7 +210,7 @@ router.get('/orders', authenticate, requireRole('supplier'), async (req, res) =>
       include: {
         items: {
           where: { product: { supplierId: req.user.id } },
-          include: { product: { select: { nameEn: true } } },
+          include: { product: { select: { nameEn: true, images: { orderBy: { sortOrder: 'asc' }, take: 1 } } } },
         },
         user: { select: { fullName: true } },
       },
@@ -189,7 +223,7 @@ router.get('/orders', authenticate, requireRole('supplier'), async (req, res) =>
       where: { items: { some: { product: { supplierId: req.user.id } } } },
     });
 
-    const totalPages = Math.max(1, Math.ceil(total / limit));
+    const totalPages = showAll ? 1 : Math.max(1, Math.ceil(total / limit));
     res.json({ orders, total, totalPages, pagination: { page, limit, total, totalPages } });
   } catch (err) {
     res.status(500).json({ error: 'Failed to fetch orders' });

@@ -48,6 +48,8 @@ model Category {
   nameEn   String     @map("name_en")
   namePs   String     @map("name_ps")
   nameDr   String     @map("name_dr")
+  image    String?    @db.VarChar(2048)
+  iconKey  String?    @map("icon_key")
   parentId Int?       @map("parent_id")
   parent   Category?  @relation("CategoryTree", fields: [parentId], references: [id])
   children Category[] @relation("CategoryTree")

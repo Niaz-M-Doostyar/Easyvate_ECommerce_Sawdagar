@@ -5,7 +5,7 @@ const sharp = require('sharp');
 
 const router = express.Router();
 
-const uploadsRoot = path.join(__dirname, '..', 'uploads');
+const uploadsRoot = path.resolve(process.env.UPLOADS_DIR || path.join(__dirname, '..', 'uploads'));
 const cacheRoot = path.join(uploadsRoot, '.cache');
 
 if (!fs.existsSync(cacheRoot)) {
@@ -14,6 +14,16 @@ if (!fs.existsSync(cacheRoot)) {
 
 // Track in-progress conversions to avoid duplicate work
 const pending = new Map();
+const allowedWidths = [80, 280, 320, 420, 500, 560, 700, 760, 800, 1200];
+const allowedQualities = [60, 75, 85];
+
+function nearestAllowed(value, allowed, fallback) {
+  const requested = parseInt(value, 10);
+  if (!Number.isFinite(requested)) return fallback;
+  return allowed.reduce((nearest, current) => (
+    Math.abs(current - requested) < Math.abs(nearest - requested) ? current : nearest
+  ), allowed[0]);
+}
 
 function normalizeUploadPath(src) {
   if (!src || typeof src !== 'string') return null;
@@ -26,8 +36,9 @@ function normalizeUploadPath(src) {
 router.get('/', async (req, res) => {
   try {
     const src = req.query.src;
-    const width = Math.max(40, Math.min(parseInt(req.query.w, 10) || 800, 2000));
-    const quality = Math.max(40, Math.min(parseInt(req.query.q, 10) || 60, 95));
+    // Bucket variants so arbitrary query values cannot create unbounded files.
+    const width = nearestAllowed(req.query.w, allowedWidths, 800);
+    const quality = nearestAllowed(req.query.q, allowedQualities, 60);
     const format = req.query.f === 'jpeg' ? 'jpeg' : 'webp';
 
     const originalPath = normalizeUploadPath(src);
@@ -35,11 +46,12 @@ router.get('/', async (req, res) => {
     if (!fs.existsSync(originalPath)) return res.status(404).json({ error: 'Image not found' });
 
     const parsed = path.parse(originalPath);
-    const cacheName = `${parsed.name}-w${width}-q${quality}.${format}`;
+    const stat = fs.statSync(originalPath);
+    const sourceVersion = Math.round(stat.mtimeMs).toString(36);
+    const cacheName = `${parsed.name}-${sourceVersion}-w${width}-q${quality}.${format}`;
     const cachePath = path.join(cacheRoot, cacheName);
 
     // ETag based on original file mtime + params
-    const stat = fs.statSync(originalPath);
     const etag = `"${stat.mtimeMs}-${width}-${quality}-${format}"`;
     if (req.headers['if-none-match'] === etag) {
       return res.status(304).end();

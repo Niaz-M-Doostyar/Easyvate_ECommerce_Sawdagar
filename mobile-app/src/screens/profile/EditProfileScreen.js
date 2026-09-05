@@ -8,6 +8,7 @@ import { useToast } from '../../contexts/ToastContext';
 import Input from '../../components/Input';
 import Button from '../../components/Button';
 import ScreenHeader from '../../components/ScreenHeader';
+import ProvincePicker from '../../components/ProvincePicker';
 import { spacing, fontSize, fontWeight } from '../../theme';
 
 export default function EditProfileScreen({ navigation }) {
@@ -59,12 +60,12 @@ export default function EditProfileScreen({ navigation }) {
           {user?.role === 'supplier' && (
             <>
               <Input label={t.companyName || 'Company name'} icon="business-outline" value={companyName} onChangeText={setCompanyName} />
-              <Input label="Contact person" icon="account" value={contactPerson} onChangeText={setContactPerson} />
-              <Input label="Tax ID" icon="identifier" value={taxId} onChangeText={setTaxId} />
-              <Input label="Province" icon="map-marker-outline" value={province} onChangeText={setProvince} />
-              <Input label="District" icon="map-marker-radius" value={district} onChangeText={setDistrict} />
-              <Input label="Village / City" icon="city" value={village} onChangeText={setVillage} />
-              <Input label="Landmark" icon="map-marker" value={landmark} onChangeText={setLandmark} />
+              <Input label="Contact person" icon="person-outline" value={contactPerson} onChangeText={setContactPerson} />
+              <Input label="Tax ID" icon="document-text-outline" value={taxId} onChangeText={setTaxId} />
+              <ProvincePicker value={province} onChange={setProvince} />
+              <Input label="District" icon="location-outline" value={district} onChangeText={setDistrict} />
+              <Input label="Village / City" icon="home-outline" value={village} onChangeText={setVillage} />
+              <Input label="Landmark" icon="navigate-outline" value={landmark} onChangeText={setLandmark} />
             </>
           )}
           <Button title={t.save} onPress={handleSave} loading={loading} style={{ marginTop: spacing.lg }} />
@@ -76,5 +77,5 @@ export default function EditProfileScreen({ navigation }) {
 
 const styles = StyleSheet.create({
   safe: { flex: 1 },
-  scroll: { padding: spacing.lg },
+  scroll: { width: '100%', maxWidth: 620, alignSelf: 'center', padding: spacing.lg, paddingBottom: 120 },
 });

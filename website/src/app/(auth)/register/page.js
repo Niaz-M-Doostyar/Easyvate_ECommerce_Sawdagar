@@ -6,6 +6,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/contexts/ToastContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useSiteData } from "@/contexts/SiteDataContext";
+import { AFGHANISTAN_PROVINCES } from "@/data/afghanistanProvinces";
 
 export default function RegisterPage() {
   const { register } = useAuth();
@@ -17,7 +18,7 @@ export default function RegisterPage() {
   const [role, setRole] = useState("customer");
   const [loading, setLoading] = useState(false);
   const [formError, setFormError] = useState("");
-  const [form, setForm] = useState({ fullName: "", email: "", phone: "", password: "", confirmPassword: "", companyName: "", companyAddress: "" });
+  const [form, setForm] = useState({ fullName: "", email: "", phone: "", password: "", confirmPassword: "", companyName: "", companyAddress: "", province: "" });
   const set = (k, v) => setForm(p => ({ ...p, [k]: v }));
 
   const handleSubmit = async (e) => {
@@ -39,7 +40,7 @@ export default function RegisterPage() {
 
     setLoading(true);
     const body = { fullName: form.fullName, email: form.email, phone: form.phone, password: form.password, role };
-    if (role === "supplier") { body.companyName = form.companyName; body.companyAddress = form.companyAddress; }
+    if (role === "supplier") { body.companyName = form.companyName; body.companyAddress = form.companyAddress; body.province = form.province; }
     const result = await register(body);
     setLoading(false);
 
@@ -54,111 +55,121 @@ export default function RegisterPage() {
   };
 
   return (
-    <>
-      <div className="site-breadcrumb">
+    <div className="f2-content-page f2-auth-page f2-auth-page--with-crumb">
+      <div className="site-breadcrumb f2-content-crumb">
         <div className="site-breadcrumb-bg" style={{ background: "url(/assets/img/breadcrumb/01.jpg)" }} />
         <div className="container">
           <div className="site-breadcrumb-wrap">
-            <h4 className="breadcrumb-title">{t('register')}</h4>
+            <h1 className="breadcrumb-title">{t('register') || 'Create Account'}</h1>
             <ul className="breadcrumb-menu">
               <li><Link href="/"><i className="far fa-home"></i> Home</Link></li>
-              <li className="active">{t('register')}</li>
+              <li className="active">{t('register') || 'Create Account'}</li>
             </ul>
           </div>
         </div>
       </div>
 
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-primary/5 flex items-center justify-center py-20 px-4">
-      <div className="w-full max-w-lg animate-fade-up">
-        <div className="text-center mb-8">
-          <Link href="/" className="inline-flex items-center gap-2.5 mb-6">
+      <div className="f2-auth-shell f2-auth-shell--wide">
+        <div className="f2-auth-panel animate-fade-up">
+          <header className="f2-auth-heading">
+            <Link href="/" className="f2-auth-brand f2-auth-brand--image" aria-label="Sawdagar home">
             <img src={logoUrl} alt="Sawdagar" style={{height:48,objectFit:'contain',maxWidth:200}} />
-          </Link>
-          <h2 className="text-2xl font-bold text-midnight font-display">{t('register')}</h2>
-          <p className="text-body mt-2">Create your Sawdagar account in seconds</p>
-        </div>
+            </Link>
+            <span className="f2-content-eyebrow">Join Sawdagar</span>
+            <h2>{t('register') || 'Create Account'}</h2>
+            <p>Create your Sawdagar account in seconds</p>
+          </header>
 
-        <div className="bg-white rounded-2xl shadow-card p-8">
-          <div className="flex flex-wrap gap-2 justify-center mb-6">
+          <div className="f2-auth-card">
+          <div className="f2-role-picker" aria-label="Account type">
             <button
               type="button"
-              className={`role-btn${role === 'customer' ? ' active' : ''}`}
+              className={`f2-role-option${role === 'customer' ? ' active' : ''}`}
               onClick={() => setRole('customer')}
+              aria-pressed={role === 'customer'}
             >
               <i className="far fa-user"></i> {t('register_as_customer') || 'Customer'}
             </button>
             <button
               type="button"
-              className={`role-btn${role === 'supplier' ? ' active' : ''}`}
+              className={`f2-role-option${role === 'supplier' ? ' active' : ''}`}
               onClick={() => setRole('supplier')}
+              aria-pressed={role === 'supplier'}
             >
               <i className="far fa-store"></i> {t('register_as_supplier') || 'Supplier'}
             </button>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-5">
-            <div>
-              <label className="text-sm font-semibold text-midnight mb-1.5 block font-display">{t('full_name')} *</label>
-              <input type="text" className="w-full rounded-lg border border-gray-200 px-4 py-3 text-sm text-midnight placeholder:text-body focus:border-theme-color focus:outline-none focus:ring-2 focus:ring-theme-color/30" placeholder={t('full_name')} value={form.fullName} onChange={e => set("fullName", e.target.value)} required />
+          <form onSubmit={handleSubmit} className="f2-content-form" aria-busy={loading}>
+            <div className="f2-content-field">
+              <label htmlFor="register-name">{t('full_name') || 'Full name'} *</label>
+              <input id="register-name" type="text" placeholder={t('full_name') || 'Full name'} value={form.fullName} onChange={e => set("fullName", e.target.value)} autoComplete="name" required />
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="text-sm font-semibold text-midnight mb-1.5 block font-display">{t('email')} *</label>
-                <input type="email" className="w-full rounded-lg border border-gray-200 px-4 py-3 text-sm text-midnight placeholder:text-body focus:border-theme-color focus:outline-none focus:ring-2 focus:ring-theme-color/30" placeholder={t('email')} value={form.email} onChange={e => set("email", e.target.value)} required />
+            <div className="f2-content-form-grid">
+              <div className="f2-content-field">
+                <label htmlFor="register-email">{t('email') || 'Email'} *</label>
+                <input id="register-email" type="email" placeholder={t('email') || 'Email'} value={form.email} onChange={e => set("email", e.target.value)} autoComplete="email" required />
               </div>
-              <div>
-                <label className="text-sm font-semibold text-midnight mb-1.5 block font-display">{t('phone')} *</label>
-                <input type="tel" className="w-full rounded-lg border border-gray-200 px-4 py-3 text-sm text-midnight placeholder:text-body focus:border-theme-color focus:outline-none focus:ring-2 focus:ring-theme-color/30" placeholder="07XXXXXXXX" value={form.phone} onChange={e => set("phone", e.target.value)} required />
+              <div className="f2-content-field">
+                <label htmlFor="register-phone">{t('phone') || 'Phone'} *</label>
+                <input id="register-phone" type="tel" placeholder="07XXXXXXXX" value={form.phone} onChange={e => set("phone", e.target.value)} autoComplete="tel" required />
               </div>
             </div>
 
             {role === 'supplier' && (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="text-sm font-semibold text-midnight mb-1.5 block font-display">{t('company_name')} *</label>
-                  <input type="text" className="w-full rounded-lg border border-gray-200 px-4 py-3 text-sm text-midnight placeholder:text-body focus:border-theme-color focus:outline-none focus:ring-2 focus:ring-theme-color/30" placeholder={t('company_name')} value={form.companyName} onChange={e => set("companyName", e.target.value)} required />
+              <div className="f2-content-form-grid">
+                <div className="f2-content-field">
+                  <label htmlFor="register-company">{t('company_name') || 'Company name'} *</label>
+                  <input id="register-company" type="text" placeholder={t('company_name') || 'Company name'} value={form.companyName} onChange={e => set("companyName", e.target.value)} autoComplete="organization" required />
                 </div>
-                <div>
-                  <label className="text-sm font-semibold text-midnight mb-1.5 block font-display">Company Address</label>
-                  <input type="text" className="w-full rounded-lg border border-gray-200 px-4 py-3 text-sm text-midnight placeholder:text-body focus:border-theme-color focus:outline-none focus:ring-2 focus:ring-theme-color/30" placeholder="Company address" value={form.companyAddress} onChange={e => set("companyAddress", e.target.value)} />
+                <div className="f2-content-field">
+                  <label htmlFor="register-province">{t('province') || 'Province'} *</label>
+                  <select id="register-province" value={form.province} onChange={e => set("province", e.target.value)} required>
+                    <option value="">Select province</option>
+                    {AFGHANISTAN_PROVINCES.map(province => <option key={province} value={province}>{province}</option>)}
+                  </select>
+                </div>
+                <div className="f2-content-field">
+                  <label htmlFor="register-address">Company Address</label>
+                  <input id="register-address" type="text" placeholder="Company address" value={form.companyAddress} onChange={e => set("companyAddress", e.target.value)} autoComplete="street-address" />
                 </div>
               </div>
             )}
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="text-sm font-semibold text-midnight mb-1.5 block font-display">{t('password')} *</label>
-                <input type="password" className="w-full rounded-lg border border-gray-200 px-4 py-3 text-sm text-midnight placeholder:text-body focus:border-theme-color focus:outline-none focus:ring-2 focus:ring-theme-color/30" placeholder={t('password')} value={form.password} onChange={e => set("password", e.target.value)} required />
+            <div className="f2-content-form-grid">
+              <div className="f2-content-field">
+                <label htmlFor="register-password">{t('password') || 'Password'} *</label>
+                <input id="register-password" type="password" placeholder={t('password') || 'Password'} value={form.password} onChange={e => set("password", e.target.value)} autoComplete="new-password" required />
               </div>
-              <div>
-                <label className="text-sm font-semibold text-midnight mb-1.5 block font-display">{t('confirm_password')} *</label>
-                <input type="password" className="w-full rounded-lg border border-gray-200 px-4 py-3 text-sm text-midnight placeholder:text-body focus:border-theme-color focus:outline-none focus:ring-2 focus:ring-theme-color/30" placeholder={t('confirm_password')} value={form.confirmPassword} onChange={e => set("confirmPassword", e.target.value)} required />
+              <div className="f2-content-field">
+                <label htmlFor="register-confirm">{t('confirm_password') || 'Confirm password'} *</label>
+                <input id="register-confirm" type="password" placeholder={t('confirm_password') || 'Confirm password'} value={form.confirmPassword} onChange={e => set("confirmPassword", e.target.value)} autoComplete="new-password" required />
               </div>
             </div>
 
-            <div className="form-check mb-3">
-              <input className="form-check-input" type="checkbox" id="terms" required />
-              <label className="form-check-label text-sm text-body" htmlFor="terms">
-                I agree to the <a href="#" className="text-gold">Terms of Service</a> and <a href="#" className="text-gold">Privacy Policy</a>
+            <div className="f2-content-check">
+              <input type="checkbox" id="terms" required />
+              <label htmlFor="terms">
+                I agree to the <a href="#">Terms of Service</a> and <a href="#">Privacy Policy</a>
               </label>
             </div>
 
             {formError && (
-              <div className="alert alert-danger mb-3" role="alert">
+              <div className="f2-content-alert f2-content-alert--error" role="alert">
                 {formError}
               </div>
             )}
 
-            <button type="submit" className="theme-btn w-full justify-center text-base py-3.5 disabled:opacity-60" disabled={loading}>
-              {loading ? `${t('sending') || 'Creating...'} ` : `${t('register')}`}
+            <button type="submit" className="f2-content-button f2-content-button--wide" disabled={loading}>
+              {loading ? `${t('sending') || 'Creating...'} ` : `${t('register') || 'Create Account'}`}
             </button>
 
-            <p className="text-center text-sm text-body">{t('already_have_account')} <Link href="/login" className="font-semibold text-gold">{t('login')}</Link></p>
+            <p className="f2-auth-alternative">{t('already_have_account') || 'Already have an account?'} <Link href="/login">{t('login') || 'Sign In'}</Link></p>
           </form>
+          </div>
         </div>
       </div>
     </div>
-    </>
   );
 }

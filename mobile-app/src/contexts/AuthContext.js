@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { authApi, setToken, getToken } from '../services/api';
+import { authApi, setToken, getToken, getStoredUser, setStoredUser } from '../services/api';
 
 const AuthContext = createContext();
 
@@ -17,10 +17,13 @@ export function AuthProvider({ children }) {
 
   const clearSession = useCallback(async () => {
     await setToken(null);
+    await setStoredUser(null);
     setUser(null);
   }, []);
 
   const fetchMe = useCallback(async () => {
+    const cachedUser = normalizeUser(await getStoredUser());
+    if (cachedUser) setUser(cachedUser);
     try {
       const t = await getToken();
       if (!t) {
@@ -29,17 +32,26 @@ export function AuthProvider({ children }) {
         return;
       }
       const data = await authApi.me();
-      setUser(normalizeUser(data.user));
-    } catch { await setToken(null); setUser(null); }
+      const nextUser = normalizeUser(data.user);
+      setUser(nextUser);
+      await setStoredUser(nextUser);
+    } catch (error) {
+      // Network interruptions must not sign a user out. Only an explicit
+      // authentication rejection invalidates the persisted session.
+      if (error?.status === 401 || error?.status === 403) await clearSession();
+      else if (!cachedUser) setUser(null);
+    }
     setLoading(false);
-  }, []);
+  }, [clearSession]);
 
   useEffect(() => { fetchMe(); }, [fetchMe]);
 
   const login = async (email, password) => {
-    const data = await authApi.login({ email, password });
+    const data = await authApi.login({ email, password, rememberMe: true });
     await setToken(data.token);
-    setUser(normalizeUser(data.user));
+    const nextUser = normalizeUser(data.user);
+    await setStoredUser(nextUser);
+    setUser(nextUser);
     return data;
   };
 
@@ -73,7 +85,11 @@ export function AuthProvider({ children }) {
     };
     delete payload.name;
     const data = await authApi.updateProfile(payload);
-    if (data.user) setUser(prev => normalizeUser({ ...prev, ...data.user }));
+    if (data.user) {
+      const nextUser = normalizeUser({ ...user, ...data.user });
+      setUser(nextUser);
+      await setStoredUser(nextUser);
+    }
     return data;
   };
 

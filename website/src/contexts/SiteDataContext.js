@@ -11,23 +11,22 @@ export function SiteDataProvider({ children, initialCategories = [], initialSite
   const [loaded, setLoaded] = useState(hasInitialData);
 
   useEffect(() => {
-    if (hasInitialData) return undefined;
-
     let cancelled = false;
     Promise.all([
-      fetch('/api/categories').then(r => r.json()).catch(() => null),
-      fetch('/api/site-content').then(r => r.json()).catch(() => null),
+      fetch('/api/categories', { cache: 'no-store' }).then(r => r.json()).catch(() => null),
+      fetch('/api/site-content', { cache: 'no-store' }).then(r => r.json()).catch(() => null),
     ]).then(([catData, siteData]) => {
       if (cancelled) return;
+      const hasCategoryPayload = Array.isArray(catData?.categories) || Array.isArray(catData);
       const cats = Array.isArray(catData?.categories)
         ? catData.categories
         : Array.isArray(catData) ? catData : [];
-      setCategories(cats);
+      if (hasCategoryPayload) setCategories(cats);
       if (siteData?.content) setSiteContent(siteData.content);
       setLoaded(true);
     });
     return () => { cancelled = true; };
-  }, [hasInitialData]);
+  }, []);
 
   const getName = useCallback((item, lang) => {
     if (!item) return '';

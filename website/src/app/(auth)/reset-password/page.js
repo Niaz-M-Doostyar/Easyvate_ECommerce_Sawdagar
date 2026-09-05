@@ -26,36 +26,39 @@ function ResetForm() {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-5">
-      <div>
-        <label className="text-sm font-semibold text-midnight mb-1.5 block font-display">New Password</label>
-        <input type="password" value={form.password} onChange={e => setForm({...form, password: e.target.value})} className="w-full rounded-lg border border-gray-200 px-4 py-3 text-sm text-midnight placeholder:text-body focus:border-theme-color focus:outline-none focus:ring-2 focus:ring-theme-color/30" placeholder="Min 6 characters" required />
+    <form onSubmit={handleSubmit} className="f2-content-form" aria-busy={loading}>
+      <div className="f2-content-field">
+        <label htmlFor="reset-password">New Password</label>
+        <input id="reset-password" type="password" value={form.password} onChange={e => setForm({...form, password: e.target.value})} placeholder="Min 6 characters" autoComplete="new-password" required />
       </div>
-      <div>
-        <label className="text-sm font-semibold text-midnight mb-1.5 block font-display">Confirm Password</label>
-        <input type="password" value={form.confirmPassword} onChange={e => setForm({...form, confirmPassword: e.target.value})} className="w-full rounded-lg border border-gray-200 px-4 py-3 text-sm text-midnight placeholder:text-body focus:border-theme-color focus:outline-none focus:ring-2 focus:ring-theme-color/30" placeholder="••••••••" required />
+      <div className="f2-content-field">
+        <label htmlFor="reset-confirm-password">Confirm Password</label>
+        <input id="reset-confirm-password" type="password" value={form.confirmPassword} onChange={e => setForm({...form, confirmPassword: e.target.value})} placeholder="••••••••" autoComplete="new-password" required />
       </div>
-      <button type="submit" disabled={loading} className="theme-btn w-full justify-center text-base py-3.5 disabled:opacity-60">{loading ? "Resetting..." : "Reset Password"}</button>
+      <button type="submit" disabled={loading} className="f2-content-button f2-content-button--wide">{loading ? "Resetting..." : "Reset Password"}</button>
     </form>
   );
 }
 
 export default function ResetPasswordPage() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-primary/5 flex items-center justify-center py-20 px-4">
-      <div className="w-full max-w-md animate-fade-up">
-        <div className="text-center mb-8">
-          <Link href="/" className="inline-flex items-center gap-2.5 mb-6">
-            <div className="w-12 h-12 bg-gold rounded-xl flex items-center justify-center shadow-lg shadow-gold/20"><span className="text-white font-extrabold text-2xl font-display">S</span></div>
-            <span className="text-2xl font-extrabold text-midnight font-display">Sawdagar</span>
-          </Link>
-          <h2 className="text-2xl font-bold text-midnight font-display">Reset Password</h2>
-          <p className="text-body mt-2">Choose a new password for your account</p>
-        </div>
-        <div className="bg-white rounded-2xl shadow-card p-8">
-          <Suspense fallback={<div className="text-center py-8 text-body">Loading...</div>}>
+    <div className="f2-content-page f2-auth-page">
+      <div className="f2-auth-shell">
+        <div className="f2-auth-panel animate-fade-up">
+          <header className="f2-auth-heading">
+            <Link href="/" className="f2-auth-brand" aria-label="Sawdagar home">
+              <span className="f2-auth-brand__mark" aria-hidden="true">S</span>
+              <span className="f2-auth-brand__name">Sawdagar</span>
+            </Link>
+            <span className="f2-content-eyebrow">Account recovery</span>
+            <h1>Reset Password</h1>
+            <p>Choose a new password for your account</p>
+          </header>
+          <div className="f2-auth-card">
+          <Suspense fallback={<div className="f2-content-loading" role="status"><span className="f2-content-spinner" aria-hidden="true" />Loading...</div>}>
             <ResetForm />
           </Suspense>
+          </div>
         </div>
       </div>
     </div>

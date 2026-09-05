@@ -28,6 +28,7 @@ export default function AdminProducts() {
   const [editForm, setEditForm] = useState({});
   const [editImages, setEditImages] = useState([]);
   const [saving, setSaving] = useState(false);
+  const [categories, setCategories] = useState([]);
 
   const fetchProducts = useCallback(async () => {
     const q = new URLSearchParams({ page, limit: 20 });
@@ -38,6 +39,12 @@ export default function AdminProducts() {
   }, [page, statusFilter, search]);
 
   useEffect(() => { fetchProducts(); }, [fetchProducts]);
+  useEffect(() => {
+    fetch('/api/categories', { credentials: 'include' })
+      .then(r => r.json())
+      .then(data => setCategories(data.categories || data || []))
+      .catch(() => setCategories([]));
+  }, []);
 
   const handleApprove = async (id) => {
     if (!retailPrice) { toast.error("Enter retail price"); return; }
@@ -60,7 +67,7 @@ export default function AdminProducts() {
         descEn: data.descEn || "", descPs: data.descPs || "", descDr: data.descDr || "",
         wholesaleCost: data.wholesaleCost || "", suggestedPrice: data.suggestedPrice || "", retailPrice: data.retailPrice || "",
         stock: data.stock ?? 0, weight: data.weight || "", dimensions: data.dimensions || "", material: data.material || "",
-        status: data.status || "pending",
+        status: data.status || "pending", categoryId: data.categoryId || "",
       });
       setEditImages((data.images || []).map(img => img.url));
       setLangTab("en");
@@ -79,6 +86,7 @@ export default function AdminProducts() {
         suggestedPrice: parseFloat(editForm.suggestedPrice) || null,
         retailPrice: parseFloat(editForm.retailPrice) || null,
         stock: parseInt(editForm.stock) || 0,
+        categoryId: parseInt(editForm.categoryId, 10),
         images: editImages,
       });
       toast.success("Product updated");
@@ -243,7 +251,14 @@ export default function AdminProducts() {
             {/* Pricing & Stock */}
             <div>
               <h4 className="font-semibold text-navy mb-3">Pricing & Stock</h4>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+              <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
+                <div>
+                  <label className="label">{t("category")} *</label>
+                  <select className="input" value={editForm.categoryId} onChange={e => setEditForm(p => ({ ...p, categoryId: e.target.value }))}>
+                    <option value="">Select category</option>
+                    {categories.map(category => <option key={category.id} value={category.id}>{category.nameEn}</option>)}
+                  </select>
+                </div>
                 <div>
                   <label className="label">{t("wholesale")} ({CURRENCY_SYMBOL})</label>
                   <input type="number" step="0.01" className="input" value={editForm.wholesaleCost}

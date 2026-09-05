@@ -23,7 +23,8 @@ export default function NewProduct() {
   };
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!form.nameEn || !form.namePs || !form.nameDr || !form.wholesaleCost || !form.stock) { toast.error("Fill all required fields"); return; }
+    const required = [form.nameEn, form.namePs, form.nameDr, form.descEn, form.descPs, form.descDr, form.categoryId, form.wholesaleCost, form.suggestedPrice, form.stock];
+    if (required.some(value => String(value).trim() === "") || images.length === 0) { toast.error("Fill every field and upload at least one image"); return; }
     setSubmitting(true);
     const body = { ...form, wholesaleCost: parseFloat(form.wholesaleCost), suggestedPrice: form.suggestedPrice ? parseFloat(form.suggestedPrice) : null, stock: parseInt(form.stock), categoryId: form.categoryId ? parseInt(form.categoryId) : null, images };
     const r = await fetch("/api/supplier/products", { method: "POST", headers: { "Content-Type": "application/json" }, credentials: "include", body: JSON.stringify(body) });
@@ -44,24 +45,24 @@ export default function NewProduct() {
           </div>
         </div>
         <div className="card card-p mb-6">
-          <h3 className="font-bold text-navy mb-4">Descriptions (Optional)</h3>
+          <h3 className="font-bold text-navy mb-4">Descriptions (Required in all languages)</h3>
           <div className="space-y-4">
-            <div><label className="label">Description (English)</label><textarea value={form.descEn} onChange={e => set("descEn", e.target.value)} className="input" rows={3} /></div>
-            <div><label className="label">Description (Pashto)</label><textarea value={form.descPs} onChange={e => set("descPs", e.target.value)} className="input" rows={3} dir="rtl" /></div>
-            <div><label className="label">Description (Dari)</label><textarea value={form.descDr} onChange={e => set("descDr", e.target.value)} className="input" rows={3} dir="rtl" /></div>
+            <div><label className="label">Description (English) *</label><textarea value={form.descEn} onChange={e => set("descEn", e.target.value)} className="input" rows={3} required /></div>
+            <div><label className="label">Description (Pashto) *</label><textarea value={form.descPs} onChange={e => set("descPs", e.target.value)} className="input" rows={3} dir="rtl" required /></div>
+            <div><label className="label">Description (Dari) *</label><textarea value={form.descDr} onChange={e => set("descDr", e.target.value)} className="input" rows={3} dir="rtl" required /></div>
           </div>
         </div>
         <div className="card card-p mb-6">
           <h3 className="font-bold text-navy mb-4">Pricing & Stock</h3>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div><label className="label">{t("category")}</label><select value={form.categoryId} onChange={e => set("categoryId", e.target.value)} className="input"><option value="">Select...</option>{categories.map(c => <option key={c.id} value={c.id}>{c.nameEn}</option>)}</select></div>
+            <div><label className="label">{t("category")} *</label><select value={form.categoryId} onChange={e => set("categoryId", e.target.value)} className="input" required><option value="">Select...</option>{categories.map(c => <option key={c.id} value={c.id}>{c.nameEn}</option>)}</select></div>
             <div><label className="label">{t("wholesale")} (؋) *</label><input type="number" step="0.01" value={form.wholesaleCost} onChange={e => set("wholesaleCost", e.target.value)} className="input" required /></div>
-            <div><label className="label">{t("suggested")} (؋)</label><input type="number" step="0.01" value={form.suggestedPrice} onChange={e => set("suggestedPrice", e.target.value)} className="input" /></div>
+            <div><label className="label">{t("suggested")} (؋) *</label><input type="number" min="0.01" step="0.01" value={form.suggestedPrice} onChange={e => set("suggestedPrice", e.target.value)} className="input" required /></div>
             <div><label className="label">{t("stock")} *</label><input type="number" value={form.stock} onChange={e => set("stock", e.target.value)} className="input" required /></div>
           </div>
         </div>
         <div className="card card-p mb-6">
-          <h3 className="font-bold text-navy mb-4">Images (Max 5)</h3>
+          <h3 className="font-bold text-navy mb-4">Images * (1–5 required)</h3>
           <div className="flex gap-3 flex-wrap mb-4">
             {images.map((url, i) => <div key={i} className="relative w-24 h-24 rounded-lg overflow-hidden border border-gray-200"><img src={url} alt="" className="w-full h-full object-cover" /><button type="button" onClick={() => setImages(prev => prev.filter((_, j) => j !== i))} className="absolute top-1 right-1 w-5 h-5 bg-red text-white rounded-full flex items-center justify-center text-xs">×</button></div>)}
             {images.length < 5 && <label className="w-24 h-24 rounded-lg border-2 border-dashed border-gray-300 flex items-center justify-center cursor-pointer hover:border-primary transition-colors"><svg className="w-6 h-6 text-body" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" /></svg><input type="file" accept="image/*" multiple onChange={handleImageUpload} className="hidden" /></label>}

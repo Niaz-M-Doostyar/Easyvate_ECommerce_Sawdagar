@@ -6,8 +6,9 @@ export async function fetchPublicJson(path, fallback, init = {}) {
 
   try {
     const response = await fetch(url, {
-      headers: { Accept: 'application/json', ...(init.headers || {}) },
       ...init,
+      cache: 'no-store',
+      headers: { Accept: 'application/json', ...(init.headers || {}) },
     });
 
     if (!response.ok) {

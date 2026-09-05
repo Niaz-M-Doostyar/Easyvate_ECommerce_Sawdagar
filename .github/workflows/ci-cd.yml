@@ -1,0 +1,99 @@
+name: Sawdagar CI/CD
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: sawdagar-production-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  quality:
+    name: Build and verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      NEXT_PUBLIC_API_URL: http://127.0.0.1:4000
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Use Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: |
+            backend/package-lock.json
+            website/package-lock.json
+            admin/package-lock.json
+
+      - name: Install backend dependencies
+        run: npm ci
+        working-directory: backend
+
+      - name: Generate Prisma client
+        run: npx prisma generate
+        working-directory: backend
+
+      - name: Check backend JavaScript
+        run: npm run check:syntax
+        working-directory: backend
+
+      - name: Install storefront dependencies
+        run: npm ci
+        working-directory: website
+
+      - name: Build storefront
+        run: npm run build
+        working-directory: website
+
+      - name: Install admin dependencies
+        run: npm ci
+        working-directory: admin
+
+      - name: Build admin
+        run: npm run build
+        working-directory: admin
+
+  deploy:
+    name: Deploy to VPS
+    needs: quality
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    environment: production
+    env:
+      VPS_HOST: ${{ secrets.VPS_HOST }}
+      VPS_USER: ${{ secrets.VPS_USER }}
+      VPS_APP_DIR: ${{ secrets.VPS_APP_DIR }}
+      VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
+      VPS_HOST_FINGERPRINT: ${{ secrets.VPS_HOST_FINGERPRINT }}
+    steps:
+      - name: Deployment configuration notice
+        if: env.VPS_HOST == '' || env.VPS_USER == '' || env.VPS_APP_DIR == '' || env.VPS_SSH_KEY == '' || env.VPS_HOST_FINGERPRINT == ''
+        run: echo "::warning::Build passed, but VPS deployment is waiting for VPS_HOST, VPS_USER, VPS_APP_DIR, VPS_SSH_KEY, and VPS_HOST_FINGERPRINT secrets."
+
+      - name: Pull, build, restart, and health-check VPS
+        if: env.VPS_HOST != '' && env.VPS_USER != '' && env.VPS_APP_DIR != '' && env.VPS_SSH_KEY != '' && env.VPS_HOST_FINGERPRINT != ''
+        uses: appleboy/ssh-action@v1.2.2
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          port: ${{ secrets.VPS_PORT || 22 }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          passphrase: ${{ secrets.VPS_SSH_PASSPHRASE }}
+          fingerprint: ${{ secrets.VPS_HOST_FINGERPRINT }}
+          script_stop: true
+          command_timeout: 22m
+          script: |
+            set -eu
+            cd "${{ secrets.VPS_APP_DIR }}"
+            bash scripts/deploy-vps.sh

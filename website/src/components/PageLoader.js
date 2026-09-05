@@ -1,32 +1,47 @@
-"use client";
+'use client';
+
 import { useEffect, useState } from 'react';
 
 export default function PageLoader() {
-  const [loading, setLoading] = useState(true);
+  const [phase, setPhase] = useState('visible');
 
   useEffect(() => {
-    // Hide immediately if page already loaded
-    if (document.readyState === 'complete') {
-      setLoading(false);
-      return;
+    let exitTimer;
+    let safetyTimer;
+    let frame;
+    let dismissed = false;
+
+    const dismiss = () => {
+      if (dismissed) return;
+      dismissed = true;
+      setPhase('leaving');
+      exitTimer = window.setTimeout(() => setPhase('hidden'), 180);
+    };
+
+    if (document.readyState === 'complete' || document.readyState === 'interactive') {
+      frame = window.requestAnimationFrame(dismiss);
+    } else {
+      window.addEventListener('load', dismiss, { once: true });
     }
-    const handleLoad = () => setLoading(false);
-    window.addEventListener('load', handleLoad);
-    // Safety timeout — never block longer than 200ms
-    const timer = setTimeout(() => setLoading(false), 200);
+    safetyTimer = window.setTimeout(dismiss, 450);
+
     return () => {
-      clearTimeout(timer);
-      window.removeEventListener('load', handleLoad);
+      window.removeEventListener('load', dismiss);
+      window.cancelAnimationFrame(frame);
+      window.clearTimeout(exitTimer);
+      window.clearTimeout(safetyTimer);
     };
   }, []);
 
-  if (!loading) return null;
+  if (phase === 'hidden') return null;
+
   return (
-    <div className="preloader" aria-hidden="true">
-      <div className="loader-ripple">
-        <div></div>
-        <div></div>
+    <div className={`sd-page-loader${phase === 'leaving' ? ' is-leaving' : ''}`} role="status" aria-live="polite">
+      <div className="sd-page-loader__mark" aria-hidden="true">
+        <span>S</span>
+        <i />
       </div>
+      <span className="sd-sr-only">Loading Sawdagar</span>
     </div>
   );
 }

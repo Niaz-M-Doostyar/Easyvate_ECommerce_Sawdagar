@@ -43,3 +43,4 @@ npm run db:seed
 
 - The active production code lives in `backend/`, `website/`, and `admin/`.
 - Root-level legacy scaffold/config files from the old single-app setup have been reduced so the workspace is clearer to navigate.
+- Pushes to `main` run the GitHub Actions build and optional VPS deployment workflow. See [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) for the required server setup and repository secrets.

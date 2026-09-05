@@ -3,17 +3,14 @@ import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useToast } from "@/contexts/ToastContext";
-import Pagination from "@/components/Pagination";
 export default function SupplierProducts() {
   const { t } = useLanguage();
   const toast = useToast();
   const [products, setProducts] = useState([]);
-  const [page, setPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
   const fetchProducts = useCallback(async () => {
-    const r = await fetch(`/api/supplier/products?page=${page}&limit=20`, { credentials: "include" });
-    if (r.ok) { const d = await r.json(); setProducts(d.products || []); setTotalPages(d.totalPages || 1); }
-  }, [page]);
+    const r = await fetch(`/api/supplier/products?all=true`, { credentials: "include" });
+    if (r.ok) { const d = await r.json(); setProducts(d.products || []); }
+  }, []);
   useEffect(() => { fetchProducts(); }, [fetchProducts]);
   const deleteProduct = async (id) => {
     if (!confirm("Delete this product?")) return;
@@ -39,7 +36,6 @@ export default function SupplierProducts() {
             <td><div className="flex gap-1"><Link href={`/supplier/products/${p.id}`} className="btn btn-sm btn-outline">{t("edit")}</Link><button onClick={() => deleteProduct(p.id)} className="btn btn-sm btn-danger">{t("delete")}</button></div></td>
           </tr>)}
         </tbody></table></div>
-        <div className="p-4"><Pagination page={page} totalPages={totalPages} onPageChange={setPage} /></div>
       </div>
     </div>
   );

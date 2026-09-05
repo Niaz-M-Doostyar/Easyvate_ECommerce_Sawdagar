@@ -8,6 +8,7 @@ import { useToast } from '../../contexts/ToastContext';
 import { authApi } from '../../services/api';
 import Input from '../../components/Input';
 import Button from '../../components/Button';
+import ScreenHeader from '../../components/ScreenHeader';
 import { spacing, fontSize, fontWeight } from '../../theme';
 
 export default function ForgotPasswordScreen({ navigation }) {
@@ -48,6 +49,7 @@ export default function ForgotPasswordScreen({ navigation }) {
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: c.background }]} edges={['top', 'bottom']}>
+      <ScreenHeader title="" onBack={() => navigation.goBack()} />
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined} keyboardVerticalOffset={Platform.OS === 'ios' ? 18 : 0}>
         <ScrollView contentContainerStyle={[styles.scroll, isTablet && styles.scrollTablet]} keyboardShouldPersistTaps="handled">
           <View style={[styles.content, { maxWidth: contentWidth }]}> 
@@ -56,7 +58,6 @@ export default function ForgotPasswordScreen({ navigation }) {
           <Text style={[styles.subtitle, { color: c.textSecondary }]}>Enter your email and we'll send you a reset link</Text>
           <Input label={t.email} icon="mail-outline" value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" placeholder="you@example.com" />
           <Button title={t.sendResetLink} onPress={handleSend} loading={loading} style={{ marginTop: spacing.md }} />
-          <Button title="Back to Login" onPress={() => navigation.goBack()} variant="ghost" style={{ marginTop: spacing.sm }} />
           </View>
         </ScrollView>
       </KeyboardAvoidingView>

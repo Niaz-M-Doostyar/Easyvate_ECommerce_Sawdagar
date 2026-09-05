@@ -1,7 +1,9 @@
 import React from 'react';
-import { Linking, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Linking, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Ionicons from 'react-native-vector-icons/Ionicons';
+import Button from '../../components/Button';
+import HeroCard from '../../components/HeroCard';
 import ScreenHeader from '../../components/ScreenHeader';
 import { useTheme } from '../../contexts/ThemeContext';
 import { borderRadius, fontSize, fontWeight, spacing } from '../../theme';
@@ -34,19 +36,19 @@ export default function PrivacyPolicyScreen({ navigation }) {
   const c = theme.colors;
 
   const handleEmailPress = () => {
-    Linking.openURL('mailto:easyvate33@gmail.com?subject=Sawdagar%20Account%20Deletion%20Request').catch(() => {});
+    Linking.openURL('mailto:supports@sawdagaraf.com?subject=Sawdagar%20Account%20Deletion%20Request').catch(() => {});
   };
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: c.background }]} edges={['top']}>
       <ScreenHeader title="Privacy Policy" onBack={() => navigation.goBack()} />
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
-        <View style={[styles.hero, { backgroundColor: c.secondary }]}>
-          <View style={[styles.heroGlow, { backgroundColor: c.primary + '22' }]} />
-          <Text style={styles.heroEyebrow}>Sawdagar Privacy</Text>
-          <Text style={styles.heroTitle}>How we collect, use, and protect account information inside the app.</Text>
-          <Text style={styles.heroBody}>Last updated: April 2026</Text>
-        </View>
+        <HeroCard
+          eyebrow="Sawdagar Privacy"
+          title="How we collect, use, and protect account information inside the app."
+          subtitle="Last updated: April 2026"
+          style={styles.hero}
+        />
 
         {POLICY_SECTIONS.map((section) => (
           <View key={section.title} style={[styles.card, { backgroundColor: c.card, borderColor: c.border }]}>
@@ -61,11 +63,16 @@ export default function PrivacyPolicyScreen({ navigation }) {
           </View>
           <View style={styles.deleteCopy}>
             <Text style={[styles.cardTitle, { color: c.text }]}>Account deletion requests</Text>
-            <Text style={[styles.cardBody, { color: c.textSecondary }]}>If someone wants to delete a Sawdagar account, they should contact easyvate33@gmail.com. Send the request from the same email address or include the phone number linked to the account so the team can verify ownership.</Text>
+            <Text style={[styles.cardBody, { color: c.textSecondary }]}>If someone wants to delete a Sawdagar account, they should contact supports@sawdagaraf.com. Send the request from the same email address or include the phone number linked to the account so the team can verify ownership.</Text>
           </View>
-          <TouchableOpacity onPress={handleEmailPress} style={[styles.emailButton, { backgroundColor: c.primary }]}>
-            <Text style={styles.emailButtonText}>Email us</Text>
-          </TouchableOpacity>
+          <Button
+            variant="primary"
+            size="sm"
+            title="Email us"
+            onPress={handleEmailPress}
+            icon={<Ionicons name="mail-outline" size={16} color={c.white} />}
+            style={styles.emailButton}
+          />
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -74,18 +81,13 @@ export default function PrivacyPolicyScreen({ navigation }) {
 
 const styles = StyleSheet.create({
   safe: { flex: 1 },
-  scroll: { padding: spacing.base, paddingBottom: spacing.xxl },
-  hero: { borderRadius: borderRadius.xxl, overflow: 'hidden', padding: spacing.xl, marginBottom: spacing.base },
-  heroGlow: { position: 'absolute', width: 180, height: 180, borderRadius: 90, top: -46, right: -18 },
-  heroEyebrow: { color: '#BDD0FF', fontSize: fontSize.xs, fontWeight: fontWeight.bold, textTransform: 'uppercase', letterSpacing: 1 },
-  heroTitle: { color: '#FFFFFF', fontSize: fontSize.xl, fontWeight: fontWeight.bold, lineHeight: 30, marginTop: spacing.sm, maxWidth: '88%' },
-  heroBody: { color: '#D6E5FF', fontSize: fontSize.sm, marginTop: spacing.sm },
+  scroll: { width: '100%', maxWidth: 760, alignSelf: 'center', padding: spacing.base, paddingBottom: 120 },
+  hero: { marginBottom: spacing.base },
   card: { borderRadius: borderRadius.xl, borderWidth: 1, padding: spacing.lg, marginBottom: spacing.base },
   cardTitle: { fontSize: fontSize.base, fontWeight: fontWeight.bold, marginBottom: spacing.sm },
   cardBody: { fontSize: fontSize.sm, lineHeight: 22 },
   deleteCard: { borderRadius: borderRadius.xl, borderWidth: 1, padding: spacing.lg, marginTop: spacing.sm },
   deleteIcon: { width: 46, height: 46, borderRadius: 23, justifyContent: 'center', alignItems: 'center', marginBottom: spacing.base },
   deleteCopy: { marginBottom: spacing.base },
-  emailButton: { alignSelf: 'flex-start', paddingHorizontal: spacing.lg, paddingVertical: spacing.sm, borderRadius: borderRadius.full },
-  emailButtonText: { color: '#FFFFFF', fontSize: fontSize.sm, fontWeight: fontWeight.bold },
+  emailButton: { alignSelf: 'flex-start' },
 });

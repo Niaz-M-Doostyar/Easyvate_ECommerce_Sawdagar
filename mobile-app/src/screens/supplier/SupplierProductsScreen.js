@@ -10,6 +10,7 @@ import Button from '../../components/Button';
 import EmptyState from '../../components/EmptyState';
 import ScreenHeader from '../../components/ScreenHeader';
 import RemoteImage from '../../components/RemoteImage';
+import FilterTabs from '../../components/FilterTabs';
 import { supplierApi } from '../../services/api';
 import { formatPrice } from '../../config';
 import { spacing, fontSize, fontWeight, borderRadius } from '../../theme';
@@ -23,10 +24,11 @@ export default function SupplierProductsScreen({ navigation }) {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [filter, setFilter] = useState('all');
+  const [openingId, setOpeningId] = useState(null);
 
   const load = useCallback(async (statusValue = 'all') => {
     try {
-      const d = await supplierApi.myProducts(statusValue === 'all' ? undefined : { status: statusValue });
+      const d = await supplierApi.myProducts(statusValue === 'all' ? { all: true } : { status: statusValue, all: true });
       setProducts(d.products || d || []);
     } catch (err) {
       setProducts([]);
@@ -47,6 +49,19 @@ export default function SupplierProductsScreen({ navigation }) {
     ]);
   };
 
+  const handleEdit = async (item) => {
+    if (openingId) return;
+    setOpeningId(item.id);
+    try {
+      const data = await supplierApi.getProduct(item.id);
+      navigation.navigate('SupplierAddProduct', { product: data.product || data });
+    } catch (err) {
+      toast.error(err?.message || 'Failed to open product');
+    } finally {
+      setOpeningId(null);
+    }
+  };
+
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: c.background }]} edges={['top']}>
       <ScreenHeader
@@ -54,33 +69,25 @@ export default function SupplierProductsScreen({ navigation }) {
         onBack={() => navigation.goBack()}
         right={(
           <TouchableOpacity onPress={() => navigation.navigate('SupplierAddProduct')} style={[styles.addBtn, { backgroundColor: c.primary }]}> 
-            <Ionicons name="add" size={22} color="#FFF" />
+            <Ionicons name="add" size={22} color={c.white} />
           </TouchableOpacity>
         )}
       />
-      <View style={styles.filtersRow}>
-        {[
+      <FilterTabs
+        tabs={[
           { key: 'all', label: t.all },
           { key: 'pending', label: t.pending },
           { key: 'approved', label: t.approved },
           { key: 'rejected', label: t.rejected },
-        ].map((f) => {
-          const selected = filter === f.key;
-          return (
-            <TouchableOpacity
-              key={f.key}
-              onPress={() => setFilter(f.key)}
-              style={[styles.filterChip, { backgroundColor: selected ? c.primary : c.card, borderColor: selected ? c.primary : c.border }]}
-            >
-              <Text style={{ color: selected ? '#FFF' : c.textSecondary, fontSize: fontSize.sm, fontWeight: fontWeight.medium }}>{f.label}</Text>
-            </TouchableOpacity>
-          );
-        })}
-      </View>
+        ]}
+        activeKey={filter}
+        onChange={setFilter}
+        style={{ marginVertical: spacing.sm }}
+      />
       {loading ? <ActivityIndicator size="large" color={c.primary} style={{ marginTop: 60 }} /> : products.length === 0 ? (
         <EmptyState icon="cube-outline" title={filter === 'all' ? 'No products yet' : 'No products in this status'} actionLabel={t.addProduct} onAction={() => navigation.navigate('SupplierAddProduct')} />
       ) : (
-        <FlatList data={products} keyExtractor={i => String(i.id)} contentContainerStyle={{ padding: spacing.base }}
+        <FlatList data={products} keyExtractor={i => String(i.id)} contentContainerStyle={{ padding: spacing.base, paddingBottom: 120 }}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={c.primary} />}
           renderItem={({ item }) => {
             const img = item.images?.[0]?.url || item.image || item.thumbnail || null;
@@ -90,12 +97,12 @@ export default function SupplierProductsScreen({ navigation }) {
                   {img ? <RemoteImage source={img} fallbackSource={item.images?.[1]?.url} style={styles.cardImg} fallback={<View style={[styles.cardImg, { backgroundColor: c.skeleton }]} />} /> : <View style={[styles.cardImg, { backgroundColor: c.skeleton }]} />}
                   <View style={styles.cardInfo}>
                     <Text numberOfLines={1} style={[styles.cardName, { color: c.text }]}>{getName(item)}</Text>
-                    <Text style={[styles.cardPrice, { color: c.primary }]}>{formatPrice(item.retailPrice)}</Text>
+                    <Text style={[styles.cardPrice, { color: c.primary }]}>{formatPrice(item.retailPrice ?? item.suggestedPrice ?? item.wholesaleCost)}</Text>
                     <StatusBadge status={item.status === 'approved' ? 'approved' : item.status === 'rejected' ? 'rejected' : 'pending'} />
                   </View>
                 </View>
                 <View style={styles.cardActions}>
-                  <Button title={t.editProduct} onPress={() => navigation.navigate('SupplierAddProduct', { product: item })} size="sm" variant="outline" style={{ flex: 1, marginRight: 8 }} />
+                  <Button title={t.editProduct} onPress={() => handleEdit(item)} loading={openingId === item.id} disabled={!!openingId} size="sm" variant="outline" style={{ flex: 1, marginRight: 8 }} />
                   <TouchableOpacity onPress={() => handleDelete(item.id)} style={[styles.delBtn, { borderColor: c.error }]}>
                     <Ionicons name="trash-outline" size={18} color={c.error} />
                   </TouchableOpacity>
@@ -111,9 +118,7 @@ export default function SupplierProductsScreen({ navigation }) {
 
 const styles = StyleSheet.create({
   safe: { flex: 1 },
-  filtersRow: { flexDirection: 'row', gap: 8, paddingHorizontal: spacing.base, paddingTop: spacing.sm, paddingBottom: spacing.sm },
-  filterChip: { paddingHorizontal: 12, paddingVertical: 7, borderRadius: borderRadius.full, borderWidth: 1 },
-  addBtn: { width: 36, height: 36, borderRadius: 18, justifyContent: 'center', alignItems: 'center' },
+  addBtn: { width: 44, height: 44, borderRadius: borderRadius.full, justifyContent: 'center', alignItems: 'center' },
   card: { borderRadius: borderRadius.lg, borderWidth: 1, padding: spacing.base, marginBottom: spacing.md },
   cardRow: { flexDirection: 'row', marginBottom: spacing.md },
   cardImg: { width: 64, height: 64, borderRadius: borderRadius.md },
@@ -121,5 +126,5 @@ const styles = StyleSheet.create({
   cardName: { fontSize: fontSize.base, fontWeight: fontWeight.semibold },
   cardPrice: { fontSize: fontSize.md, fontWeight: fontWeight.bold },
   cardActions: { flexDirection: 'row', alignItems: 'center' },
-  delBtn: { width: 38, height: 38, borderRadius: borderRadius.md, borderWidth: 1, justifyContent: 'center', alignItems: 'center' },
+  delBtn: { width: 44, height: 44, borderRadius: borderRadius.full, borderWidth: 1, justifyContent: 'center', alignItems: 'center' },
 });

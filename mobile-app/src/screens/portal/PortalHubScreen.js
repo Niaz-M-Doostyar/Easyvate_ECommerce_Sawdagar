@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useAuth } from '../../contexts/AuthContext';
+import ScreenHeader from '../../components/ScreenHeader';
 import { spacing, fontSize, fontWeight, borderRadius, shadows } from '../../theme';
 
 export default function PortalHubScreen({ navigation }) {
@@ -83,15 +84,11 @@ export default function PortalHubScreen({ navigation }) {
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: c.background }]} edges={['top']}>
-      <View style={[styles.header, { borderBottomColor: c.border }]}> 
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.headerAction}>
-          <Ionicons name="arrow-back" size={24} color={c.text} />
-        </TouchableOpacity>
-        <View style={styles.headerCopy}>
-          <Text style={[styles.headerTitle, { color: c.text }]}>Command Center</Text>
-          <Text style={[styles.headerSubtitle, { color: c.textSecondary }]}>Full website and admin parity, routed through a mobile shell.</Text>
-        </View>
-      </View>
+      <ScreenHeader
+        title="Command Center"
+        subtitle="Full website and admin parity, routed through a mobile shell."
+        onBack={() => navigation.goBack()}
+      />
 
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
         <View style={[styles.heroCard, shadows.lg, { backgroundColor: c.card, borderColor: c.border }]}> 
@@ -144,25 +141,20 @@ function StatPill({ label, value, c }) {
 
 const styles = StyleSheet.create({
   safe: { flex: 1 },
-  header: { flexDirection: 'row', alignItems: 'flex-start', paddingHorizontal: spacing.base, paddingVertical: spacing.base, borderBottomWidth: 1 },
-  headerAction: { padding: 8, marginRight: spacing.sm },
-  headerCopy: { flex: 1, paddingTop: 4 },
-  headerTitle: { fontSize: fontSize.xl, fontWeight: fontWeight.bold },
-  headerSubtitle: { fontSize: fontSize.sm, marginTop: 4, lineHeight: 20 },
-  scroll: { padding: spacing.base, paddingBottom: spacing.xxl },
+  scroll: { padding: spacing.base, paddingBottom: 120 },
   heroCard: { borderWidth: 1, borderRadius: borderRadius.xl, padding: spacing.xl, marginBottom: spacing.base },
   heroBadge: { flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start', borderRadius: borderRadius.full, paddingHorizontal: 12, paddingVertical: 8, gap: 6 },
-  heroBadgeText: { fontSize: fontSize.xs, fontWeight: '700', letterSpacing: 1 },
-  heroTitle: { fontSize: fontSize.xl, fontWeight: '800', lineHeight: 30, marginTop: spacing.base },
+  heroBadgeText: { fontSize: fontSize.xs, fontWeight: fontWeight.bold, letterSpacing: 1 },
+  heroTitle: { fontSize: fontSize.xl, fontWeight: fontWeight.heavy, lineHeight: 30, marginTop: spacing.base },
   heroBody: { fontSize: fontSize.base, lineHeight: 24, marginTop: spacing.sm },
   heroStats: { flexDirection: 'row', gap: 10, marginTop: spacing.lg },
   statPill: { flex: 1, borderRadius: borderRadius.lg, padding: spacing.md },
-  statLabel: { fontSize: fontSize.xs, fontWeight: '700', letterSpacing: 1 },
-  statValue: { fontSize: fontSize.md, fontWeight: '800', marginTop: 4 },
-  portalCard: { flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderRadius: borderRadius.xl, padding: spacing.base, marginBottom: 12 },
-  portalIcon: { width: 46, height: 46, borderRadius: 23, justifyContent: 'center', alignItems: 'center', marginRight: spacing.base },
+  statLabel: { fontSize: fontSize.xs, fontWeight: fontWeight.bold, letterSpacing: 1 },
+  statValue: { fontSize: fontSize.md, fontWeight: fontWeight.heavy, marginTop: 4 },
+  portalCard: { flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderRadius: borderRadius.xl, padding: spacing.base, marginBottom: spacing.md },
+  portalIcon: { width: 46, height: 46, borderRadius: borderRadius.full, justifyContent: 'center', alignItems: 'center', marginRight: spacing.base },
   portalCopy: { flex: 1, paddingRight: spacing.base },
-  portalTitle: { fontSize: fontSize.base, fontWeight: '800' },
+  portalTitle: { fontSize: fontSize.base, lineHeight: 20, fontWeight: fontWeight.heavy, includeFontPadding: false },
   portalBody: { fontSize: fontSize.sm, lineHeight: 20, marginTop: 4 },
-  portalHint: { fontSize: fontSize.xs, fontWeight: '700', marginTop: 8 },
+  portalHint: { fontSize: fontSize.xs, fontWeight: fontWeight.bold, marginTop: 8 },
 });

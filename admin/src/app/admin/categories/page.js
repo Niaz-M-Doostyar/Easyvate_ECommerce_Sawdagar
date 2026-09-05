@@ -2,6 +2,10 @@
 import { useEffect, useState } from "react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useToast } from "@/contexts/ToastContext";
+import ImageUploader from "@/components/ImageUploader";
+import { CATEGORY_ICONS, getCategoryIcon } from "@/data/categoryIcons";
+
+const EMPTY_FORM = { slug: "", nameEn: "", namePs: "", nameDr: "", parentId: "", image: "", iconKey: "", visualMode: "icon" };
 
 export default function AdminCategoriesPage() {
   const { t } = useLanguage();
@@ -9,7 +13,7 @@ export default function AdminCategoriesPage() {
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [modal, setModal] = useState(null); // null | { mode: 'create' | 'edit', data }
-  const [form, setForm] = useState({ slug: "", nameEn: "", namePs: "", nameDr: "", parentId: "" });
+  const [form, setForm] = useState(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
 
   const fetchCategories = () => {
@@ -23,24 +27,43 @@ export default function AdminCategoriesPage() {
   useEffect(() => { fetchCategories(); }, []);
 
   const openCreate = () => {
-    setForm({ slug: "", nameEn: "", namePs: "", nameDr: "", parentId: "" });
+    setForm(EMPTY_FORM);
     setModal({ mode: "create" });
   };
 
   const openEdit = (cat) => {
-    setForm({ slug: cat.slug, nameEn: cat.nameEn, namePs: cat.namePs, nameDr: cat.nameDr, parentId: cat.parentId || "" });
+    setForm({
+      slug: cat.slug,
+      nameEn: cat.nameEn,
+      namePs: cat.namePs,
+      nameDr: cat.nameDr,
+      parentId: cat.parentId || "",
+      image: cat.image || "",
+      iconKey: cat.iconKey || "",
+      visualMode: cat.image ? "image" : "icon",
+    });
     setModal({ mode: "edit", id: cat.id });
   };
 
   const handleSave = async () => {
     if (!form.slug || !form.nameEn) { toast.error("Slug and English name are required"); return; }
+    if (form.visualMode === "icon" && !form.iconKey) { toast.error("Choose a 3D category icon"); return; }
+    if (form.visualMode === "image" && !form.image) { toast.error("Upload a category image"); return; }
     setSaving(true);
     try {
       const url = modal.mode === "create" ? "/api/categories" : `/api/categories/${modal.id}`;
       const method = modal.mode === "create" ? "POST" : "PUT";
       const res = await fetch(url, {
         method, headers: { "Content-Type": "application/json" }, credentials: "include",
-        body: JSON.stringify({ ...form, parentId: form.parentId || null }),
+        body: JSON.stringify({
+          slug: form.slug,
+          nameEn: form.nameEn,
+          namePs: form.namePs,
+          nameDr: form.nameDr,
+          parentId: form.parentId || null,
+          image: form.visualMode === "image" ? form.image : null,
+          iconKey: form.visualMode === "icon" ? form.iconKey : null,
+        }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Failed");
@@ -87,6 +110,7 @@ export default function AdminCategoriesPage() {
             <thead>
               <tr>
                 <th>ID</th>
+                <th>Visual</th>
                 <th>Slug</th>
                 <th>Name (EN)</th>
                 <th>Name (PS)</th>
@@ -98,10 +122,21 @@ export default function AdminCategoriesPage() {
             </thead>
             <tbody>
               {categories.length === 0 ? (
-                <tr><td colSpan={8} className="text-center py-8 text-body">No categories found</td></tr>
+                <tr><td colSpan={9} className="text-center py-8 text-body">No categories found</td></tr>
               ) : categories.map((cat) => (
                 <tr key={cat.id}>
                   <td className="font-semibold text-navy">{cat.id}</td>
+                  <td>
+                    {cat.image ? (
+                      <img src={cat.image} alt="" className="h-11 w-11 rounded-xl border border-gray-200 object-cover" />
+                    ) : cat.iconKey ? (
+                      <div className="flex h-12 w-12 items-center justify-center rounded-xl border border-blue-100 bg-blue-50/60 p-1" title={getCategoryIcon(cat.iconKey)?.label || cat.iconKey}>
+                        <img src={getCategoryIcon(cat.iconKey)?.asset || "/category-icons/general.png"} alt="" className="h-full w-full object-contain" />
+                      </div>
+                    ) : (
+                      <span className="text-body">—</span>
+                    )}
+                  </td>
                   <td><span className="badge badge-blue">{cat.slug}</span></td>
                   <td className="font-semibold text-navy">{cat.nameEn}</td>
                   <td>{cat.namePs}</td>
@@ -123,7 +158,7 @@ export default function AdminCategoriesPage() {
 
       {modal && (
         <div className="modal-overlay" onClick={() => setModal(null)}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+          <div className="modal-content" style={{ maxWidth: 720 }} onClick={(e) => e.stopPropagation()}>
             <h2 className="text-lg font-bold text-navy mb-4">{modal.mode === "create" ? "Add Category" : "Edit Category"}</h2>
             <div className="space-y-4">
               <div>
@@ -155,6 +190,59 @@ export default function AdminCategoriesPage() {
                     <option key={c.id} value={c.id}>{c.nameEn}</option>
                   ))}
                 </select>
+              </div>
+
+              <div>
+                <label className="label">Category Visual *</label>
+                <div className="mb-3 grid grid-cols-2 gap-2 rounded-xl bg-gray-100 p-1">
+                  <button
+                    type="button"
+                    onClick={() => setForm((prev) => ({ ...prev, visualMode: "icon", image: "" }))}
+                    className={`min-h-10 rounded-lg px-4 text-sm font-semibold transition ${form.visualMode === "icon" ? "bg-white text-primary shadow-sm" : "text-body hover:text-navy"}`}
+                  >
+                    Choose 3D Icon
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setForm((prev) => ({ ...prev, visualMode: "image", iconKey: "" }))}
+                    className={`min-h-10 rounded-lg px-4 text-sm font-semibold transition ${form.visualMode === "image" ? "bg-white text-primary shadow-sm" : "text-body hover:text-navy"}`}
+                  >
+                    Upload Image
+                  </button>
+                </div>
+
+                {form.visualMode === "icon" ? (
+                  <div>
+                    <p className="mb-3 text-xs text-body">Select the realistic 3D visual that best represents this category.</p>
+                    <div className="grid max-h-64 grid-cols-3 gap-2 overflow-y-auto pr-1 sm:grid-cols-4">
+                      {CATEGORY_ICONS.map((icon) => {
+                        const selected = form.iconKey === icon.key;
+                        return (
+                          <button
+                            key={icon.key}
+                            type="button"
+                            onClick={() => setForm((prev) => ({ ...prev, iconKey: icon.key }))}
+                            className={`flex min-h-28 flex-col items-center justify-center gap-2 rounded-xl border-2 p-2 text-center transition ${selected ? "border-primary bg-blue-50 shadow-sm" : "border-gray-200 bg-white hover:border-blue-300"}`}
+                            aria-pressed={selected}
+                          >
+                            <span className="flex h-16 w-16 items-center justify-center rounded-xl bg-blue-50/70 p-1">
+                              <img src={icon.asset} alt="" className="h-full w-full object-contain" />
+                            </span>
+                            <span className={`text-xs font-semibold leading-4 ${selected ? "text-primary" : "text-navy"}`}>{icon.label}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ) : (
+                  <ImageUploader
+                    images={form.image ? [form.image] : []}
+                    onChange={(images) => setForm((prev) => ({ ...prev, image: images[0] || "" }))}
+                    max={1}
+                    label="Category Image *"
+                    helperText="Use a square image for the best result in the mobile app."
+                  />
+                )}
               </div>
             </div>
             <div className="flex gap-3 mt-6">

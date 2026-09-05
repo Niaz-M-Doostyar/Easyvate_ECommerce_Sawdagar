@@ -7,9 +7,9 @@ import { useLanguage } from '../../contexts/LanguageContext';
 import { useToast } from '../../contexts/ToastContext';
 import Input from '../../components/Input';
 import Button from '../../components/Button';
-import BrandLogo from '../../components/BrandLogo';
 import ScreenHeader from '../../components/ScreenHeader';
-import { spacing, fontSize, fontWeight } from '../../theme';
+import ProvincePicker from '../../components/ProvincePicker';
+import { spacing, fontSize, fontWeight, borderRadius } from '../../theme';
 
 export default function RegisterScreen({ navigation }) {
   const { width } = useWindowDimensions();
@@ -26,39 +26,8 @@ export default function RegisterScreen({ navigation }) {
 
   const set = (k, v) => setForm(prev => ({ ...prev, [k]: v }));
 
-  const navigateToLogin = () => {
-    // Prefer navigating within the Auth stack to the Login screen
-    if (navigation && typeof navigation.navigate === 'function') {
-      // Use replace to avoid stacking Login on top of Register for smoother back behavior
-      navigation.replace('Login');
-      return;
-    }
-    if (navigation.canGoBack?.()) {
-      navigation.goBack();
-      return;
-    }
-    const parent = navigation.getParent();
-    if (parent && typeof parent.goBack === 'function') {
-      parent.goBack();
-      return;
-    }
-  };
-
-  const handleBack = () => {
-    const parent = navigation.getParent();
-    const authIndex = navigation.getState?.()?.index ?? 0;
-
-    if (authIndex > 0 && navigation.canGoBack && navigation.canGoBack()) {
-      navigation.goBack();
-      return;
-    }
-    if (parent && typeof parent.goBack === 'function') {
-      parent.goBack();
-      return;
-    }
-    // fallback to main
-    if (parent && typeof parent.navigate === 'function') parent.navigate('Main');
-  };
+  const goToLogin = () => { navigation.goBack(); };
+  const handleBack = () => { navigation.goBack(); };
 
   const validate = () => {
     const e = {};
@@ -70,6 +39,7 @@ export default function RegisterScreen({ navigation }) {
     else if (form.password.length < 6) e.password = 'At least 6 characters';
     if (form.password !== form.confirmPassword) e.confirmPassword = 'Passwords do not match';
     if (form.role === 'supplier' && !(form.companyName || '').trim()) e.companyName = 'Company name is required';
+    if (form.role === 'supplier' && !form.province) e.province = 'Province is required';
     setErrors(e);
     return Object.keys(e).length === 0;
   };
@@ -98,7 +68,7 @@ export default function RegisterScreen({ navigation }) {
       Alert.alert(
         t.registrationSuccessTitle,
         successMessage,
-        [{ text: 'OK', onPress: navigateToLogin }],
+        [{ text: 'OK', onPress: goToLogin }],
         { cancelable: false },
       );
     } catch (err) {
@@ -121,19 +91,14 @@ export default function RegisterScreen({ navigation }) {
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined} keyboardVerticalOffset={Platform.OS === 'ios' ? 18 : 0}>
         <ScrollView contentContainerStyle={[styles.scroll, isTablet && styles.scrollTablet]} keyboardShouldPersistTaps="handled">
           <View style={[styles.content, { maxWidth: contentWidth }]}> 
-          <View style={[styles.hero, { backgroundColor: c.secondary }]}> 
-            <View style={[styles.heroGlow, { backgroundColor: c.primary + '22' }]} />
-            <BrandLogo variant="symbol" size={72} style={styles.heroMark} />
-            <BrandLogo width={168} />
-            <Text style={[styles.subtitle, { color: '#C1D4FF' }]}>Create your account in minutes and keep your shopping, orders, and checkout details in one place.</Text>
-          </View>
+
           <View style={[styles.formCard, { backgroundColor: c.surface, borderColor: c.border }]}> 
             <Text style={[styles.title, { color: c.text }]}>{t.createYourAccount}</Text>
             <View style={styles.roleRow}>
               {roles.map(r => (
                 <TouchableOpacity key={r.key} onPress={() => set('role', r.key)}
                   style={[styles.roleBtn, { borderColor: form.role === r.key ? c.primary : c.border, backgroundColor: form.role === r.key ? c.brandSurface : c.surfaceElevated }]}> 
-                  <Text style={[styles.roleLabel, { color: form.role === r.key ? c.primary : c.textSecondary }]}>{r.label}</Text>
+                  <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.86} maxFontSizeMultiplier={1.15} style={[styles.roleLabel, { color: form.role === r.key ? c.primary : c.textSecondary }]}>{r.label}</Text>
                 </TouchableOpacity>
               ))}
             </View>
@@ -143,10 +108,10 @@ export default function RegisterScreen({ navigation }) {
             {form.role === 'supplier' && (
               <>
                 <Input label={t.companyName} icon="business-outline" value={form.companyName || ''} onChangeText={v => set('companyName', v)} error={errors.companyName} placeholder="Required for suppliers" />
-                <Input label="Province" icon="map-marker-outline" value={form.province || ''} onChangeText={v => set('province', v)} placeholder="Province / State" />
-                <Input label="District" icon="map-marker-radius" value={form.district || ''} onChangeText={v => set('district', v)} placeholder="District" />
-                <Input label="Village / City" icon="city" value={form.village || ''} onChangeText={v => set('village', v)} placeholder="Village or City" />
-                <Input label="Landmark" icon="map-marker" value={form.landmark || ''} onChangeText={v => set('landmark', v)} placeholder="Landmark / Address" />
+                <ProvincePicker value={form.province} onChange={v => set('province', v)} error={errors.province} />
+                <Input label="District" icon="location-outline" value={form.district || ''} onChangeText={v => set('district', v)} placeholder="District" />
+                <Input label="Village / City" icon="home-outline" value={form.village || ''} onChangeText={v => set('village', v)} placeholder="Village or City" />
+                <Input label="Landmark" icon="navigate-outline" value={form.landmark || ''} onChangeText={v => set('landmark', v)} placeholder="Landmark / Address" />
               </>
             )}
             <Input label={t.password} icon="lock-closed-outline" value={form.password} onChangeText={v => set('password', v)} error={errors.password} secureTextEntry placeholder="Min 6 characters" />
@@ -155,8 +120,8 @@ export default function RegisterScreen({ navigation }) {
           </View>
           <View style={styles.footer}>
             <Text style={[styles.footerText, { color: c.textSecondary }]}>{t.alreadyHaveAccount} </Text>
-            <TouchableOpacity onPress={navigateToLogin}>
-                <Text style={[styles.footerLink, { color: c.primary }]}>{t.login}</Text>
+            <TouchableOpacity onPress={goToLogin} accessibilityRole="button" accessibilityLabel={t.login} hitSlop={8} style={styles.footerLinkButton}>
+                <Text numberOfLines={1} maxFontSizeMultiplier={1.15} style={[styles.footerLink, { color: c.primary }]}>{t.login}</Text>
               </TouchableOpacity>
           </View>
           </View>
@@ -171,16 +136,13 @@ const styles = StyleSheet.create({
   scroll: { flexGrow: 1, padding: spacing.lg, paddingBottom: spacing.xxl },
   scrollTablet: { justifyContent: 'center' },
   content: { width: '100%', alignSelf: 'center' },
-  hero: { borderRadius: 30, overflow: 'hidden', padding: spacing.xl, marginTop: spacing.lg, marginBottom: spacing.lg },
-  heroGlow: { position: 'absolute', width: 180, height: 180, borderRadius: 90, top: -42, right: -28 },
-  heroMark: { position: 'absolute', right: spacing.lg, top: spacing.lg, opacity: 0.12 },
   title: { fontSize: fontSize.xxl, fontWeight: fontWeight.bold, marginBottom: spacing.md },
-  subtitle: { fontSize: fontSize.base, marginTop: spacing.base, lineHeight: 22, maxWidth: '86%' },
-  formCard: { borderWidth: 1, borderRadius: 30, padding: spacing.lg },
+  formCard: { borderWidth: 1, borderRadius: borderRadius.xxl, padding: spacing.lg },
   roleRow: { flexDirection: 'row', gap: 12, marginBottom: spacing.lg },
-  roleBtn: { flex: 1, padding: spacing.md, borderRadius: 16, borderWidth: 1.5, alignItems: 'center' },
-  roleLabel: { fontSize: fontSize.base, fontWeight: fontWeight.semibold },
-  footer: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', paddingVertical: spacing.lg },
+  roleBtn: { flex: 1, height: 48, paddingHorizontal: spacing.md, borderRadius: borderRadius.full, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
+  roleLabel: { fontSize: fontSize.base, lineHeight: 20, fontWeight: fontWeight.semibold, includeFontPadding: false, textAlign: 'center', textAlignVertical: 'center' },
+  footer: { minHeight: 44, flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', alignItems: 'center', paddingVertical: spacing.lg },
   footerText: { fontSize: fontSize.base },
-  footerLink: { fontSize: fontSize.base, fontWeight: fontWeight.semibold },
+  footerLinkButton: { minHeight: 44, justifyContent: 'center', paddingHorizontal: spacing.xs },
+  footerLink: { fontSize: fontSize.base, lineHeight: 20, fontWeight: fontWeight.semibold, includeFontPadding: false, textAlignVertical: 'center' },
 });

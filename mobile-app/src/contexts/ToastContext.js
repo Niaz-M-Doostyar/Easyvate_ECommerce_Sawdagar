@@ -2,7 +2,7 @@ import React, { createContext, useContext, useState, useCallback, useRef } from 
 import { Animated, Text, StyleSheet, Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from './ThemeContext';
-import { borderRadius, fontSize, spacing } from '../theme';
+import { borderRadius, fontSize, fontWeight, spacing } from '../theme';
 
 const ToastContext = createContext();
 
@@ -45,5 +45,5 @@ export function useToast() {
 
 const styles = StyleSheet.create({
   toast: { position: 'absolute', left: spacing.base, right: spacing.base, borderRadius: borderRadius.md, padding: spacing.base, zIndex: 9999, ...Platform.select({ ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.2, shadowRadius: 8 }, android: { elevation: 8 } }) },
-  text: { color: '#FFF', fontSize: fontSize.base, fontWeight: '600', textAlign: 'center' },
+  text: { color: '#FFF', fontSize: fontSize.base, fontWeight: fontWeight.semibold, textAlign: 'center' },
 });

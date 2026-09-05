@@ -76,7 +76,7 @@ function buildPortalBootstrapScript(state) {
           localStorage.setItem('sawdagar_admin_lang', window.__SAWDAGAR_STATE__.lang || 'en');
           localStorage.setItem('sawdagar_theme', window.__SAWDAGAR_STATE__.themeKey || 'ocean');
           localStorage.setItem('sawdagar_theme_mode', window.__SAWDAGAR_STATE__.themeMode || 'light');
-          localStorage.setItem('sawdagar_mobile_primary', window.__SAWDAGAR_STATE__.primaryColor || '#0EA5E9');
+          localStorage.setItem('sawdagar_mobile_primary', window.__SAWDAGAR_STATE__.primaryColor || '#2144C8');
 
           authKeys().forEach(function(key) {
             if (token) localStorage.setItem(key, token);
@@ -89,7 +89,7 @@ function buildPortalBootstrapScript(state) {
 
         try {
           document.documentElement.setAttribute('data-sawdagar-mobile', 'true');
-          document.documentElement.style.setProperty('--sawdagar-mobile-primary', window.__SAWDAGAR_STATE__.primaryColor || '#0EA5E9');
+          document.documentElement.style.setProperty('--sawdagar-mobile-primary', window.__SAWDAGAR_STATE__.primaryColor || '#2144C8');
         } catch (error) {}
 
         post('auth-state', { token: activeToken() });
@@ -357,7 +357,7 @@ export default function PortalScreen({ navigation, route }) {
             style={[styles.toolbarHub, { backgroundColor: c.background }]}
           >
             <Ionicons name="layers-outline" size={16} color={c.primary} />
-            <Text style={[styles.toolbarHubText, { color: c.primary }]}>Center</Text>
+            <Text numberOfLines={1} maxFontSizeMultiplier={1.15} style={[styles.toolbarHubText, { color: c.primary }]}>Center</Text>
           </TouchableOpacity>
         </View>
 
@@ -443,16 +443,16 @@ const styles = StyleSheet.create({
   loadingText: { fontSize: fontSize.base, marginTop: spacing.base },
   header: { borderBottomWidth: 1 },
   headerTop: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: spacing.base, paddingTop: spacing.base, paddingBottom: spacing.sm },
-  headerAction: { width: 40, height: 40, borderRadius: 20, justifyContent: 'center', alignItems: 'center' },
+  headerAction: { width: 44, height: 44, borderRadius: borderRadius.full, justifyContent: 'center', alignItems: 'center' },
   headerCopy: { flex: 1, paddingHorizontal: spacing.sm },
-  headerTitle: { fontSize: fontSize.base, fontWeight: '800' },
+  headerTitle: { fontSize: fontSize.base, fontWeight: fontWeight.heavy },
   headerUrl: { fontSize: fontSize.xs, marginTop: 4 },
   variantBadge: { borderRadius: borderRadius.full, paddingHorizontal: 10, paddingVertical: 6 },
-  variantText: { fontSize: fontSize.xs, fontWeight: '700', letterSpacing: 0.6 },
+  variantText: { fontSize: fontSize.xs, lineHeight: 16, fontWeight: fontWeight.bold, letterSpacing: 0.6, includeFontPadding: false, textAlignVertical: 'center' },
   toolbar: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: spacing.base, paddingBottom: spacing.base },
-  toolButton: { width: 38, height: 38, borderRadius: 19, justifyContent: 'center', alignItems: 'center' },
-  toolbarHub: { marginLeft: 'auto', flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 12, paddingVertical: 10, borderRadius: borderRadius.full },
-  toolbarHubText: { fontSize: fontSize.xs, fontWeight: '800', letterSpacing: 0.8 },
+  toolButton: { width: 44, height: 44, borderRadius: borderRadius.full, justifyContent: 'center', alignItems: 'center' },
+  toolbarHub: { minHeight: 44, marginLeft: 'auto', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingHorizontal: 12, paddingVertical: 8, borderRadius: borderRadius.full },
+  toolbarHubText: { fontSize: fontSize.xs, lineHeight: 16, fontWeight: fontWeight.heavy, letterSpacing: 0.5, includeFontPadding: false, textAlignVertical: 'center' },
   progressTrack: { height: 3, width: '100%' },
   progressBar: { height: '100%' },
   errorWrap: { flex: 1 },

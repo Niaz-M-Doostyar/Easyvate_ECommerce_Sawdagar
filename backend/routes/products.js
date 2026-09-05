@@ -23,7 +23,7 @@ const buildOrderBy = (sort) => {
 router.get('/', optionalAuth, async (req, res) => {
   try {
     const { skip, take, page, limit } = paginate(req.query.page, req.query.limit);
-    const { category, sort, minPrice, maxPrice, search, q, sponsoredOnly, inStock } = req.query;
+    const { category, sort, minPrice, maxPrice, search, q, sponsoredOnly, inStock, supplierId } = req.query;
 
     const where = { status: 'approved', isDeleted: false };
     const categoryId = await resolveCategoryFilter(category);
@@ -31,6 +31,13 @@ router.get('/', optionalAuth, async (req, res) => {
       return res.json({ products: [], total: 0, totalPages: 1, pagination: { page, limit, total: 0, totalPages: 1 } });
     }
     if (categoryId) where.categoryId = categoryId;
+    if (supplierId) {
+      const parsedSupplierId = parseInt(supplierId, 10);
+      if (!Number.isInteger(parsedSupplierId) || parsedSupplierId <= 0) {
+        return res.status(400).json({ error: 'Invalid supplier ID' });
+      }
+      where.supplierId = parsedSupplierId;
+    }
     if (minPrice || maxPrice) {
       where.retailPrice = {};
       if (minPrice) where.retailPrice.gte = parseFloat(minPrice);
@@ -62,7 +69,7 @@ router.get('/', optionalAuth, async (req, res) => {
         include: {
           images: { orderBy: { sortOrder: 'asc' }, take: 5 },
           category: true,
-          supplier: { select: { id: true, companyName: true, fullName: true, supplierVerified: true } },
+          supplier: { select: { id: true, companyName: true, fullName: true, supplierVerified: true, province: true } },
         },
         orderBy,
         skip,
@@ -72,7 +79,6 @@ router.get('/', optionalAuth, async (req, res) => {
     ]);
 
     const totalPages = Math.max(1, Math.ceil(total / limit));
-    res.set('Cache-Control', 'public, max-age=30, stale-while-revalidate=60');
     res.json({
       products,
       total,
@@ -122,7 +128,7 @@ router.get('/search', async (req, res) => {
         include: {
           images: { orderBy: { sortOrder: 'asc' }, take: 5 },
           category: true,
-          supplier: { select: { id: true, companyName: true, fullName: true, supplierVerified: true } },
+          supplier: { select: { id: true, companyName: true, fullName: true, supplierVerified: true, province: true } },
         },
         orderBy,
         skip,
@@ -151,9 +157,9 @@ router.get('/sponsored', async (req, res) => {
       include: {
         images: { orderBy: { sortOrder: 'asc' }, take: 5 },
         category: true,
-        supplier: { select: { id: true, companyName: true, fullName: true, supplierVerified: true } },
+        supplier: { select: { id: true, companyName: true, fullName: true, supplierVerified: true, province: true } },
       },
-      take: 8,
+      take: 30,
     });
     res.json({ products });
   } catch (err) {
@@ -169,7 +175,7 @@ router.get('/:id', async (req, res) => {
       include: {
         images: { orderBy: { sortOrder: 'asc' } },
         category: true,
-        supplier: { select: { id: true, companyName: true, fullName: true, supplierVerified: true } },
+        supplier: { select: { id: true, companyName: true, fullName: true, supplierVerified: true, province: true } },
       },
     });
 
@@ -186,7 +192,7 @@ router.get('/:id', async (req, res) => {
       },
       include: {
         images: { take: 1 },
-        supplier: { select: { id: true, companyName: true, fullName: true, supplierVerified: true } },
+        supplier: { select: { id: true, companyName: true, fullName: true, supplierVerified: true, province: true } },
       },
       take: 4,
     });

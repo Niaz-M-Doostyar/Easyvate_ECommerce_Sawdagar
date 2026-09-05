@@ -92,12 +92,12 @@ export default function SponsorshipsPage() {
   };
 
   return (
-    <main className="main">
-      <div className="site-breadcrumb">
+    <div className="f2-content-page f2-sponsorship-page">
+      <div className="site-breadcrumb f2-content-crumb">
         <div className="site-breadcrumb-bg" style={{ background: "url(/assets/img/breadcrumb/01.jpg)" }}></div>
         <div className="container">
           <div className="site-breadcrumb-wrap">
-            <h4 className="breadcrumb-title">{t("sponsorships") || "Sponsorships"}</h4>
+            <h1 className="breadcrumb-title">{t("sponsorships") || "Sponsorships"}</h1>
             <ul className="breadcrumb-menu">
               <li><Link href="/"><i className="far fa-home"></i> {t("home") || "Home"}</Link></li>
               <li className="active">{t("sponsorships") || "Sponsorships"}</li>
@@ -106,42 +106,45 @@ export default function SponsorshipsPage() {
         </div>
       </div>
 
-      <div className="py-100">
+      <section className="f2-content-section f2-sponsorship-main">
         <div className="container">
           {/* Packages Section */}
-          <div className="site-heading text-center mb-5">
-            <span className="site-title-tagline">Boost Your Sales</span>
+          <div className="site-heading f2-content-heading f2-content-heading--center f2-sponsorship-heading">
+            <span className="site-title-tagline f2-content-eyebrow">Boost Your Sales</span>
             <h2 className="site-title">Sponsorship Packages</h2>
-            <p style={{ maxWidth: 600, margin: "10px auto 0", color: "#666" }}>
+            <p>
               Promote your products to thousands of customers. Choose a package that suits your needs.
             </p>
           </div>
 
-          <div className="row mb-5">
+          {loading && (
+            <div className="f2-content-state" role="status">
+              <span className="f2-content-spinner f2-content-spinner--large" aria-hidden="true" />
+              <span>Loading sponsorship packages...</span>
+            </div>
+          )}
+
+          <div className="row f2-sponsorship-packages">
             {packages.length === 0 && !loading && (
-              <div className="col-12 text-center py-5">
-                <p style={{ color: "#999" }}>No sponsorship packages available at the moment.</p>
+              <div className="col-12">
+                <div className="f2-content-state f2-content-state--empty">
+                  <span className="f2-content-state__icon"><i className="far fa-megaphone" aria-hidden="true" /></span>
+                  <h2>No packages available</h2>
+                  <p>No sponsorship packages available at the moment.</p>
+                </div>
               </div>
             )}
             {packages.map((pkg) => (
               <div className="col-md-6 col-lg-4" key={pkg.id}>
-                <div className="wow fadeInUp" data-wow-delay="0.1s" style={{
-                  background: "#fff",
-                  borderRadius: 12,
-                  padding: 30,
-                  marginBottom: 30,
-                  boxShadow: "0 2px 20px rgba(0,0,0,0.08)",
-                  border: "2px solid #f0f0f0",
-                  transition: "all 0.3s ease",
-                  textAlign: "center",
-                }}>
-                  <h4 style={{ fontWeight: 700, marginBottom: 10 }}>{pkg.name}</h4>
-                  <div style={{ fontSize: 36, fontWeight: 800, color: "var(--theme-color)", marginBottom: 10 }}>
+                <article className="f2-sponsorship-package wow fadeInUp" data-wow-delay="0.1s">
+                  <span className="f2-sponsorship-package__icon"><i className="far fa-bullhorn" aria-hidden="true" /></span>
+                  <h3>{pkg.name}</h3>
+                  <div className="f2-sponsorship-package__price">
                     {CURRENCY_SYMBOL}{pkg.price}
                   </div>
-                  <p style={{ color: "#888", marginBottom: 15 }}>{pkg.durationDays} Days</p>
-                  {pkg.description && <p style={{ color: "#666", fontSize: 14 }}>{pkg.description}</p>}
-                </div>
+                  <p className="f2-sponsorship-package__duration">{pkg.durationDays} Days</p>
+                  {pkg.description && <p>{pkg.description}</p>}
+                </article>
               </div>
             ))}
           </div>
@@ -149,16 +152,17 @@ export default function SponsorshipsPage() {
           {/* Supplier Section: Submit Request */}
           {user?.role === "supplier" && (
             <>
-              <div className="site-heading mb-4">
-                <h2 className="site-title" style={{ fontSize: 22 }}>Request Sponsorship</h2>
+              <div className="site-heading f2-content-heading f2-sponsorship-subheading">
+                <span className="f2-content-eyebrow">Promote a product</span>
+                <h2 className="site-title">Request Sponsorship</h2>
               </div>
-              <div style={{ background: "#fff", borderRadius: 12, padding: 30, boxShadow: "0 2px 12px rgba(0,0,0,0.06)", marginBottom: 40 }}>
-                <form onSubmit={handleSubmit}>
-                  <div className="row">
+              <div className="f2-sponsorship-request-card">
+                <form onSubmit={handleSubmit} className="f2-content-form" aria-busy={submitting}>
+                  <div className="row f2-sponsorship-request-card__grid">
                     <div className="col-md-5">
-                      <div className="form-group">
-                        <label className="form-label fw-bold">Select Product</label>
-                        <select className="form-control" value={selectedProduct} onChange={(e) => setSelectedProduct(e.target.value)} required>
+                      <div className="form-group f2-content-field">
+                        <label htmlFor="sponsorship-product">Select Product</label>
+                        <select id="sponsorship-product" value={selectedProduct} onChange={(e) => setSelectedProduct(e.target.value)} required>
                           <option value="">-- Choose Product --</option>
                           {myProducts.map((p) => (
                             <option key={p.id} value={p.id}>{getName(p)}</option>
@@ -167,9 +171,9 @@ export default function SponsorshipsPage() {
                       </div>
                     </div>
                     <div className="col-md-5">
-                      <div className="form-group">
-                        <label className="form-label fw-bold">Select Package</label>
-                        <select className="form-control" value={selectedPackage} onChange={(e) => setSelectedPackage(e.target.value)} required>
+                      <div className="form-group f2-content-field">
+                        <label htmlFor="sponsorship-package">Select Package</label>
+                        <select id="sponsorship-package" value={selectedPackage} onChange={(e) => setSelectedPackage(e.target.value)} required>
                           <option value="">-- Choose Package --</option>
                           {packages.map((pkg) => (
                             <option key={pkg.id} value={pkg.id}>{pkg.name} - {CURRENCY_SYMBOL}{pkg.price}</option>
@@ -178,7 +182,7 @@ export default function SponsorshipsPage() {
                       </div>
                     </div>
                     <div className="col-md-2 d-flex align-items-end">
-                      <button type="submit" className="theme-btn w-100" disabled={submitting}>
+                      <button type="submit" className="f2-content-button f2-content-button--wide" disabled={submitting}>
                         {submitting ? "Submitting..." : "Submit"}
                       </button>
                     </div>
@@ -187,11 +191,12 @@ export default function SponsorshipsPage() {
               </div>
 
               {/* My Requests */}
-              <div className="site-heading mb-4">
-                <h2 className="site-title" style={{ fontSize: 22 }}>My Sponsorship Requests</h2>
+              <div className="site-heading f2-content-heading f2-sponsorship-subheading">
+                <span className="f2-content-eyebrow">Request history</span>
+                <h2 className="site-title">My Sponsorship Requests</h2>
               </div>
-              <div className="table-responsive" style={{ background: "#fff", borderRadius: 12, boxShadow: "0 2px 12px rgba(0,0,0,0.06)" }}>
-                <table className="table table-hover mb-0">
+              <div className="table-responsive f2-content-table-card">
+                <table className="table table-hover">
                   <thead>
                     <tr>
                       <th>Product</th>
@@ -204,7 +209,7 @@ export default function SponsorshipsPage() {
                   </thead>
                   <tbody>
                     {myRequests.length === 0 ? (
-                      <tr><td colSpan={6} className="text-center py-4" style={{ color: "#999" }}>No requests yet</td></tr>
+                      <tr><td colSpan={6} className="f2-content-table-empty">No requests yet</td></tr>
                     ) : myRequests.map((req) => (
                       <tr key={req.id}>
                         <td>{req.product?.nameEn || `Product #${req.productId}`}</td>
@@ -223,18 +228,20 @@ export default function SponsorshipsPage() {
 
           {/* Non-supplier: info */}
           {user && user.role !== "supplier" && (
-            <div className="text-center py-4">
-              <p style={{ color: "#666" }}>Sponsorship requests are available for suppliers. <Link href="/register" style={{ color: "var(--theme-color)" }}>Register as a supplier</Link> to get started.</p>
+            <div className="f2-content-notice">
+              <i className="far fa-info-circle" aria-hidden="true" />
+              <p>Sponsorship requests are available for suppliers. <Link href="/register">Register as a supplier</Link> to get started.</p>
             </div>
           )}
 
           {!user && (
-            <div className="text-center py-4">
-              <p style={{ color: "#666" }}>Please <Link href="/login" style={{ color: "var(--theme-color)" }}>sign in</Link> to view sponsorship options.</p>
+            <div className="f2-content-notice">
+              <i className="far fa-lock" aria-hidden="true" />
+              <p>Please <Link href="/login">sign in</Link> to view sponsorship options.</p>
             </div>
           )}
         </div>
-      </div>
-    </main>
+      </section>
+    </div>
   );
 }

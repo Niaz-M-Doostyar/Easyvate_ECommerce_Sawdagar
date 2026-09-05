@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useLanguage } from '../../contexts/LanguageContext';
@@ -8,15 +8,22 @@ import { useCart } from '../../contexts/CartContext';
 import { useAuth } from '../../contexts/AuthContext';
 import Button from '../../components/Button';
 import EmptyState from '../../components/EmptyState';
+import HeroCard from '../../components/HeroCard';
+import QuantityInput from '../../components/QuantityInput';
 import RemoteImage from '../../components/RemoteImage';
+import ScreenHeader from '../../components/ScreenHeader';
 import { formatPrice } from '../../config';
 import { spacing, fontSize, fontWeight, borderRadius, shadows } from '../../theme';
+
+// Space reserved at the end of the list so the last item clears the bottom checkout bar.
+const LIST_BOTTOM_CLEARANCE = 132;
 
 export default function CartScreen({ navigation }) {
   const { theme } = useTheme();
   const { t, getName } = useLanguage();
   const { user } = useAuth();
   const { items, total, updateQty, removeItem, clearCart, count } = useCart();
+  const insets = useSafeAreaInsets();
   const c = theme.colors;
 
   const openTab = (tabName) => {
@@ -31,7 +38,8 @@ export default function CartScreen({ navigation }) {
 
   if (items.length === 0) {
     return (
-      <SafeAreaView style={[styles.safe, { backgroundColor: c.background }]}>
+      <SafeAreaView style={[styles.safe, { backgroundColor: c.background }]} edges={['top']}>
+        <ScreenHeader title={t.cart} showBack={false} />
         <EmptyState
           icon="cart-outline"
           title={t.emptyCart}
@@ -45,26 +53,19 @@ export default function CartScreen({ navigation }) {
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: c.background }]} edges={['top']}>
-      <View style={[styles.header, { borderBottomColor: c.border }]}> 
-        <View>
-          <Text style={[styles.title, { color: c.text }]}>{t.cart}</Text>
-          <Text style={[styles.subtitle, { color: c.textSecondary }]}>{count} {count === 1 ? 'item' : 'items'} ready for checkout</Text>
-        </View>
-        <TouchableOpacity onPress={clearCart} style={[styles.clearBtn, { backgroundColor: c.brandSurface }]}> 
-          <MaterialCommunityIcons name="trash-can-outline" size={16} color={c.error} />
-          <Text style={[styles.clearLabel, { color: c.error }]}>{t.clear}</Text>
-        </TouchableOpacity>
-      </View>
+      <ScreenHeader
+        title={t.cart}
+        subtitle={`${count} ${count === 1 ? 'item' : 'items'} ready for checkout`}
+        showBack={false}
+        right={(
+          <TouchableOpacity onPress={clearCart} style={[styles.clearBtn, { backgroundColor: c.brandSurface }]}>
+            <MaterialCommunityIcons name="trash-can-outline" size={16} color={c.error} />
+            <Text style={[styles.clearLabel, { color: c.error }]}>{t.clear}</Text>
+          </TouchableOpacity>
+        )}
+      />
 
-      <View style={[styles.heroCard, { backgroundColor: c.secondary }, shadows.lg]}>
-        <Text style={styles.heroEyebrow}>Cart summary</Text>
-        <Text style={styles.heroTitle}>Everything is lined up for a faster checkout.</Text>
-        <Text style={styles.heroBody}>Review quantities, keep your best picks, and place the order when you're ready.</Text>
-        <View style={styles.heroStats}>
-          <StatPill icon="cart-outline" label={`${count} ${count === 1 ? 'item' : 'items'}`} />
-          <StatPill icon={user ? 'shield-check-outline' : 'account-lock-outline'} label={user ? 'Secure checkout' : 'Sign in to continue'} />
-        </View>
-      </View>
+
 
       <FlatList
         data={items}
@@ -79,11 +80,10 @@ export default function CartScreen({ navigation }) {
           const lineTotal = price * (item.quantity || 1);
           const itemId = item.id || item.productId;
           const stockLimited = Number.isFinite(product.stock) && product.stock > 0;
-          const canIncrease = !stockLimited || item.quantity < product.stock;
           const categoryLabel = product.category ? getName(product.category) : product.unit;
 
           return (
-            <View style={[styles.cartItem, { backgroundColor: c.card, borderColor: c.border }]}> 
+            <View style={[styles.cartItem, { backgroundColor: c.card, borderColor: c.border }]}>
               <TouchableOpacity
                 activeOpacity={0.9}
                 onPress={() => navigation.navigate('ProductDetail', { id: product.id || item.productId, product })}
@@ -102,17 +102,14 @@ export default function CartScreen({ navigation }) {
               </TouchableOpacity>
 
               <View style={styles.cartActions}>
-                <View style={[styles.stepper, { borderColor: c.border, backgroundColor: c.surfaceElevated }]}> 
-                  <TouchableOpacity onPress={() => updateQty(itemId, item.quantity - 1)} style={styles.stepBtn}>
-                    <MaterialCommunityIcons name="minus" size={18} color={c.text} />
-                  </TouchableOpacity>
-                  <Text style={[styles.stepVal, { color: c.text }]}>{item.quantity}</Text>
-                  <TouchableOpacity onPress={() => canIncrease && updateQty(itemId, item.quantity + 1)} disabled={!canIncrease} style={styles.stepBtn}>
-                    <MaterialCommunityIcons name="plus" size={18} color={canIncrease ? c.text : c.textMuted} />
-                  </TouchableOpacity>
-                </View>
+                <QuantityInput
+                  value={item.quantity}
+                  onChange={(next) => updateQty(itemId, next)}
+                  max={stockLimited ? product.stock : undefined}
+                  size="sm"
+                />
 
-                <TouchableOpacity onPress={() => removeItem(itemId)} style={[styles.removeBtn, { backgroundColor: c.brandSurface }]}> 
+                <TouchableOpacity onPress={() => removeItem(itemId)} style={[styles.removeBtn, { backgroundColor: c.brandSurface }]}>
                   <MaterialCommunityIcons name="trash-can-outline" size={16} color={c.error} />
                   <Text style={[styles.removeLabel, { color: c.error }]}>Remove</Text>
                 </TouchableOpacity>
@@ -122,18 +119,21 @@ export default function CartScreen({ navigation }) {
         }}
       />
 
-      <View style={[styles.bottomBar, { backgroundColor: c.card, borderTopColor: c.border }]}> 
-        <View>
+      <View style={[styles.bottomBar, { backgroundColor: c.card, borderTopColor: c.border, paddingBottom: Math.max(insets.bottom, spacing.md) }]}>
+        <View style={styles.totalCol}>
           <Text style={[styles.totalLabel, { color: c.textSecondary }]}>{t.total}</Text>
           <Text style={[styles.totalVal, { color: c.text }]}>{formatPrice(total)}</Text>
-          <Text style={[styles.totalNote, { color: c.textMuted }]}>Fast delivery and live order tracking</Text>
+          <Text numberOfLines={2} style={[styles.totalNote, { color: c.textMuted }]}>Fast delivery and live order tracking</Text>
         </View>
         <Button
           title={user ? t.checkout : t.login}
           onPress={() => user ? navigation.navigate('Checkout') : navigation.navigate('Auth', {
-            redirectTo: {
-              tab: 'CartTab',
-              params: { screen: 'Checkout' },
+            screen: 'Login',
+            params: {
+              redirectTo: {
+                tab: 'CartTab',
+                params: { screen: 'Checkout' },
+              },
             },
           })}
           style={styles.checkoutBtn}
@@ -145,29 +145,25 @@ export default function CartScreen({ navigation }) {
 }
 
 function StatPill({ icon, label }) {
+  const { theme } = useTheme();
+  const c = theme.colors;
   return (
-    <View style={styles.statPill}>
-      <MaterialCommunityIcons name={icon} size={16} color="#D6E5FF" />
-      <Text style={styles.statPillText}>{label}</Text>
+    <View style={[styles.statPill, { backgroundColor: c.heroSurface }]}>
+      <MaterialCommunityIcons name={icon} size={16} color={c.heroTextMuted} />
+      <Text style={[styles.statPillText, { color: c.heroTextMuted }]}>{label}</Text>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   safe: { flex: 1 },
-  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: spacing.base, paddingTop: spacing.base, paddingBottom: spacing.md, borderBottomWidth: 1 },
-  title: { fontSize: fontSize.xl, fontWeight: fontWeight.bold },
-  subtitle: { fontSize: fontSize.sm, marginTop: 4 },
-  clearBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, borderRadius: borderRadius.full, paddingHorizontal: 12, paddingVertical: 10 },
-  clearLabel: { fontSize: fontSize.xs, fontWeight: fontWeight.bold },
-  heroCard: { marginHorizontal: spacing.base, marginTop: spacing.base, borderRadius: borderRadius.xxl, padding: spacing.xl },
-  heroEyebrow: { color: '#C6D4FF', fontSize: fontSize.xs, fontWeight: fontWeight.bold, letterSpacing: 1.1, textTransform: 'uppercase' },
-  heroTitle: { color: '#FFFFFF', fontSize: fontSize.xl, fontWeight: fontWeight.heavy, lineHeight: 30, marginTop: spacing.sm },
-  heroBody: { color: '#D6E5FF', fontSize: fontSize.base, lineHeight: 22, marginTop: spacing.sm },
-  heroStats: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginTop: spacing.lg },
-  statPill: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 12, paddingVertical: 9, borderRadius: borderRadius.full, backgroundColor: 'rgba(255,255,255,0.08)' },
-  statPillText: { color: '#D6E5FF', fontSize: fontSize.xs, fontWeight: fontWeight.bold },
-  listContent: { paddingHorizontal: spacing.base, paddingTop: spacing.lg, paddingBottom: 120 },
+  clearBtn: { minHeight: 44, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, borderRadius: borderRadius.full, paddingHorizontal: 12, paddingVertical: 8 },
+  clearLabel: { fontSize: fontSize.xs, lineHeight: 16, fontWeight: fontWeight.bold, includeFontPadding: false, textAlignVertical: 'center' },
+  heroSpacing: { marginHorizontal: spacing.base, marginTop: spacing.base },
+  heroStats: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
+  statPill: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 12, paddingVertical: 9, borderRadius: borderRadius.full },
+  statPillText: { fontSize: fontSize.xs, fontWeight: fontWeight.bold },
+  listContent: { paddingHorizontal: spacing.base, paddingTop: spacing.lg, paddingBottom: LIST_BOTTOM_CLEARANCE },
   sectionTitle: { fontSize: fontSize.md, fontWeight: fontWeight.bold, marginBottom: spacing.md },
   cartItem: { borderRadius: borderRadius.xl, borderWidth: 1, marginBottom: spacing.md, overflow: 'hidden' },
   itemMain: { flexDirection: 'row', padding: spacing.md },
@@ -179,14 +175,12 @@ const styles = StyleSheet.create({
   lineRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: spacing.sm },
   cartPrice: { fontSize: fontSize.md, fontWeight: fontWeight.bold },
   cartActions: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: spacing.md, paddingBottom: spacing.md },
-  stepper: { flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderRadius: borderRadius.full, paddingHorizontal: 4, paddingVertical: 4 },
-  stepBtn: { width: 34, height: 34, borderRadius: 17, justifyContent: 'center', alignItems: 'center' },
-  stepVal: { paddingHorizontal: 12, fontSize: fontSize.sm, fontWeight: fontWeight.bold },
-  removeBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, borderRadius: borderRadius.full, paddingHorizontal: 12, paddingVertical: 10 },
-  removeLabel: { fontSize: fontSize.xs, fontWeight: fontWeight.bold },
-  bottomBar: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: spacing.base, borderTopWidth: 1, ...shadows.lg },
+  removeBtn: { minHeight: 44, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, borderRadius: borderRadius.full, paddingHorizontal: 12, paddingVertical: 8 },
+  removeLabel: { fontSize: fontSize.xs, lineHeight: 16, fontWeight: fontWeight.bold, includeFontPadding: false, textAlignVertical: 'center' },
+  bottomBar: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: spacing.md, padding: spacing.base, borderTopWidth: 1, ...shadows.lg },
+  totalCol: { flex: 1, minWidth: 0 },
   totalLabel: { fontSize: fontSize.sm },
   totalVal: { fontSize: fontSize.xl, fontWeight: fontWeight.heavy },
   totalNote: { fontSize: fontSize.xs, marginTop: 4 },
-  checkoutBtn: { flex: 0.62 },
+  checkoutBtn: { flex: 1, maxWidth: 180 },
 });

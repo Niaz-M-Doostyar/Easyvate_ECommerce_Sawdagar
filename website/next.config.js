@@ -1,5 +1,6 @@
 /** @type {import('next').NextConfig} */
 const apiOrigin = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+const isProduction = process.env.NODE_ENV === 'production';
 
 const nextConfig = {
   reactStrictMode: true,
@@ -14,7 +15,7 @@ const nextConfig = {
       { protocol: 'https', hostname: 'upload.wikimedia.org' },
       { protocol: 'https', hostname: 'picsum.photos' },
     ],
-    minimumCacheTTL: 86400,
+    minimumCacheTTL: 0,
     formats: ['image/avif', 'image/webp'],
   },
   experimental: {
@@ -23,15 +24,42 @@ const nextConfig = {
   async headers() {
     return [
       {
+        source: '/.well-known/apple-app-site-association',
+        headers: [
+          { key: 'Content-Type', value: 'application/json' },
+          { key: 'Cache-Control', value: 'public, max-age=3600' },
+        ],
+      },
+      {
+        source: '/.well-known/assetlinks.json',
+        headers: [
+          { key: 'Content-Type', value: 'application/json' },
+          { key: 'Cache-Control', value: 'public, max-age=3600' },
+        ],
+      },
+      {
+        source: '/api/:path*',
+        headers: [
+          { key: 'Cache-Control', value: 'no-store, no-cache, must-revalidate, proxy-revalidate' },
+          { key: 'Pragma', value: 'no-cache' },
+          { key: 'Expires', value: '0' },
+        ],
+      },
+      {
         source: '/assets/:path*',
         headers: [
-          { key: 'Cache-Control', value: 'public, max-age=31536000, immutable' },
+          { key: 'Cache-Control', value: 'no-cache, must-revalidate' },
         ],
       },
       {
         source: '/_next/static/:path*',
         headers: [
-          { key: 'Cache-Control', value: 'public, max-age=31536000, immutable' },
+          {
+            key: 'Cache-Control',
+            value: isProduction
+              ? 'public, max-age=31536000, immutable'
+              : 'no-cache, must-revalidate',
+          },
         ],
       },
       {

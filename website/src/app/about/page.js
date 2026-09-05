@@ -19,13 +19,13 @@ export default function AboutPage() {
   }, []);
 
   return (
-    <>
+    <div className="f2-content-page f2-about-page">
       {/* Breadcrumb */}
-      <div className="site-breadcrumb">
+      <div className="site-breadcrumb f2-content-crumb">
         <div className="site-breadcrumb-bg" style={{ background: "url(/assets/img/breadcrumb/01.jpg)" }} />
         <div className="container">
           <div className="site-breadcrumb-wrap">
-            <h4 className="breadcrumb-title">About Us</h4>
+            <h1 className="breadcrumb-title">About Us</h1>
             <ul className="breadcrumb-menu">
               <li><Link href="/"><i className="far fa-home"></i> Home</Link></li>
               <li className="active">About Us</li>
@@ -35,12 +35,12 @@ export default function AboutPage() {
       </div>
 
       {/* About Area */}
-      <div className="about-area py-100">
+      <section className="about-area f2-content-section f2-about-intro">
         <div className="container">
-          <div className="row align-items-center">
+          <div className="row align-items-center f2-about-intro__grid">
             <div className="col-lg-6">
-              <div className="about-left">
-                <div className="about-img">
+              <div className="about-left f2-about-collage">
+                <div className="about-img f2-about-collage__images">
                   <div className="row">
                     <div className="col-7">
                       <img className="img-1" src={content.missionImage || "/assets/img/about/01.jpg"} alt="About Sawdagar" />
@@ -50,7 +50,7 @@ export default function AboutPage() {
                     </div>
                   </div>
                 </div>
-                <div className="about-experience">
+                <div className="about-experience f2-about-collage__badge">
                   <div className="about-experience-icon">
                     <img src="/assets/img/icon/experience.svg" alt="" />
                   </div>
@@ -59,9 +59,9 @@ export default function AboutPage() {
               </div>
             </div>
             <div className="col-lg-6">
-              <div className="about-right">
-                <div className="site-heading mb-3">
-                  <span className="site-title-tagline justify-content-start">
+              <div className="about-right f2-about-copy">
+                <div className="site-heading f2-content-heading">
+                  <span className="site-title-tagline f2-content-eyebrow">
                     <i className="flaticon-drive"></i> {content.missionLabel || "About Sawdagar"}
                   </span>
                   <h2 className="site-title">{content.heroTitle || "Afghanistan's Leading Online Shopping Marketplace"}</h2>
@@ -80,93 +80,95 @@ export default function AboutPage() {
                     ))}
                   </ul>
                 </div>
-                <Link href="/search" className="theme-btn mt-4">Explore Products <i className="fas fa-arrow-right"></i></Link>
+                <Link href="/search" className="f2-content-button">Explore Products <i className="fas fa-arrow-right"></i></Link>
               </div>
             </div>
           </div>
         </div>
-      </div>
+      </section>
 
       {/* Vision, Mission & Core Values */}
-      <div className="py-80" style={{ background: "#f8f9fa" }}>
+      <section className="f2-content-section f2-content-section--tinted f2-about-pillars">
         <div className="container">
-          <div className="row text-center mb-5">
+          <div className="row text-center f2-content-section-head">
             <div className="col-lg-6 mx-auto">
-              <div className="site-heading">
-                <span className="site-title-tagline"><i className="far fa-lightbulb"></i> What Drives Us</span>
+              <div className="site-heading f2-content-heading f2-content-heading--center">
+                <span className="site-title-tagline f2-content-eyebrow"><i className="far fa-lightbulb"></i> What Drives Us</span>
                 <h2 className="site-title">Our Vision, Mission & <span>Values</span></h2>
               </div>
             </div>
           </div>
-          <div className="row g-4">
+          <div className="row g-4 f2-about-pillars__grid">
             <div className="col-lg-4">
-              <div className="card h-100 border-0 shadow-sm" style={{ borderRadius: 12 }}>
-                <div className="card-body text-center p-4">
-                  <div style={{ width: 70, height: 70, borderRadius: '50%', background: 'linear-gradient(135deg,#f0f7ff,#e0efff)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px' }}>
-                    <i className="far fa-eye" style={{ fontSize: 28, color: '#E3242B' }}></i>
+              <div className="card h-100 f2-about-pillar">
+                <div className="card-body">
+                  <div className="f2-about-pillar__icon">
+                    <i className="far fa-eye"></i>
                   </div>
-                  <h4 style={{ fontWeight: 700, marginBottom: 12 }}>Our Vision</h4>
-                  <p style={{ color: '#666' }}>{content.vision || "To become the most trusted and widely used e-commerce platform in Afghanistan, empowering every citizen to shop online with confidence."}</p>
+                  <h3>Our Vision</h3>
+                  <p>{content.vision || "To become the most trusted and widely used e-commerce platform in Afghanistan, empowering every citizen to shop online with confidence."}</p>
                 </div>
               </div>
             </div>
             <div className="col-lg-4">
-              <div className="card h-100 border-0 shadow-sm" style={{ borderRadius: 12 }}>
-                <div className="card-body text-center p-4">
-                  <div style={{ width: 70, height: 70, borderRadius: '50%', background: 'linear-gradient(135deg,#fff0f0,#ffe0e0)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px' }}>
-                    <i className="far fa-bullseye-arrow" style={{ fontSize: 28, color: '#E3242B' }}></i>
+              <div className="card h-100 f2-about-pillar">
+                <div className="card-body">
+                  <div className="f2-about-pillar__icon">
+                    <i className="far fa-bullseye-arrow"></i>
                   </div>
-                  <h4 style={{ fontWeight: 700, marginBottom: 12 }}>Our Mission</h4>
-                  <p style={{ color: '#666' }}>{content.mission || "To bridge the gap between Afghan businesses and consumers through innovative technology, affordable delivery, and exceptional customer service."}</p>
+                  <h3>Our Mission</h3>
+                  <p>{content.mission || "To bridge the gap between Afghan businesses and consumers through innovative technology, affordable delivery, and exceptional customer service."}</p>
                 </div>
               </div>
             </div>
             <div className="col-lg-4">
-              <div className="card h-100 border-0 shadow-sm" style={{ borderRadius: 12 }}>
-                <div className="card-body text-center p-4">
-                  <div style={{ width: 70, height: 70, borderRadius: '50%', background: 'linear-gradient(135deg,#f0fff0,#e0ffe0)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px' }}>
-                    <i className="far fa-heart" style={{ fontSize: 28, color: '#E3242B' }}></i>
+              <div className="card h-100 f2-about-pillar">
+                <div className="card-body">
+                  <div className="f2-about-pillar__icon">
+                    <i className="far fa-heart"></i>
                   </div>
-                  <h4 style={{ fontWeight: 700, marginBottom: 12 }}>Core Values</h4>
-                  <p style={{ color: '#666' }}>{content.coreValues || "Trust, Innovation, Community, Quality — We put our customers first and support local Afghan businesses to grow and prosper."}</p>
+                  <h3>Core Values</h3>
+                  <p>{content.coreValues || "Trust, Innovation, Community, Quality — We put our customers first and support local Afghan businesses to grow and prosper."}</p>
                 </div>
               </div>
             </div>
           </div>
         </div>
-      </div>
+      </section>
 
       {/* Sawdagar App Intro */}
-      <div className="py-80">
+      <section className="f2-content-section f2-about-app">
         <div className="container">
-          <div className="row align-items-center">
+          <div className="row align-items-center f2-about-app__grid">
             <div className="col-lg-6 order-lg-2 mb-4 mb-lg-0">
-              <img src="/assets/img/about/01.jpg" alt="Sawdagar App" className="rounded" style={{ width: '100%', maxHeight: 400, objectFit: 'cover', borderRadius: 16 }} />
+              <div className="f2-about-app__media">
+                <img src="/assets/img/about/01.jpg" alt="Sawdagar App" />
+              </div>
             </div>
             <div className="col-lg-6 order-lg-1">
-              <div className="site-heading mb-3">
-                <span className="site-title-tagline justify-content-start"><i className="far fa-mobile-alt"></i> Download Our App</span>
+              <div className="site-heading f2-content-heading">
+                <span className="site-title-tagline f2-content-eyebrow"><i className="far fa-mobile-alt"></i> Download Our App</span>
                 <h2 className="site-title">Shop Anytime, <span>Anywhere</span></h2>
               </div>
               <p>{content.appIntro || "Experience the convenience of shopping from your phone. The Sawdagar mobile app lets you browse thousands of products, track your orders in real-time, and enjoy exclusive app-only deals."}</p>
-              <div className="row mt-4">
+              <div className="row f2-about-app__features">
                 <div className="col-6">
-                  <div className="d-flex align-items-center gap-2 mb-3">
-                    <i className="fas fa-check-circle" style={{ color: '#E3242B', fontSize: 18 }}></i>
+                  <div className="f2-about-app__feature">
+                    <i className="fas fa-check-circle"></i>
                     <span>Easy browsing</span>
                   </div>
-                  <div className="d-flex align-items-center gap-2 mb-3">
-                    <i className="fas fa-check-circle" style={{ color: '#E3242B', fontSize: 18 }}></i>
+                  <div className="f2-about-app__feature">
+                    <i className="fas fa-check-circle"></i>
                     <span>Order tracking</span>
                   </div>
                 </div>
                 <div className="col-6">
-                  <div className="d-flex align-items-center gap-2 mb-3">
-                    <i className="fas fa-check-circle" style={{ color: '#E3242B', fontSize: 18 }}></i>
+                  <div className="f2-about-app__feature">
+                    <i className="fas fa-check-circle"></i>
                     <span>Secure payments</span>
                   </div>
-                  <div className="d-flex align-items-center gap-2 mb-3">
-                    <i className="fas fa-check-circle" style={{ color: '#E3242B', fontSize: 18 }}></i>
+                  <div className="f2-about-app__feature">
+                    <i className="fas fa-check-circle"></i>
                     <span>Exclusive deals</span>
                   </div>
                 </div>
@@ -174,12 +176,12 @@ export default function AboutPage() {
             </div>
           </div>
         </div>
-      </div>
+      </section>
 
       {/* Counter Area */}
-      <div className="counter-area pt-50 pb-50">
+      <section className="counter-area f2-about-stats">
         <div className="container">
-          <div className="row">
+          <div className="row f2-about-stats__grid">
             {(content.stats && content.stats.length > 0 ? content.stats : [
               { value: "5,000+", label: "Products Available" },
               { value: "1,200+", label: "Happy Customers" },
@@ -187,8 +189,8 @@ export default function AboutPage() {
               { value: "500+", label: "Verified Sellers" },
             ]).map((item, i) => (
               <div key={i} className="col-lg-3 col-sm-6">
-                <div className="counter-box">
-                  <div className="icon" style={{ padding: 12 }}>
+                <div className="counter-box f2-about-stat">
+                  <div className="icon">
                     <img src={`/assets/img/icon/${['sale', 'rate', 'employee', 'award'][i % 4]}.svg`} alt="" />
                   </div>
                   <div className="counter-info">
@@ -202,41 +204,41 @@ export default function AboutPage() {
             ))}
           </div>
         </div>
-      </div>
+      </section>
 
       {/* Feature Area */}
-      <div className="feature-area pb-100">
+      <section className="feature-area f2-content-section f2-about-benefits">
         <div className="container">
-          <div className="feature-wrap">
+          <div className="feature-wrap f2-about-benefits__wrap">
             <div className="row g-0">
               <div className="col-12 col-md-6 col-lg-3">
                 <div className="feature-item">
-                  <div className="feature-icon" style={{ padding: 12 }}><img src="/assets/img/icon/delivery-2.svg" alt="" /></div>
+                  <div className="feature-icon"><img src="/assets/img/icon/delivery-2.svg" alt="" /></div>
                   <div className="feature-content"><h4>Free Delivery</h4><p>Orders Over ؋5,000</p></div>
                 </div>
               </div>
               <div className="col-12 col-md-6 col-lg-3">
                 <div className="feature-item">
-                  <div className="feature-icon" style={{ padding: 12 }}><img src="/assets/img/icon/refund.svg" alt="" /></div>
+                  <div className="feature-icon"><img src="/assets/img/icon/refund.svg" alt="" /></div>
                   <div className="feature-content"><h4>Get Refund</h4><p>Within 30 Days Returns</p></div>
                 </div>
               </div>
               <div className="col-12 col-md-6 col-lg-3">
                 <div className="feature-item">
-                  <div className="feature-icon" style={{ padding: 12 }}><img src="/assets/img/icon/payment.svg" alt="" /></div>
+                  <div className="feature-icon"><img src="/assets/img/icon/payment.svg" alt="" /></div>
                   <div className="feature-content"><h4>Safe Payment</h4><p>100% Secure Payment</p></div>
                 </div>
               </div>
               <div className="col-12 col-md-6 col-lg-3">
                 <div className="feature-item">
-                  <div className="feature-icon" style={{ padding: 12 }}><img src="/assets/img/icon/support.svg" alt="" /></div>
+                  <div className="feature-icon"><img src="/assets/img/icon/support.svg" alt="" /></div>
                   <div className="feature-content"><h4>24/7 Support</h4><p>Feel Free To Call Us</p></div>
                 </div>
               </div>
             </div>
           </div>
         </div>
-      </div>
-    </>
+      </section>
+    </div>
   );
 }

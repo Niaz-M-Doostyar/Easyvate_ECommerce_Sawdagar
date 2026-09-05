@@ -21,6 +21,7 @@ const {
   sendVerificationEmail,
   sendProductApprovalEmail,
   sendOrderStatusUpdate,
+  sendOrderStatusRecord,
   sendSponsorshipStatusEmail,
   sendSupplierAccountStatusEmail,
   getLastEmailError,
@@ -38,6 +39,15 @@ async function notifySupplierStatusChange(previousUser, updatedUser) {
   if (sent) return null;
 
   return getLastEmailError()?.message || `Supplier ${status} email could not be sent.`;
+}
+
+function logOrderEmailFailure(label, order, to) {
+  const err = typeof getLastEmailError === 'function' ? getLastEmailError() : null;
+  console.error(`${label} failed:`, {
+    orderNumber: order.orderNumber,
+    to,
+    error: err ? err.message : 'Unknown email error',
+  });
 }
 
 // GET /api/admin/stats
@@ -219,7 +229,8 @@ router.get('/users', authenticate, requireRole('admin'), async (req, res) => {
         where,
         select: {
           id: true, email: true, fullName: true, phone: true, role: true,
-          isActive: true, isApproved: true, emailVerified: true, supplierVerified: true, companyName: true, createdAt: true,
+          isActive: true, isApproved: true, emailVerified: true, supplierVerified: true, companyName: true,
+          province: true, district: true, village: true, landmark: true, createdAt: true,
         },
         orderBy: { createdAt: 'desc' },
         skip,
@@ -301,7 +312,7 @@ router.get('/orders', authenticate, requireRole('admin'), async (req, res) => {
       prisma.order.findMany({
         where,
         include: {
-          items: { include: { product: { select: { nameEn: true } } } },
+          items: { include: { product: { select: { id: true, nameEn: true, images: { orderBy: { sortOrder: 'asc' }, take: 1 } } } } },
           user: { select: { id: true, fullName: true, phone: true, email: true } },
         },
         orderBy: { createdAt: 'desc' },
@@ -327,18 +338,44 @@ router.get('/orders', authenticate, requireRole('admin'), async (req, res) => {
 router.put('/orders/:id', authenticate, requireRole('admin'), async (req, res) => {
   try {
     const { status, deliveryPersonId } = req.body;
+    const orderId = parseInt(req.params.id, 10);
+    const existing = await prisma.order.findUnique({
+      where: { id: orderId },
+      include: { items: { select: { productId: true, quantity: true } } },
+    });
+    if (!existing) return res.status(404).json({ error: 'Order not found' });
+
     const updateData = {};
     if (status) updateData.status = status;
     if (deliveryPersonId) updateData.deliveryPersonId = parseInt(deliveryPersonId);
 
-    const order = await prisma.order.update({
-      where: { id: parseInt(req.params.id) },
-      data: updateData,
-      include: { user: true },
+    const order = await prisma.$transaction(async (tx) => {
+      if (status === 'cancelled' && existing.status !== 'cancelled') {
+        for (const item of existing.items) {
+          await tx.product.update({ where: { id: item.productId }, data: { stock: { increment: item.quantity } } });
+        }
+      } else if (status && status !== 'cancelled' && existing.status === 'cancelled') {
+        for (const item of existing.items) {
+          const restored = await tx.product.updateMany({
+            where: { id: item.productId, stock: { gte: item.quantity } },
+            data: { stock: { decrement: item.quantity } },
+          });
+          if (restored.count !== 1) throw new Error('Not enough stock to reopen this cancelled order');
+        }
+      }
+      return tx.order.update({
+        where: { id: orderId },
+        data: updateData,
+        include: { user: true, items: true },
+      });
     });
 
     if (status) {
-      await sendOrderStatusUpdate(order.user.email, order);
+      const customerEmailSent = await sendOrderStatusUpdate(order.user.email, order);
+      if (!customerEmailSent) logOrderEmailFailure('Order status customer email', order, order.user.email);
+
+      const salesEmailSent = await sendOrderStatusRecord(order, order.user, existing.status);
+      if (!salesEmailSent) logOrderEmailFailure('Order status sales record email', order, 'sales');
     }
 
     await logTransaction(req, 'UPDATE_ORDER', 'Order', order.id, { status, deliveryPersonId });

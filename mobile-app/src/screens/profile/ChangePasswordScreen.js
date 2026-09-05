@@ -48,5 +48,5 @@ export default function ChangePasswordScreen({ navigation }) {
 
 const styles = StyleSheet.create({
   safe: { flex: 1 },
-  scroll: { padding: spacing.lg },
+  scroll: { width: '100%', maxWidth: 620, alignSelf: 'center', padding: spacing.lg, paddingBottom: 120 },
 });

@@ -2,6 +2,8 @@
  * Sawdagar Mobile – Brand theme engine.
  * All built-in themes stay within the Sawdagar blue / ink palette.
  */
+import { StyleSheet } from 'react-native';
+
 const BRAND = {
   cobalt: '#2144C8',
   cobaltLight: '#3288F5',
@@ -58,6 +60,12 @@ function makeLightTheme(name, overrides = {}) {
       brandSurfaceStrong: overrides.brandSurfaceStrong || '#DCE5FF',
       brandInk: BRAND.ink,
       brandSteel: BRAND.slate,
+      // Text/surfaces rendered on top of the dark `secondary` hero blocks.
+      // These are identical across all themes because hero blocks are always dark ink.
+      heroText: '#FFFFFF',
+      heroTextMuted: '#D6E5FF',
+      heroSurface: 'rgba(255,255,255,0.08)',
+      heroBorder: 'rgba(255,255,255,0.14)',
       white: '#FFFFFF',
       black: '#000000',
     },
@@ -108,6 +116,11 @@ function makeDarkTheme(name, overrides = {}) {
       brandSurfaceStrong: overrides.brandSurfaceStrong || 'rgba(50, 136, 245, 0.2)',
       brandInk: '#F5F7FB',
       brandSteel: '#AFC0CC',
+      // Hero blocks stay dark ink in dark themes as well.
+      heroText: '#FFFFFF',
+      heroTextMuted: '#D6E5FF',
+      heroSurface: 'rgba(255,255,255,0.08)',
+      heroBorder: 'rgba(255,255,255,0.14)',
       white: '#FFFFFF',
       black: '#000000',
     },
@@ -176,8 +189,11 @@ export const fontSize = { xs:11, sm:13, base:15, md:17, lg:20, xl:24, xxl:30, xx
 export const fontWeight = { regular:'400', medium:'500', semibold:'600', bold:'700', heavy:'800' };
 export const borderRadius = { xs:4, sm:8, md:12, lg:18, xl:24, xxl:30, full:999 };
 export const shadows = {
-  sm: { shadowColor:'#0B1220', shadowOffset:{width:0,height:2}, shadowOpacity:0.05, shadowRadius:6, elevation:2 },
-  md: { shadowColor:'#0B1220', shadowOffset:{width:0,height:6}, shadowOpacity:0.08, shadowRadius:14, elevation:4 },
-  lg: { shadowColor:'#0B1220', shadowOffset:{width:0,height:10}, shadowOpacity:0.12, shadowRadius:24, elevation:7 },
-  xl: { shadowColor:'#0B1220', shadowOffset:{width:0,height:18}, shadowOpacity:0.16, shadowRadius:32, elevation:12 },
+  sm: { shadowColor:'#0B1220', shadowOffset:{width:0,height:1}, shadowOpacity:0.04, shadowRadius:4, elevation:1 },
+  md: { shadowColor:'#0B1220', shadowOffset:{width:0,height:4}, shadowOpacity:0.06, shadowRadius:12, elevation:3 },
+  lg: { shadowColor:'#0B1220', shadowOffset:{width:0,height:8}, shadowOpacity:0.09, shadowRadius:20, elevation:5 },
+  xl: { shadowColor:'#0B1220', shadowOffset:{width:0,height:14}, shadowOpacity:0.12, shadowRadius:28, elevation:9 },
 };
+
+/** Standard hairline separator width used between list rows. */
+export const hairline = StyleSheet.hairlineWidth;

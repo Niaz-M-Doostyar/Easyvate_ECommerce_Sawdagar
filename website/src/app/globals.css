@@ -2603,6 +2603,12 @@ a {
   font-weight: 850 !important;
   line-height: 1.02 !important;
   letter-spacing: -.045em !important;
+  /* Clamp lines so each slide keeps equal height (prevents slider height jumping) */
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+  overflow: hidden;
 }
 
 .storefront-hero-copy > p {
@@ -2611,6 +2617,11 @@ a {
   color: rgba(255, 255, 255, .72);
   font-size: clamp(15px, 1.4vw, 18px);
   line-height: 1.75;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+  overflow: hidden;
 }
 
 .storefront-hero-actions {

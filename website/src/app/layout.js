@@ -1,4 +1,10 @@
 import './globals.css';
+import './sawdagar-system.css';
+import './sawdagar-shell.css';
+import './sawdagar-home.css';
+import './sawdagar-furniture2.css';
+import './sawdagar-content-pages.css';
+import './sawdagar-commerce.css';
 import Script from 'next/script';
 import { ToastProvider } from '@/contexts/ToastContext';
 import { LanguageProvider } from '@/contexts/LanguageContext';
@@ -21,20 +27,24 @@ export const metadata = {
 export const viewport = {
   width: 'device-width',
   initialScale: 1,
-  themeColor: '#2563EB',
+  themeColor: '#F59A57',
 };
+
+// Storefront content is managed by the admin panel and must always reflect the
+// latest database state instead of being captured during a static build.
+export const dynamic = 'force-dynamic';
 
 export default async function RootLayout({ children }) {
   const [categoryData, siteData] = await Promise.all([
-    fetchPublicJson('/api/categories', { categories: [] }, { next: { revalidate: 60 } }),
-    fetchPublicJson('/api/site-content', { content: null }, { next: { revalidate: 60 } }),
+    fetchPublicJson('/api/categories', { categories: [] }),
+    fetchPublicJson('/api/site-content', { content: null }),
   ]);
 
   const initialCategories = Array.isArray(categoryData?.categories) ? categoryData.categories : [];
   const initialSiteContent = siteData?.content || null;
 
   return (
-    <html lang="en">
+    <html lang="en" dir="ltr" suppressHydrationWarning>
       <head>
         <link rel="icon" type="image/x-icon" href="/assets/img/logo/favicon.png" />
 
@@ -47,9 +57,12 @@ export default async function RootLayout({ children }) {
         <link rel="stylesheet" href="/assets/css/style.css" />
         <link rel="stylesheet" href="/assets/css/owl.carousel.min.css" />
         <link rel="stylesheet" href="/assets/css/all-fontawesome.min.css" />
-        <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+        <link href="https://fonts.googleapis.com/css2?family=Urbanist:wght@600;700;800&family=Work+Sans:wght@400;500;600&family=Vazirmatn:wght@400;500;700&display=swap" rel="stylesheet" />
       </head>
       <body>
+        <Script id="sawdagar-language" strategy="beforeInteractive">
+          {`try{var l=localStorage.getItem('sawdagar_lang')||'en';document.documentElement.lang=l;document.documentElement.dir=(l==='ps'||l==='dr')?'rtl':'ltr'}catch(e){}`}
+        </Script>
         <PageLoader />
         <ToastProvider>
           <LanguageProvider>

@@ -40,99 +40,86 @@ export default function ProfilePage() {
   };
 
   if (!user) return (
-    <>
-      <div className="site-breadcrumb">
-        <div className="site-breadcrumb-bg" style={{ background: "url(/assets/img/breadcrumb/01.jpg)" }} />
-        <div className="container"><div className="site-breadcrumb-wrap"><h4 className="breadcrumb-title">My Profile</h4><ul className="breadcrumb-menu"><li><Link href="/"><i className="far fa-home"></i> Home</Link></li><li className="active">My Profile</li></ul></div></div>
-      </div>
-      <div className="py-100 text-center"><div className="container"><h3>Please Sign In</h3><Link href="/login" className="theme-btn mt-3">Sign In</Link></div></div>
-    </>
+    <section className="f2-account-gate">
+      <div className="f2-account-gate__icon" aria-hidden="true"><i className="far fa-user" /></div>
+      <span>Customer account</span>
+      <h1>Please sign in</h1>
+      <p>Sign in to update your profile and password.</p>
+      <Link href="/login" className="f2-account-button">Sign in</Link>
+    </section>
   );
 
   return (
-    <>
-      <div className="site-breadcrumb">
-        <div className="site-breadcrumb-bg" style={{ background: "url(/assets/img/breadcrumb/01.jpg)" }} />
-        <div className="container"><div className="site-breadcrumb-wrap"><h4 className="breadcrumb-title">My Profile</h4><ul className="breadcrumb-menu"><li><Link href="/"><i className="far fa-home"></i> Home</Link></li><li className="active">My Profile</li></ul></div></div>
-      </div>
-
-      <AccountLayout>
-        <div className="user-card">
-          <h4 className="user-card-title">My Profile</h4>
-          <ul className="nav nav-tabs" role="tablist">
-            <li className="nav-item" role="presentation">
-              <button className={`nav-link${tab === 'info' ? ' active' : ''}`} onClick={() => setTab('info')} role="tab" aria-selected={tab === 'info'}>Personal Info</button>
-            </li>
-            <li className="nav-item" role="presentation">
-              <button className={`nav-link${tab === 'password' ? ' active' : ''}`} onClick={() => setTab('password')} role="tab" aria-selected={tab === 'password'}>Change Password</button>
-            </li>
-          </ul>
-          <div className="tab-content pt-4">
-            {tab === 'info' && (
-              <form onSubmit={handleSave}>
-                <div className="row">
-                  <div className="col-md-6">
-                    <div className="form-group">
-                      <label className="form-label">Full Name</label>
-                      <input type="text" className="form-control" value={form.fullName} onChange={e => set("fullName", e.target.value)} />
-                    </div>
-                  </div>
-                  <div className="col-md-6">
-                    <div className="form-group">
-                      <label className="form-label">Phone</label>
-                      <input type="tel" className="form-control" value={form.phone} onChange={e => set("phone", e.target.value)} />
-                    </div>
-                  </div>
-                  <div className="col-md-6">
-                    <div className="form-group">
-                      <label className="form-label">Province</label>
-                      <input type="text" className="form-control" value={form.province} onChange={e => set("province", e.target.value)} />
-                    </div>
-                  </div>
-                  <div className="col-md-6">
-                    <div className="form-group">
-                      <label className="form-label">District</label>
-                      <input type="text" className="form-control" value={form.district} onChange={e => set("district", e.target.value)} />
-                    </div>
-                  </div>
-                  <div className="col-md-12">
-                    <div className="form-group">
-                      <label className="form-label">Email</label>
-                      <input type="email" className="form-control" value={user.email} disabled />
-                    </div>
-                  </div>
-                </div>
-                <button type="submit" disabled={saving} className="theme-btn mt-2">{saving ? "Saving..." : "Save Changes"} <i className="far fa-save"></i></button>
-              </form>
-            )}
-            {tab === 'password' && (
-              <form onSubmit={handlePassword}>
-                <div className="row">
-                  <div className="col-md-12">
-                    <div className="form-group">
-                      <label className="form-label">Current Password</label>
-                      <input type="password" className="form-control" value={passForm.currentPassword} onChange={e => setPassForm({...passForm, currentPassword: e.target.value})} required />
-                    </div>
-                  </div>
-                  <div className="col-md-6">
-                    <div className="form-group">
-                      <label className="form-label">New Password</label>
-                      <input type="password" className="form-control" value={passForm.newPassword} onChange={e => setPassForm({...passForm, newPassword: e.target.value})} required />
-                    </div>
-                  </div>
-                  <div className="col-md-6">
-                    <div className="form-group">
-                      <label className="form-label">Confirm New Password</label>
-                      <input type="password" className="form-control" value={passForm.confirmPassword} onChange={e => setPassForm({...passForm, confirmPassword: e.target.value})} required />
-                    </div>
-                  </div>
-                </div>
-                <button type="submit" disabled={saving} className="theme-btn mt-2">{saving ? "Changing..." : "Change Password"} <i className="far fa-lock"></i></button>
-              </form>
-            )}
+    <AccountLayout
+      title="My profile"
+      description="Keep your contact and delivery information up to date."
+    >
+      <section className="f2-account-card">
+        <div className="f2-account-card__heading">
+          <div>
+            <span>Account settings</span>
+            <h2>Profile details</h2>
           </div>
         </div>
-      </AccountLayout>
-    </>
+
+        <div className="f2-account-tabs" role="tablist" aria-label="Profile settings">
+          <button type="button" className={tab === 'info' ? 'is-active' : ''} onClick={() => setTab('info')} role="tab" aria-selected={tab === 'info'}>Personal information</button>
+          <button type="button" className={tab === 'password' ? 'is-active' : ''} onClick={() => setTab('password')} role="tab" aria-selected={tab === 'password'}>Change password</button>
+        </div>
+
+        {tab === 'info' && (
+          <form className="f2-account-form" onSubmit={handleSave}>
+            <div className="f2-account-form__grid">
+              <label className="f2-account-field">
+                <span>Full name</span>
+                <input type="text" value={form.fullName} onChange={e => set("fullName", e.target.value)} />
+              </label>
+              <label className="f2-account-field">
+                <span>Phone</span>
+                <input type="tel" value={form.phone} onChange={e => set("phone", e.target.value)} />
+              </label>
+              <label className="f2-account-field">
+                <span>Province</span>
+                <input type="text" value={form.province} onChange={e => set("province", e.target.value)} />
+              </label>
+              <label className="f2-account-field">
+                <span>District</span>
+                <input type="text" value={form.district} onChange={e => set("district", e.target.value)} />
+              </label>
+              <label className="f2-account-field f2-account-field--wide">
+                <span>Email address</span>
+                <input type="email" value={user.email} disabled />
+                <small>Your account email cannot be changed here.</small>
+              </label>
+            </div>
+            <div className="f2-account-form__actions">
+              <button type="submit" disabled={saving} className="f2-account-button">{saving ? "Saving…" : "Save changes"} <i className="far fa-save" /></button>
+            </div>
+          </form>
+        )}
+
+        {tab === 'password' && (
+          <form className="f2-account-form" onSubmit={handlePassword}>
+            <div className="f2-account-form__grid">
+              <label className="f2-account-field f2-account-field--wide">
+                <span>Current password</span>
+                <input type="password" value={passForm.currentPassword} onChange={e => setPassForm({...passForm, currentPassword: e.target.value})} required />
+              </label>
+              <label className="f2-account-field">
+                <span>New password</span>
+                <input type="password" value={passForm.newPassword} onChange={e => setPassForm({...passForm, newPassword: e.target.value})} required />
+              </label>
+              <label className="f2-account-field">
+                <span>Confirm new password</span>
+                <input type="password" value={passForm.confirmPassword} onChange={e => setPassForm({...passForm, confirmPassword: e.target.value})} required />
+              </label>
+            </div>
+            <div className="f2-account-form__actions">
+              <button type="submit" disabled={saving} className="f2-account-button">{saving ? "Changing…" : "Change password"} <i className="far fa-lock" /></button>
+            </div>
+          </form>
+        )}
+      </section>
+    </AccountLayout>
   );
 }

@@ -6,6 +6,7 @@
   "scripts": {
     "start": "node server.js",
     "dev": "nodemon server.js",
+    "check:syntax": "find . -path './node_modules' -prune -o -name '*.js' -type f -print0 | xargs -0 -n1 node --check",
     "product-image:demo": "node ./scripts/process-product-image.js",
     "db:push": "npx prisma db push",
     "db:seed": "node prisma/seed.js",

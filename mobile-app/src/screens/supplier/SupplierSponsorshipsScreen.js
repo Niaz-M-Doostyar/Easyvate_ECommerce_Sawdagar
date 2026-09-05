@@ -7,13 +7,14 @@ import { useToast } from '../../contexts/ToastContext';
 import Button from '../../components/Button';
 import EmptyState from '../../components/EmptyState';
 import ScreenHeader from '../../components/ScreenHeader';
+import StatusBadge from '../../components/StatusBadge';
 import { supplierApi } from '../../services/api';
 import { formatPrice } from '../../config';
 import { spacing, fontSize, fontWeight, borderRadius } from '../../theme';
 
 export default function SupplierSponsorshipsScreen({ navigation }) {
   const { theme } = useTheme();
-  const { t } = useLanguage();
+  const { t, getName } = useLanguage();
   const toast = useToast();
   const c = theme.colors;
   const [packages, setPackages] = useState([]);
@@ -28,7 +29,7 @@ export default function SupplierSponsorshipsScreen({ navigation }) {
     try {
       const [sponsorshipData, productData] = await Promise.all([
         supplierApi.sponsorships(),
-        supplierApi.myProducts({ limit: 100 }),
+        supplierApi.myProducts({ all: true }),
       ]);
       const nextPackages = sponsorshipData.packages || sponsorshipData || [];
       const nextRequests = sponsorshipData.requests || [];
@@ -95,7 +96,7 @@ export default function SupplierSponsorshipsScreen({ navigation }) {
                     onPress={() => setSelectedProductId(item.id)}
                     style={[styles.productChip, { backgroundColor: selected ? c.primary : c.card, borderColor: selected ? c.primary : c.border }]}
                   >
-                    <Text numberOfLines={1} style={{ color: selected ? '#FFF' : c.text, fontSize: fontSize.sm, maxWidth: 160 }}>{item.nameEn || `#${item.id}`}</Text>
+                    <Text numberOfLines={1} maxFontSizeMultiplier={1.15} style={[styles.productChipText, { color: selected ? c.white : c.text }]}>{getName(item) || `#${item.id}`}</Text>
                   </TouchableOpacity>
                 );
               }}
@@ -106,7 +107,7 @@ export default function SupplierSponsorshipsScreen({ navigation }) {
       {loading ? <ActivityIndicator size="large" color={c.primary} style={{ marginTop: 60 }} /> : packages.length === 0 ? (
         <EmptyState icon="megaphone-outline" title="No packages available" />
       ) : (
-        <FlatList data={packages} keyExtractor={i => String(i.id)} contentContainerStyle={{ padding: spacing.base }}
+        <FlatList data={packages} keyExtractor={i => String(i.id)} contentContainerStyle={{ padding: spacing.base, paddingBottom: 120 }}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={c.primary} />}
           renderItem={({ item }) => (
             <View style={[styles.card, { backgroundColor: c.card, borderColor: c.border }]}>
@@ -126,7 +127,7 @@ export default function SupplierSponsorshipsScreen({ navigation }) {
                 {requests.slice(0, 5).map((req) => (
                   <View key={req.id} style={[styles.reqRow, { borderColor: c.border, backgroundColor: c.card }]}>
                     <Text numberOfLines={1} style={{ color: c.text, flex: 1 }}>{req.product?.nameEn || `Product #${req.productId}`}</Text>
-                    <Text style={{ color: c.textSecondary, fontSize: fontSize.sm }}>{req.status}</Text>
+                    <StatusBadge status={req.status} />
                   </View>
                 ))}
               </View>
@@ -141,12 +142,13 @@ export default function SupplierSponsorshipsScreen({ navigation }) {
 const styles = StyleSheet.create({
   safe: { flex: 1 },
   productSection: { paddingHorizontal: spacing.base, paddingTop: spacing.base },
-  productLabel: { fontSize: fontSize.xs, fontWeight: '700', marginBottom: 8, letterSpacing: 0.8, textTransform: 'uppercase' },
-  productChip: { borderWidth: 1, borderRadius: borderRadius.full, paddingHorizontal: 12, paddingVertical: 8 },
+  productLabel: { fontSize: fontSize.xs, fontWeight: fontWeight.bold, marginBottom: 8, letterSpacing: 0.8, textTransform: 'uppercase' },
+  productChip: { minHeight: 44, justifyContent: 'center', borderWidth: 1, borderRadius: borderRadius.full, paddingHorizontal: 12, paddingVertical: 8 },
+  productChipText: { maxWidth: 160, fontSize: fontSize.sm, lineHeight: 18, fontWeight: fontWeight.medium, includeFontPadding: false, textAlign: 'center', textAlignVertical: 'center' },
   card: { borderRadius: borderRadius.lg, borderWidth: 1, padding: spacing.base, marginBottom: spacing.base },
   pkgName: { fontSize: fontSize.md, fontWeight: fontWeight.bold, marginBottom: 4 },
   pkgDesc: { fontSize: fontSize.sm, lineHeight: 20, marginBottom: 8 },
   pkgRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  pkgPrice: { fontSize: fontSize.lg, fontWeight: '800' },
+  pkgPrice: { fontSize: fontSize.lg, fontWeight: fontWeight.heavy },
   reqRow: { marginTop: 8, borderWidth: 1, borderRadius: borderRadius.md, paddingHorizontal: 12, paddingVertical: 10, flexDirection: 'row', alignItems: 'center', gap: 8 },
 });

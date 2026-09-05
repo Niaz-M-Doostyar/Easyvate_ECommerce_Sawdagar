@@ -3,9 +3,11 @@ import { View, Text, FlatList, TouchableOpacity, ActivityIndicator, StyleSheet, 
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useLanguage } from '../../contexts/LanguageContext';
+import { useToast } from '../../contexts/ToastContext';
 import StatusBadge from '../../components/StatusBadge';
 import EmptyState from '../../components/EmptyState';
 import ScreenHeader from '../../components/ScreenHeader';
+import RemoteImage from '../../components/RemoteImage';
 import { supplierApi } from '../../services/api';
 import { formatPrice } from '../../config';
 import { spacing, fontSize, fontWeight, borderRadius } from '../../theme';
@@ -13,15 +15,22 @@ import { spacing, fontSize, fontWeight, borderRadius } from '../../theme';
 export default function SupplierOrdersScreen({ navigation }) {
   const { theme } = useTheme();
   const { t } = useLanguage();
+  const toast = useToast();
   const c = theme.colors;
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
   const load = useCallback(async () => {
-    try { const d = await supplierApi.myOrders(); setOrders(d.orders || d || []); } catch { setOrders([]); }
+    try {
+      const d = await supplierApi.myOrders({ all: true });
+      setOrders(d.orders || d || []);
+    } catch (err) {
+      setOrders([]);
+      toast.error(err?.message || 'Failed to load orders');
+    }
     setLoading(false);
-  }, []);
+  }, [toast]);
 
   useEffect(() => { load(); }, [load]);
   const onRefresh = async () => { setRefreshing(true); await load(); setRefreshing(false); };
@@ -32,7 +41,7 @@ export default function SupplierOrdersScreen({ navigation }) {
       {loading ? <ActivityIndicator size="large" color={c.primary} style={{ marginTop: 60 }} /> : orders.length === 0 ? (
         <EmptyState icon="receipt-outline" title="No orders yet" />
       ) : (
-        <FlatList data={orders} keyExtractor={i => String(i.id)} contentContainerStyle={{ padding: spacing.base }}
+        <FlatList data={orders} keyExtractor={i => String(i.id)} contentContainerStyle={{ padding: spacing.base, paddingBottom: 120 }}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={c.primary} />}
           renderItem={({ item }) => (
             <TouchableOpacity onPress={() => navigation.navigate('OrderDetail', { id: item.id, order: item })}
@@ -40,6 +49,11 @@ export default function SupplierOrdersScreen({ navigation }) {
               <View style={styles.cardTop}><Text style={[styles.ordNum, { color: c.text }]}>#{item.orderNumber || item.id}</Text><StatusBadge status={item.status} /></View>
               {!!item.user?.fullName && <Text style={{ color: c.textSecondary, fontSize: fontSize.sm, marginBottom: 2 }}>{item.user.fullName}</Text>}
               <Text style={{ color: c.textMuted, fontSize: fontSize.xs, marginBottom: 6 }}>{new Date(item.createdAt).toLocaleDateString()}</Text>
+              <View style={styles.productImages}>
+                {(item.items || []).slice(0, 4).map((orderItem, index) => orderItem.product?.images?.[0]?.url ? (
+                  <RemoteImage key={`${orderItem.productId}-${index}`} source={orderItem.product.images[0].url} style={styles.productImage} />
+                ) : null)}
+              </View>
               <View style={styles.cardBottom}><Text style={{ color: c.textSecondary, fontSize: fontSize.sm }}>{item.items?.length || 0} {t.items}</Text><Text style={[styles.cardTotal, { color: c.primary }]}>{formatPrice(item.totalAmount ?? item.total ?? 0)}</Text></View>
             </TouchableOpacity>
           )}
@@ -51,9 +65,11 @@ export default function SupplierOrdersScreen({ navigation }) {
 
 const styles = StyleSheet.create({
   safe: { flex: 1 },
-  card: { borderRadius: borderRadius.lg, borderWidth: 1, padding: spacing.base, marginBottom: spacing.md },
+  card: { borderRadius: borderRadius.xl, borderWidth: 1, padding: spacing.base, marginBottom: spacing.md },
   cardTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 },
   ordNum: { fontSize: fontSize.md, fontWeight: fontWeight.bold },
   cardBottom: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  productImages: { flexDirection: 'row', gap: 6, marginBottom: spacing.sm },
+  productImage: { width: 48, height: 48, borderRadius: borderRadius.sm },
   cardTotal: { fontSize: fontSize.md, fontWeight: fontWeight.bold },
 });

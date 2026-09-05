@@ -7,15 +7,18 @@ import { useLanguage } from '../../contexts/LanguageContext';
 import { useAuth } from '../../contexts/AuthContext';
 import StatusBadge from '../../components/StatusBadge';
 import EmptyState from '../../components/EmptyState';
+import FilterTabs from '../../components/FilterTabs';
+import HeroCard from '../../components/HeroCard';
 import { ordersApi } from '../../services/api';
 import { formatPrice } from '../../config';
+import { formatAppDate } from '../../utils/dateFormat';
 import { spacing, fontSize, fontWeight, borderRadius, shadows } from '../../theme';
 
 const TABS = ['all', 'pending', 'confirmed', 'shipped', 'delivered', 'cancelled'];
 
 export default function OrdersScreen({ navigation }) {
   const { theme } = useTheme();
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
   const { user } = useAuth();
   const c = theme.colors;
   const [orders, setOrders] = useState([]);
@@ -55,13 +58,16 @@ export default function OrdersScreen({ navigation }) {
 
   if (!user) {
     return (
-      <SafeAreaView style={[styles.safe, { backgroundColor: c.background }]}>
+      <SafeAreaView style={[styles.safe, { backgroundColor: c.background }]} edges={['top']}>
         <EmptyState
           icon="log-in-outline"
           title="Please login"
           subtitle="Sign in to track deliveries and review your purchase history."
           actionLabel={t.login}
-          onAction={() => navigation.navigate('Auth', { redirectTo: { tab: 'OrdersTab' } })}
+          onAction={() => navigation.navigate('Auth', {
+            screen: 'Login',
+            params: { redirectTo: { tab: 'OrdersTab' } },
+          })}
         />
       </SafeAreaView>
     );
@@ -74,25 +80,26 @@ export default function OrdersScreen({ navigation }) {
         <Text style={[styles.subtitle, { color: c.textSecondary }]}>Track every purchase from checkout to delivery.</Text>
       </View>
 
-      <View style={[styles.heroCard, { backgroundColor: c.secondary }, shadows.lg]}>
-        <Text style={styles.heroEyebrow}>Purchase history</Text>
-        <Text style={styles.heroTitle}>Keep every order and status update in one place.</Text>
+      <HeroCard
+        eyebrow="Purchase history"
+        title="Keep every order and status update in one place."
+        style={[styles.heroSpacing, shadows.lg]}
+      >
         <View style={styles.heroStats}>
           <OrderStat icon="clipboard-text-clock-outline" label="Active" value={String(activeOrders)} />
           <OrderStat icon="check-decagram-outline" label="Delivered" value={String(deliveredOrders)} />
           <OrderStat icon="basket-check-outline" label="Total" value={String(orders.length)} />
         </View>
-      </View>
+      </HeroCard>
 
-      <FlatList
-        horizontal showsHorizontalScrollIndicator={false} style={styles.tabs}
-        data={TABS} keyExtractor={i => i}
-        renderItem={({ item }) => (
-          <TouchableOpacity onPress={() => setTab(item)}
-            style={[styles.tabBtn, { backgroundColor: tab === item ? c.primary : c.card, borderColor: tab === item ? c.primary : c.border }]}>
-            <Text style={{ color: tab === item ? '#FFF' : c.text, fontSize: fontSize.sm, fontWeight: '500', textTransform: 'capitalize' }}>{item === 'all' ? t.all : t[item] || item}</Text>
-          </TouchableOpacity>
-        )}
+      <FilterTabs
+        tabs={TABS.map((key) => {
+          const label = String(key === 'all' ? t.all : t[key] || key);
+          return { key, label: label.charAt(0).toUpperCase() + label.slice(1) };
+        })}
+        activeKey={tab}
+        onChange={setTab}
+        style={styles.tabs}
       />
       {loading ? <ActivityIndicator size="large" color={c.primary} style={{ marginTop: 60 }} /> : visibleOrders.length === 0 ? (
         <EmptyState icon="receipt-outline" title={t.noResults} subtitle="No orders found" actionLabel={t.startShopping} onAction={() => openTab('ShopTab')} />
@@ -107,7 +114,7 @@ export default function OrdersScreen({ navigation }) {
               <View style={styles.cardTop}>
                 <View>
                   <Text style={[styles.ordNum, { color: c.text }]}>#{item.orderNumber || item.id}</Text>
-                  <Text style={[styles.date, { color: c.textMuted }]}>{new Date(item.createdAt).toLocaleDateString()}</Text>
+                  <Text style={[styles.date, { color: c.textMuted }]}>{formatAppDate(item.createdAt, lang)}</Text>
                 </View>
                 <View style={styles.totalBlock}>
                   <Text style={[styles.totalLabel, { color: c.textMuted }]}>Total</Text>
@@ -121,7 +128,7 @@ export default function OrdersScreen({ navigation }) {
                 <Text numberOfLines={1} style={[styles.address, { color: c.textSecondary }]}>{[item.district, item.province].filter(Boolean).join(', ')}</Text>
               ) : null}
               <View style={styles.cardBottom}>
-                <Text style={{ color: c.textSecondary, fontSize: fontSize.sm }}>{item.items?.length || 0} {t.items}</Text>
+                <Text style={{ color: c.textSecondary, fontSize: fontSize.sm }}>{item.items?.length || 0} {(item.items?.length || 0) === 1 ? 'item' : t.items}</Text>
                 <MaterialCommunityIcons name="chevron-right" size={18} color={c.textMuted} />
               </View>
             </TouchableOpacity>
@@ -133,11 +140,13 @@ export default function OrdersScreen({ navigation }) {
 }
 
 function OrderStat({ icon, label, value }) {
+  const { theme } = useTheme();
+  const c = theme.colors;
   return (
-    <View style={styles.statCard}>
-      <MaterialCommunityIcons name={icon} size={18} color="#D6E5FF" />
-      <Text style={styles.statValue}>{value}</Text>
-      <Text style={styles.statLabel}>{label}</Text>
+    <View style={[styles.statCard, { backgroundColor: c.heroSurface }]}>
+      <MaterialCommunityIcons name={icon} size={18} color={c.heroTextMuted} />
+      <Text style={[styles.statValue, { color: c.heroText }]}>{value}</Text>
+      <Text style={[styles.statLabel, { color: c.heroTextMuted }]}>{label}</Text>
     </View>
   );
 }
@@ -147,16 +156,13 @@ const styles = StyleSheet.create({
   header: { paddingHorizontal: spacing.base, paddingTop: spacing.base },
   title: { fontSize: fontSize.xl, fontWeight: fontWeight.bold },
   subtitle: { fontSize: fontSize.sm, marginTop: 4 },
-  heroCard: { marginHorizontal: spacing.base, marginTop: spacing.base, borderRadius: borderRadius.xxl, padding: spacing.xl },
-  heroEyebrow: { color: '#C6D4FF', fontSize: fontSize.xs, fontWeight: fontWeight.bold, letterSpacing: 1.1, textTransform: 'uppercase' },
-  heroTitle: { color: '#FFFFFF', fontSize: fontSize.xl, fontWeight: fontWeight.heavy, lineHeight: 30, marginTop: spacing.sm },
-  heroStats: { flexDirection: 'row', gap: 10, marginTop: spacing.lg },
-  statCard: { flex: 1, alignItems: 'center', borderRadius: borderRadius.xl, paddingVertical: spacing.md, paddingHorizontal: spacing.sm, backgroundColor: 'rgba(255,255,255,0.08)' },
-  statValue: { color: '#FFFFFF', fontSize: fontSize.lg, fontWeight: fontWeight.heavy, marginTop: 6 },
-  statLabel: { color: '#D6E5FF', fontSize: fontSize.xs, fontWeight: fontWeight.bold, marginTop: 2 },
-  tabs: { maxHeight: 56, paddingLeft: spacing.base, marginVertical: spacing.md },
-  tabBtn: { paddingHorizontal: 16, paddingVertical: 10, borderRadius: borderRadius.full, borderWidth: 1, marginRight: 8 },
-  listContent: { paddingHorizontal: spacing.base, paddingBottom: spacing.xxl },
+  heroSpacing: { marginHorizontal: spacing.base, marginTop: spacing.base },
+  heroStats: { flexDirection: 'row', gap: 10 },
+  statCard: { flex: 1, alignItems: 'center', borderRadius: borderRadius.xl, paddingVertical: spacing.md, paddingHorizontal: spacing.sm },
+  statValue: { fontSize: fontSize.lg, fontWeight: fontWeight.heavy, marginTop: 6 },
+  statLabel: { fontSize: fontSize.xs, fontWeight: fontWeight.bold, marginTop: 2 },
+  tabs: { marginVertical: spacing.md },
+  listContent: { paddingHorizontal: spacing.base, paddingBottom: 120 },
   card: { borderRadius: borderRadius.xl, borderWidth: 1, padding: spacing.base, marginBottom: spacing.md },
   cardTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
   ordNum: { fontSize: fontSize.md, fontWeight: fontWeight.bold },

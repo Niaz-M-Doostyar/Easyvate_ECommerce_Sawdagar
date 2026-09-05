@@ -7,6 +7,7 @@ import Pagination from "@/components/Pagination";
 import Modal from "@/components/Modal";
 import { CSVButton } from "@/components/CSVExport";
 import { adminPut } from "@/hooks/useAdminApi";
+import { AFGHANISTAN_PROVINCES } from "@/data/afghanistanProvinces";
 
 export default function AdminUsers() {
   const { t } = useLanguage();
@@ -259,7 +260,10 @@ export default function AdminUsers() {
               </div>
               <div>
                 <label className="label">Province</label>
-                <input className="input" value={editForm.province} onChange={e => setEditForm(p => ({ ...p, province: e.target.value }))} />
+                <select className="input" value={editForm.province} onChange={e => setEditForm(p => ({ ...p, province: e.target.value }))}>
+                  <option value="">Select province</option>
+                  {AFGHANISTAN_PROVINCES.map(province => <option key={province} value={province}>{province}</option>)}
+                </select>
               </div>
               <div>
                 <label className="label">District</label>

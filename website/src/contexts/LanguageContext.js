@@ -1,6 +1,9 @@
 'use client';
 
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import enTranslations from '../../public/locales/en/common.json';
+import psTranslations from '../../public/locales/ps/common.json';
+import drTranslations from '../../public/locales/dr/common.json';
 
 const LanguageContext = createContext(null);
 
@@ -10,21 +13,19 @@ const LANGUAGES = [
   { code: 'dr', name: 'Dari', nativeName: 'دری', dir: 'rtl' },
 ];
 
+const TRANSLATIONS = {
+  en: enTranslations,
+  ps: psTranslations,
+  dr: drTranslations,
+};
+
 export function LanguageProvider({ children }) {
   const [lang, setLang] = useState('en');
-  const [translations, setTranslations] = useState({});
+  const [translations, setTranslations] = useState(enTranslations);
   const [dir, setDir] = useState('ltr');
 
   const loadTranslations = useCallback(async (code) => {
-    try {
-      const res = await fetch(`/locales/${code}/common.json`);
-      if (res.ok) {
-        const data = await res.json();
-        setTranslations(data);
-      }
-    } catch {
-      console.error('Failed to load translations');
-    }
+    setTranslations(TRANSLATIONS[code] || enTranslations);
   }, []);
 
   useEffect(() => {
@@ -48,8 +49,8 @@ export function LanguageProvider({ children }) {
     loadTranslations(code);
   };
 
-  const t = (key) => {
-    return translations[key] || key;
+  const t = (key, fallback) => {
+    return translations[key] || enTranslations[key] || fallback || '';
   };
 
   return (

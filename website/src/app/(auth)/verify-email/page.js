@@ -69,41 +69,45 @@ function VerifyContent() {
   }, [token]);
 
   return (
-    <div className="text-center py-6">
+    <div className="f2-auth-state" aria-live="polite">
       {status === "loading" && (
         <>
-          <div className="w-16 h-16 border-4 border-gray-200 border-t-gold rounded-full animate-spin mx-auto mb-4" />
-          <h3 className="text-lg font-bold text-midnight mb-2">Verifying Your Email...</h3>
-          <p className="text-body text-sm">Please wait a moment</p>
+          <span className="f2-content-spinner f2-content-spinner--large" aria-hidden="true" />
+          <h2>Verifying Your Email...</h2>
+          <p>Please wait a moment</p>
         </>
       )}
       {status === "success" && (
         <>
-          <div className="w-16 h-16 bg-green/10 rounded-full flex items-center justify-center mx-auto mb-4"><svg className="w-8 h-8 text-green" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg></div>
-          <h3 className="text-lg font-bold text-midnight mb-2">Email Verified!</h3>
-          <p className="text-body text-sm mb-6">{successMessage}</p>
-          <Link href="/login" className="theme-btn inline-flex">Sign In</Link>
+          <div className="f2-auth-state__icon f2-auth-state__icon--success"><svg fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg></div>
+          <h2>Email Verified!</h2>
+          <p>{successMessage}</p>
+          <Link href="/login" className="f2-content-button">Sign In</Link>
         </>
       )}
       {status === "error" && (
         <>
-          <div className="w-16 h-16 bg-red/10 rounded-full flex items-center justify-center mx-auto mb-4"><svg className="w-8 h-8 text-red" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" /></svg></div>
-          <h3 className="text-lg font-bold text-midnight mb-2">Verification Failed</h3>
-          <p className="text-body text-sm mb-6">{error || "The link is invalid or has expired. Try registering again."}</p>
+          <div className="f2-auth-state__icon f2-auth-state__icon--error"><svg fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" /></svg></div>
+          <h2>Verification Failed</h2>
+          <p>{error || "The link is invalid or has expired. Try registering again."}</p>
 
-          <div className="flex flex-col gap-3">
-            <Link href="/login" className="theme-btn inline-flex justify-center">Go to Login</Link>
+          <div className="f2-auth-state__actions">
+            <Link href="/login" className="f2-content-button f2-content-button--wide">Go to Login</Link>
 
-            <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
-              <p className="text-xs text-body mb-2">Enter your email to receive a new verification link.</p>
-              <div className="flex gap-2">
+            <div className="f2-resend-card">
+              <p>Enter your email to receive a new verification link.</p>
+              <div className="f2-resend-card__form">
+                <label className="f2-sr-only" htmlFor="resend-email">Email address</label>
                 <input
+                  id="resend-email"
                   value={resendEmail}
                   onChange={(e) => setResendEmail(e.target.value)}
                   placeholder="you@example.com"
-                  className="input flex-1"
+                  type="email"
+                  autoComplete="email"
                 />
                 <button
+                  type="button"
                   onClick={async () => {
                     setResendStatus("");
                     setResendError("");
@@ -123,13 +127,13 @@ function VerifyContent() {
                       setResendError('Failed to send verification email');
                     }
                   }}
-                  className="theme-btn btn-sm"
+                  className="f2-content-button f2-content-button--compact"
                 >
                   Resend
                 </button>
               </div>
-              {resendStatus && <p className="text-green text-sm mt-2">{resendStatus}</p>}
-              {resendError && <p className="text-red text-sm mt-2">{resendError}</p>}
+              {resendStatus && <p className="f2-content-feedback f2-content-feedback--success" role="status">{resendStatus}</p>}
+              {resendError && <p className="f2-content-feedback f2-content-feedback--error" role="alert">{resendError}</p>}
             </div>
           </div>
         </>
@@ -140,16 +144,19 @@ function VerifyContent() {
 
 export default function VerifyEmailPage() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-primary/5 flex items-center justify-center py-20 px-4">
-      <div className="w-full max-w-md animate-fade-up">
-        <div className="text-center mb-8">
-          <Link href="/" className="inline-flex items-center gap-2.5 mb-6">
-            <div className="w-12 h-12 bg-gold rounded-xl flex items-center justify-center shadow-lg shadow-gold/20"><span className="text-white font-extrabold text-2xl font-display">S</span></div>
-            <span className="text-2xl font-extrabold text-midnight font-display">Sawdagar</span>
-          </Link>
-        </div>
-        <div className="bg-white rounded-2xl shadow-card p-8">
-          <Suspense fallback={<div className="text-center py-8 text-body">Loading...</div>}><VerifyContent /></Suspense>
+    <div className="f2-content-page f2-auth-page">
+      <div className="f2-auth-shell">
+        <div className="f2-auth-panel animate-fade-up">
+          <header className="f2-auth-heading f2-auth-heading--compact">
+            <Link href="/" className="f2-auth-brand" aria-label="Sawdagar home">
+              <span className="f2-auth-brand__mark" aria-hidden="true">S</span>
+              <span className="f2-auth-brand__name">Sawdagar</span>
+            </Link>
+            <span className="f2-content-eyebrow">Email verification</span>
+          </header>
+          <div className="f2-auth-card">
+          <Suspense fallback={<div className="f2-content-loading" role="status"><span className="f2-content-spinner" aria-hidden="true" />Loading...</div>}><VerifyContent /></Suspense>
+          </div>
         </div>
       </div>
     </div>

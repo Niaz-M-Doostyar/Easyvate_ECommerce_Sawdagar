@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, ScrollView, KeyboardAvoidingView, Platform, StyleSheet, TouchableOpacity } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useLanguage } from '../../contexts/LanguageContext';
@@ -10,6 +10,7 @@ import { ordersApi, subscribeApi } from '../../services/api';
 import Input from '../../components/Input';
 import Button from '../../components/Button';
 import EmptyState from '../../components/EmptyState';
+import HeroCard from '../../components/HeroCard';
 import ScreenHeader from '../../components/ScreenHeader';
 import { formatPrice } from '../../config';
 import { spacing, fontSize, fontWeight, borderRadius, shadows } from '../../theme';
@@ -19,6 +20,7 @@ export default function CheckoutScreen({ navigation }) {
   const { t } = useLanguage();
   const { items, total, clearCart } = useCart();
   const toast = useToast();
+  const insets = useSafeAreaInsets();
   const c = theme.colors;
 
   const [form, setForm] = useState({ province: '', district: '', village: '', landmark: '', phone: '', notes: '' });
@@ -96,7 +98,8 @@ export default function CheckoutScreen({ navigation }) {
 
   if (items.length === 0) {
     return (
-      <SafeAreaView style={[styles.safe, { backgroundColor: c.background }]}>
+      <SafeAreaView style={[styles.safe, { backgroundColor: c.background }]} edges={['top']}>
+        <ScreenHeader title={t.checkout} onBack={() => navigation.goBack()} />
         <EmptyState
           icon="cart-outline"
           title={t.emptyCart}
@@ -114,19 +117,21 @@ export default function CheckoutScreen({ navigation }) {
 
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
-          <View style={[styles.heroCard, { backgroundColor: c.secondary }, shadows.lg]}>
-            <Text style={styles.heroEyebrow}>Secure checkout</Text>
-            <Text style={styles.heroTitle}>Confirm delivery details and place your order with cash on delivery.</Text>
-            <Text style={styles.heroBody}>Review the address carefully so the driver reaches you without extra calls.</Text>
+          <HeroCard
+            eyebrow="Secure checkout"
+            title="Confirm delivery details and place your order with cash on delivery."
+            subtitle="Review the address carefully so the driver reaches you without extra calls."
+            style={[styles.heroSpacing, shadows.lg]}
+          >
             <View style={styles.heroStats}>
               <CheckoutPill icon="shopping-outline" label={`${items.length} ${items.length === 1 ? 'product' : 'products'}`} />
               <CheckoutPill icon="cash-fast" label={t.cashOnDelivery} />
               <CheckoutPill icon="truck-fast-outline" label="Fast dispatch" />
             </View>
-          </View>
+          </HeroCard>
 
           <SectionHeading c={c} icon="map-marker-radius-outline" title={t.deliveryAddress} subtitle="Use the clearest location details you can provide." />
-          <View style={[styles.section, { backgroundColor: c.card, borderColor: c.border }]}> 
+          <View style={[styles.section, { backgroundColor: c.card, borderColor: c.border }]}>
             <Input label={t.province} value={form.province} onChangeText={(value) => set('province', value)} error={errors.province} placeholder="e.g. Kabul" />
             <Input label={t.district} value={form.district} onChangeText={(value) => set('district', value)} error={errors.district} placeholder="e.g. District 10" />
             <Input label={t.village} value={form.village} onChangeText={(value) => set('village', value)} error={errors.village} placeholder="e.g. Qala-e-Fatullah" />
@@ -136,8 +141,8 @@ export default function CheckoutScreen({ navigation }) {
           </View>
 
           <SectionHeading c={c} icon="wallet-outline" title={t.paymentMethod} subtitle="One payment method is active right now." />
-          <View style={[styles.payMethod, { backgroundColor: c.card, borderColor: c.primary }]}> 
-            <View style={[styles.payIcon, { backgroundColor: c.brandSurface }]}> 
+          <View style={[styles.payMethod, { backgroundColor: c.card, borderColor: c.primary }]}>
+            <View style={[styles.payIcon, { backgroundColor: c.brandSurface }]}>
               <MaterialCommunityIcons name="cash-fast" size={24} color={c.primary} />
             </View>
             <View style={{ marginLeft: 12, flex: 1 }}>
@@ -148,7 +153,7 @@ export default function CheckoutScreen({ navigation }) {
           </View>
 
           <SectionHeading c={c} icon="ticket-percent-outline" title={t.couponCode} subtitle="Apply a valid discount before placing the order." />
-          <View style={[styles.section, { backgroundColor: c.card, borderColor: c.border }]}> 
+          <View style={[styles.section, { backgroundColor: c.card, borderColor: c.border }]}>
             <View style={styles.couponRow}>
               <Input value={coupon} onChangeText={setCoupon} placeholder="Enter code" style={styles.couponInput} />
               <Button title={t.apply} onPress={applyCoupon} size="sm" variant="outline" />
@@ -156,7 +161,7 @@ export default function CheckoutScreen({ navigation }) {
           </View>
 
           <SectionHeading c={c} icon="receipt-text-check-outline" title={t.orderSummary} subtitle="Totals update instantly before you place the order." />
-          <View style={[styles.section, { backgroundColor: c.card, borderColor: c.border }]}> 
+          <View style={[styles.section, { backgroundColor: c.card, borderColor: c.border }]}>
             <SumRow label={`${t.items} (${items.length})`} value={formatPrice(total)} c={c} />
             {discount > 0 ? <SumRow label={`Discount (${discount}%)`} value={`-${formatPrice(discountAmount)}`} c={c} valueColor={c.success} /> : null}
             <SumRow label={t.deliveryFee} value={deliveryFee > 0 ? formatPrice(deliveryFee) : 'Free'} c={c} valueColor={c.success} />
@@ -164,13 +169,13 @@ export default function CheckoutScreen({ navigation }) {
             <SumRow label={t.total} value={formatPrice(grandTotal)} c={c} bold />
           </View>
 
-          <View style={[styles.noteCard, { backgroundColor: c.brandSurfaceStrong }]}> 
+          <View style={[styles.noteCard, { backgroundColor: c.brandSurfaceStrong }]}>
             <MaterialCommunityIcons name="shield-lock-outline" size={18} color={c.primary} />
             <Text style={[styles.noteText, { color: c.textSecondary }]}>Your order details are confirmed before dispatch, and you can track the status after placing it.</Text>
           </View>
         </ScrollView>
 
-        <View style={[styles.bottomBar, { backgroundColor: c.card, borderTopColor: c.border }]}> 
+        <View style={[styles.bottomBar, { backgroundColor: c.card, borderTopColor: c.border, paddingBottom: Math.max(insets.bottom, spacing.md) }]}>
           <View style={styles.bottomSummary}>
             <Text style={[styles.bottomLabel, { color: c.textSecondary }]}>{t.total}</Text>
             <Text style={[styles.bottomValue, { color: c.text }]}>{formatPrice(grandTotal)}</Text>
@@ -190,10 +195,12 @@ export default function CheckoutScreen({ navigation }) {
 }
 
 function CheckoutPill({ icon, label }) {
+  const { theme } = useTheme();
+  const c = theme.colors;
   return (
-    <View style={styles.heroPill}>
-      <MaterialCommunityIcons name={icon} size={16} color="#D6E5FF" />
-      <Text style={styles.heroPillText}>{label}</Text>
+    <View style={[styles.heroPill, { backgroundColor: c.heroSurface }]}>
+      <MaterialCommunityIcons name={icon} size={16} color={c.heroTextMuted} />
+      <Text style={[styles.heroPillText, { color: c.heroTextMuted }]}>{label}</Text>
     </View>
   );
 }
@@ -201,7 +208,7 @@ function CheckoutPill({ icon, label }) {
 function SectionHeading({ c, icon, title, subtitle }) {
   return (
     <View style={styles.sectionHeading}>
-      <View style={[styles.sectionIcon, { backgroundColor: c.brandSurface }]}> 
+      <View style={[styles.sectionIcon, { backgroundColor: c.brandSurface }]}>
         <MaterialCommunityIcons name={icon} size={18} color={c.primary} />
       </View>
       <View style={{ flex: 1 }}>
@@ -215,8 +222,8 @@ function SectionHeading({ c, icon, title, subtitle }) {
 function SumRow({ label, value, c, bold, valueColor }) {
   return (
     <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 6 }}>
-      <Text style={{ color: c.textSecondary, fontSize: fontSize.base, fontWeight: bold ? '700' : '400' }}>{label}</Text>
-      <Text style={{ color: valueColor || c.text, fontSize: bold ? fontSize.lg : fontSize.base, fontWeight: bold ? '700' : '500' }}>{value}</Text>
+      <Text style={{ color: c.textSecondary, fontSize: fontSize.base, fontWeight: bold ? fontWeight.bold : fontWeight.regular }}>{label}</Text>
+      <Text style={{ color: valueColor || c.text, fontSize: bold ? fontSize.lg : fontSize.base, fontWeight: bold ? fontWeight.bold : fontWeight.medium }}>{value}</Text>
     </View>
   );
 }
@@ -224,19 +231,16 @@ function SumRow({ label, value, c, bold, valueColor }) {
 const styles = StyleSheet.create({
   safe: { flex: 1 },
   scroll: { padding: spacing.base, paddingBottom: 100 },
-  heroCard: { borderRadius: borderRadius.xxl, padding: spacing.xl, marginBottom: spacing.lg },
-  heroEyebrow: { color: '#C6D4FF', fontSize: fontSize.xs, fontWeight: fontWeight.bold, letterSpacing: 1.1, textTransform: 'uppercase' },
-  heroTitle: { color: '#FFFFFF', fontSize: fontSize.xl, fontWeight: fontWeight.heavy, lineHeight: 30, marginTop: spacing.sm },
-  heroBody: { color: '#D6E5FF', fontSize: fontSize.base, lineHeight: 22, marginTop: spacing.sm },
-  heroStats: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginTop: spacing.lg },
-  heroPill: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 12, paddingVertical: 9, borderRadius: borderRadius.full, backgroundColor: 'rgba(255,255,255,0.08)' },
-  heroPillText: { color: '#D6E5FF', fontSize: fontSize.xs, fontWeight: fontWeight.bold },
+  heroSpacing: { marginBottom: spacing.lg },
+  heroStats: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
+  heroPill: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 12, paddingVertical: 9, borderRadius: borderRadius.full },
+  heroPillText: { fontSize: fontSize.xs, fontWeight: fontWeight.bold },
   sectionHeading: { flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: spacing.lg, marginBottom: spacing.sm },
   sectionIcon: { width: 38, height: 38, borderRadius: 19, justifyContent: 'center', alignItems: 'center' },
   sectionTitle: { fontSize: fontSize.md, fontWeight: fontWeight.bold },
   sectionSubtitle: { fontSize: fontSize.sm, lineHeight: 20, marginTop: 2 },
   section: { borderRadius: borderRadius.xl, borderWidth: 1, padding: spacing.base },
-  payMethod: { flexDirection: 'row', alignItems: 'center', padding: spacing.base, borderRadius: borderRadius.xl, borderWidth: 1.5 },
+  payMethod: { flexDirection: 'row', alignItems: 'center', padding: spacing.base, borderRadius: borderRadius.xl, borderWidth: 1 },
   payIcon: { width: 46, height: 46, borderRadius: 23, justifyContent: 'center', alignItems: 'center' },
   payLabel: { fontSize: fontSize.base, fontWeight: fontWeight.semibold },
   couponRow: { flexDirection: 'row', alignItems: 'flex-end' },

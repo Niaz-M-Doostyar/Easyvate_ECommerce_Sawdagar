@@ -1,12 +1,111 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { Fragment, useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useSiteData } from '@/contexts/SiteDataContext';
 import MocartProductItem, { MocartProductListItem } from '@/components/MocartProductItem';
 import { DealCountdown, StorefrontCarousel, StorefrontHero } from '@/components/StorefrontCarousel';
-import { formatPrice, CURRENCY_SYMBOL } from '@/lib/currency';
+
+function asArray(value) {
+  return Array.isArray(value) ? value.filter(Boolean) : [];
+}
+
+function imageSource(value) {
+  const source = typeof value === 'string'
+    ? value.trim()
+    : value?.image || value?.url || value?.src || '';
+
+  if (!source) return '';
+  if (source.startsWith('http') || source.startsWith('//') || source.startsWith('/') || source.startsWith('data:')) {
+    return source;
+  }
+  return '/' + source;
+}
+
+function localizedValue(item, field, lang) {
+  if (!item) return '';
+  if (lang === 'ps') return item[field + 'Ps'] || item[field + 'En'] || item[field] || '';
+  if (lang === 'dr') return item[field + 'Dr'] || item[field + 'En'] || item[field] || '';
+  return item[field + 'En'] || item[field] || '';
+}
+
+function getYouTubeId(url) {
+  if (typeof url !== 'string') return null;
+  const match = url.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|shorts\/|v\/|watch\?v=|watch\?.+&v=))([^&?\s/]+)/);
+  return match ? match[1] : null;
+}
+
+function productBelongsToCategory(product, category) {
+  const productCategoryId = product?.categoryId || product?.category?.id;
+  if (productCategoryId && category?.id && String(productCategoryId) === String(category.id)) return true;
+  return Boolean(product?.category?.slug && category?.slug && product.category.slug === category.slug);
+}
+
+function formatBlogDate(value) {
+  if (!value) return '';
+  const date = new Date(value);
+  if (!Number.isFinite(date.getTime())) return String(value);
+  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+}
+
+async function fetchPublicJson(url, signal) {
+  const response = await fetch(url, { cache: 'no-store', signal });
+  if (!response.ok) throw new Error('Request failed');
+  return response.json();
+}
+
+function MultilineText({ value }) {
+  const lines = String(value || '').split(/\r?\n/);
+  return lines.map((line, index) => (
+    <Fragment key={index}>
+      {line}
+      {index < lines.length - 1 && <br />}
+    </Fragment>
+  ));
+}
+
+function SectionHeading({
+  eyebrow,
+  title,
+  description,
+  actionHref,
+  actionLabel,
+  centered = false,
+}) {
+  if (!eyebrow && !title && !description) return null;
+
+  return (
+    <div className={'sd-section-heading' + (centered ? ' sd-section-heading-center' : '')}>
+      <div>
+        {eyebrow && <span className="sd-eyebrow">{eyebrow}</span>}
+        {title && <h2>{title}</h2>}
+        {description && <p>{description}</p>}
+      </div>
+      {actionHref && actionLabel && (
+        <Link href={actionHref} className="sd-text-link">
+          {actionLabel} <i className="far fa-arrow-right" aria-hidden="true" />
+        </Link>
+      )}
+    </div>
+  );
+}
+
+function ProductCarouselSection({ title, products, href = '/search', actionLabel = 'View More', tinted = false, label }) {
+  const items = asArray(products).filter((product) => product?.id);
+  if (items.length === 0) return null;
+
+  return (
+    <section className={'sd-section' + (tinted ? ' sd-section-tint' : '')}>
+      <div className="container">
+        <SectionHeading title={title} actionHref={href} actionLabel={actionLabel} />
+        <StorefrontCarousel className="storefront-product-carousel" label={label || title}>
+          {items.map((product) => <MocartProductItem key={product.id} product={product} />)}
+        </StorefrontCarousel>
+      </div>
+    </section>
+  );
+}
 
 export default function HomePageClient({
   initialProducts = [],
@@ -14,698 +113,777 @@ export default function HomePageClient({
   initialBlogPosts = [],
 }) {
   const { lang } = useLanguage();
-  const { categories, siteContent, getName: siteGetName } = useSiteData();
-  const [products, setProducts] = useState(initialProducts);
-  const [sponsoredProducts, setSponsoredProducts] = useState(initialSponsoredProducts);
-  const [activeTab, setActiveTab] = useState(0);
+  const { categories: siteCategories, siteContent, getName: siteGetName } = useSiteData();
+  const [products, setProducts] = useState(asArray(initialProducts));
+  const [sponsoredProducts, setSponsoredProducts] = useState(asArray(initialSponsoredProducts));
+  const [blogPosts, setBlogPosts] = useState(asArray(initialBlogPosts));
+  const [activeTab, setActiveTab] = useState(null);
+  const [videoPlaying, setVideoPlaying] = useState(false);
+  const [galleryOpen, setGalleryOpen] = useState(false);
+  const [galleryIndex, setGalleryIndex] = useState(0);
+  const [subscribeEmail, setSubscribeEmail] = useState('');
+  const [subscribeStatus, setSubscribeStatus] = useState(null);
+  const [subscribeMsg, setSubscribeMsg] = useState('');
 
-  const getName = useCallback((item) => siteGetName(item, lang), [siteGetName, lang]);
+  const getName = useCallback(
+    (item) => siteGetName(item, lang) || item?.name || '',
+    [siteGetName, lang],
+  );
 
   useEffect(() => {
-    let cancelled = false;
+    const controller = new AbortController();
 
-    Promise.all([
-      initialProducts.length > 0
-        ? Promise.resolve({ products: initialProducts })
-        : fetch('/api/products?limit=24&status=approved').then(r => r.json()).catch(() => ({})),
-      initialSponsoredProducts.length > 0
-        ? Promise.resolve({ products: initialSponsoredProducts })
-        : fetch('/api/products/sponsored').then(r => r.json()).catch(() => ({})),
-    ]).then(([pData, sponsoredData]) => {
-      if (cancelled) return;
-      setProducts(pData.products || []);
-      setSponsoredProducts(sponsoredData.products || sponsoredData || []);
+    Promise.allSettled([
+      fetchPublicJson('/api/products?limit=50&status=approved', controller.signal),
+      fetchPublicJson('/api/products/sponsored', controller.signal),
+      fetchPublicJson('/api/blog?limit=3', controller.signal),
+    ]).then(([productsResult, sponsoredResult, blogResult]) => {
+      if (controller.signal.aborted) return;
+
+      if (productsResult.status === 'fulfilled') {
+        const payload = productsResult.value;
+        const nextProducts = Array.isArray(payload?.products)
+          ? payload.products
+          : Array.isArray(payload) ? payload : [];
+        setProducts(nextProducts);
+      }
+
+      if (sponsoredResult.status === 'fulfilled') {
+        const payload = sponsoredResult.value;
+        const nextSponsored = Array.isArray(payload?.products)
+          ? payload.products
+          : Array.isArray(payload) ? payload : [];
+        setSponsoredProducts(nextSponsored);
+      }
+
+      if (blogResult.status === 'fulfilled') {
+        const payload = blogResult.value;
+        const nextPosts = Array.isArray(payload?.posts)
+          ? payload.posts
+          : Array.isArray(payload) ? payload : [];
+        setBlogPosts(nextPosts);
+      }
     });
 
-    return () => { cancelled = true; };
-  }, [initialProducts, initialSponsoredProducts]);
+    return () => controller.abort();
+  }, []);
 
   const home = siteContent?.home || {};
   const hero = home.hero || {};
-  const promoBanners = home.promoBanners || [];
-  const features = home.features || [];
+  const categories = asArray(siteCategories).filter((category) => (
+    category?.id && category?.slug && getName(category)
+  ));
+  const promoBanners = asArray(home.promoBanners).filter((banner) => imageSource(banner?.image));
+  const features = asArray(home.features).filter((feature) => (
+    feature?.title || feature?.desc || feature?.description || feature?.image || feature?.icon
+  ));
+  const brandsConfig = home.brands || {};
+  const brandItems = asArray(home.brandItems).filter((brand) => brand?.name || imageSource(brand?.image));
   const bigBanner = home.bigBanner || {};
+  const video = home.video || {};
   const dealOfWeek = home.dealOfWeek || {};
   const gallery = home.gallery || {};
-  const galleryImages = home.galleryImages || [
-    { image: '/assets/img/gallery/02.jpg', size: 'col-md-4 col-lg-3' },
-    { image: '/assets/img/gallery/03.jpg', size: 'col-md-4 col-lg-3' },
-    { image: '/assets/img/gallery/01.jpg', size: 'col-md-12 col-lg-6' },
-    { image: '/assets/img/gallery/06.jpg', size: 'col-md-8 col-lg-6' },
-    { image: '/assets/img/gallery/04.jpg', size: 'col-md-4 col-lg-3' },
-    { image: '/assets/img/gallery/05.jpg', size: 'col-md-4 col-lg-3' },
-  ];
   const testimonials = home.testimonials || {};
-  const testimonialItems = home.testimonialItems || [];
+  const testimonialItems = asArray(home.testimonialItems).filter((item) => item?.text || item?.review || item?.comment || item?.name);
+  const blogConfig = home.blog || {};
   const newsletter = home.newsletter || {};
-  const brands = home.brands || {};
-  const brandItems = home.brandItems || [];
-  const instagramItems = home.instagramItems || [];
+  const instagram = home.instagram || {};
+  const instagramItems = asArray(home.instagramItems)
+    .map((item) => ({ ...item, resolvedImage: imageSource(item?.image) }))
+    .filter((item) => item.resolvedImage);
 
-  const [videoPlaying, setVideoPlaying] = useState(false);
-  const videoUrl = home.video?.videoUrl || 'https://www.youtube.com/watch?v=jLS3DrTJrpI';
-
-  // Extract YouTube video ID
-  const getYouTubeId = (url) => {
-    const m = url.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([^&?\s]+)/);
-    return m ? m[1] : null;
+  const configuredSlides = asArray(hero.slides)
+    .map((slide) => ({ ...slide, image: imageSource(slide?.image) }))
+    .filter((slide) => slide.subtitle || slide.title || slide.description || slide.image || slide.priceValue);
+  const singleConfiguredSlide = {
+    subtitle: hero.badge,
+    title: Array.isArray(hero.titleLines) ? hero.titleLines.filter(Boolean).join(' ') : hero.title,
+    description: hero.description,
+    image: imageSource(hero.image),
+    priceLabel: hero.priceLabel,
+    priceValue: hero.priceValue,
   };
+  const heroSlides = configuredSlides.length > 0
+    ? configuredSlides
+    : Object.values(singleConfiguredSlide).some(Boolean) ? [singleConfiguredSlide] : [];
 
-  const [subscribeEmail, setSubscribeEmail] = useState('');
-  const [subscribeStatus, setSubscribeStatus] = useState(null); // null | 'loading' | 'success' | 'error'
-  const [subscribeMsg, setSubscribeMsg] = useState('');
-  const [blogPosts, setBlogPosts] = useState(initialBlogPosts);
+  const realProducts = asArray(products).filter((product) => product?.id);
+  const realSponsoredProducts = asArray(sponsoredProducts).filter((product) => product?.id);
+  const trendingProducts = realProducts.slice(0, 20);
+  const featuredProducts = realProducts.slice(0, 30);
+  const onSaleProducts = realProducts.filter((product) => {
+    const currentPrice = Number(product.retailPrice || 0);
+    const compareAt = Number(product.suggestedPrice || product.wholesaleCost || 0);
+    return currentPrice > 0 && compareAt > currentPrice;
+  }).slice(0, 3);
+  const bestSellerProducts = realProducts.slice(0, 3);
+  const ratedProducts = realProducts.filter((product) => Number(product.averageRating || product.rating || 0) > 0);
+  const topRatedProducts = (ratedProducts.length > 0
+    ? [...ratedProducts].sort((a, b) => Number(b.averageRating || b.rating || 0) - Number(a.averageRating || a.rating || 0))
+    : realProducts.slice(3, 6)
+  ).slice(0, 3);
+
+  const tabCategories = categories
+    .filter((category) => realProducts.some((product) => productBelongsToCategory(product, category)))
+    .slice(0, 6);
+  const selectedCategory = tabCategories.find((category) => String(category.id) === String(activeTab))
+    || tabCategories[0];
+  const tabProducts = selectedCategory
+    ? realProducts.filter((product) => productBelongsToCategory(product, selectedCategory)).slice(0, 8)
+    : [];
+
+  const videoId = getYouTubeId(video.videoUrl);
+  const videoImage = imageSource(video.backgroundImage);
+  const bigBannerImage = imageSource(bigBanner.image);
+  const hasBigBanner = Boolean(bigBannerImage && (
+    bigBanner.subtitle
+    || bigBanner.title
+    || bigBanner.description
+    || (bigBanner.buttonLabel && bigBanner.buttonHref)
+  ));
+  const dealImage = imageSource(dealOfWeek.image);
+  const dealTarget = dealOfWeek.endsAt || dealOfWeek.countdownDate;
+  const hasDeal = Boolean(
+    dealOfWeek.badge
+    || dealOfWeek.title
+    || dealOfWeek.description
+    || dealImage
+    || dealTarget
+    || (dealOfWeek.buttonLabel && dealOfWeek.buttonHref)
+  );
+  const galleryImages = asArray(home.galleryImages)
+    .map((item) => ({
+      ...item,
+      resolvedImage: imageSource(item?.image || item),
+      isWide: typeof item?.size === 'string' && /col-(?:md|lg)-(?:6|8|12)/.test(item.size),
+    }))
+    .filter((item) => item.resolvedImage);
+  const liveBlogPosts = asArray(blogPosts).filter((post) => localizedValue(post, 'title', lang));
+  const hasNewsletter = Boolean(newsletter.buttonLabel && (newsletter.title || newsletter.description));
 
   useEffect(() => {
-    let cancelled = false;
-    if (initialBlogPosts.length > 0) return undefined;
+    setVideoPlaying(false);
+  }, [video.videoUrl]);
 
-    fetch('/api/blog?limit=3')
-      .then(r => r.json())
-      .then(d => {
-        if (!cancelled) setBlogPosts(d.posts || []);
-      })
-      .catch(() => {});
+  useEffect(() => {
+    if (!galleryOpen) return undefined;
+    if (galleryImages.length === 0) {
+      setGalleryOpen(false);
+      return undefined;
+    }
 
-    return () => { cancelled = true; };
-  }, [initialBlogPosts]);
+    const previousOverflow = document.body.style.overflow;
+    const handleKeyDown = (event) => {
+      if (event.key === 'Escape') setGalleryOpen(false);
+      if (event.key === 'ArrowRight') {
+        setGalleryIndex((current) => (current + 1) % galleryImages.length);
+      }
+      if (event.key === 'ArrowLeft') {
+        setGalleryIndex((current) => (current - 1 + galleryImages.length) % galleryImages.length);
+      }
+    };
 
-  const handleSubscribe = async (e) => {
-    e.preventDefault();
-    if (!subscribeEmail) return;
+    document.body.style.overflow = 'hidden';
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [galleryOpen, galleryImages.length]);
+
+  const handleSubscribe = async (event) => {
+    event.preventDefault();
+    if (!subscribeEmail || subscribeStatus === 'loading') return;
     setSubscribeStatus('loading');
+    setSubscribeMsg('');
+
     try {
-      const res = await fetch('/api/subscribe', {
+      const response = await fetch('/api/subscribe', {
         method: 'POST',
+        cache: 'no-store',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: subscribeEmail }),
       });
-      const data = await res.json();
-      if (res.ok) {
-        setSubscribeStatus('success');
-        setSubscribeMsg(data.couponCode ? `Welcome! Use code ${data.couponCode} for 10% off!` : 'Subscribed successfully!');
-        setSubscribeEmail('');
-      } else {
+      const data = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
         setSubscribeStatus('error');
-        setSubscribeMsg(data.error || 'Something went wrong');
+        setSubscribeMsg(data.error || 'Something went wrong. Please try again.');
+        return;
       }
+
+      setSubscribeStatus('success');
+      setSubscribeMsg(
+        data.couponCode
+          ? 'Welcome! Use code ' + data.couponCode + ' for 10% off!'
+          : 'Subscribed successfully!',
+      );
+      setSubscribeEmail('');
     } catch {
       setSubscribeStatus('error');
       setSubscribeMsg('Network error. Please try again.');
     }
   };
 
-  const [galleryOpen, setGalleryOpen] = useState(false);
-  const [galleryIndex, setGalleryIndex] = useState(0);
-
   const openGallery = (index) => {
     setGalleryIndex(index);
     setGalleryOpen(true);
   };
 
-  const closeGallery = () => setGalleryOpen(false);
-
-  const goNext = () => setGalleryIndex((prev) => (prev + 1) % galleryImages.length);
-  const goPrev = () => setGalleryIndex((prev) => (prev - 1 + galleryImages.length) % galleryImages.length);
-
-  // Split products for different sections
-  const trendingProducts = products.slice(0, 8);
-  const featuredProducts = products.slice(4, 12);
-  const onSaleProducts = products.filter(p => p.wholesaleCost > (p.retailPrice || 0)).slice(0, 3);
-  const bestSellerProducts = products.slice(0, 3);
-  const topRatedProducts = products.slice(3, 6);
-
-  // Products by category for tabs
-  const tabCategories = categories.slice(0, 6);
-  const getTabProducts = (catIndex) => {
-    if (catIndex >= tabCategories.length) return products.slice(0, 8);
-    const cat = tabCategories[catIndex];
-    const filtered = products.filter(p => p.categoryId === cat.id || p.category?.id === cat.id);
-    return filtered.length > 0 ? filtered.slice(0, 8) : products.slice(0, 8);
-  };
-
-  const heroSlides = hero.slides || [
-    { subtitle: hero.badge || `Start From ${CURRENCY_SYMBOL}999`, title: hero.titleLines?.join(' ') || 'Explore The Trendy products for you.', description: hero.description || '', image: hero.image || '/assets/img/hero/01.png', priceLabel: hero.priceLabel || 'Price', priceValue: hero.priceValue || formatPrice(2500) },
-    { subtitle: `Start From ${CURRENCY_SYMBOL}999`, title: 'Explore The Trendy products for you.', description: '', image: '/assets/img/hero/02.png', priceLabel: 'Price', priceValue: formatPrice(2500) },
-    { subtitle: `Start From ${CURRENCY_SYMBOL}999`, title: 'Explore The Trendy products for you.', description: '', image: '/assets/img/hero/03.png', priceLabel: 'Price', priceValue: formatPrice(2500) },
-  ];
+  const listPanels = [
+    { title: 'On Sale', href: '/search?sort=price_asc', products: onSaleProducts },
+    { title: 'Best Seller', href: '/search?sort=best_seller', products: bestSellerProducts },
+    { title: 'Top Rated', href: '/search?sort=price_desc', products: topRatedProducts },
+  ].filter((panel) => panel.products.length > 0);
 
   return (
-    <>
-      {/* Hero Slider */}
-      <StorefrontHero slides={heroSlides} hero={hero} currencySymbol={CURRENCY_SYMBOL} />
+    <div className="f2-market-home sd-home">
+      <StorefrontHero slides={heroSlides} hero={hero} />
 
-      {/* Category Area */}
-      <div className="category-area pt-80 pb-100">
-        <div className="container">
-          <div className="row">
-            <div className="col-12 wow fadeInDown" data-wow-delay=".25s">
-              <div className="site-heading-inline">
-                <h2 className="site-title">Top Category</h2>
-                <Link href="/search">View More <i className="fas fa-angle-double-right"></i></Link>
-              </div>
-            </div>
-          </div>
-          <StorefrontCarousel className="storefront-category-carousel" label="categories">
-            {categories.map(cat => (
-              <div className="category-item" key={cat.id}>
-                <Link href={`/categories/${cat.slug}`}>
-                  <div className="category-info">
-                    <div className="icon">
-                      <img src={cat.image || `/assets/img/icon/${getCategoryIcon(cat.slug)}`} alt="" />
-                    </div>
-                    <div className="content">
-                      <h4>{getName(cat)}</h4>
-                      <p>{cat._count?.products || 0} Items</p>
-                    </div>
-                  </div>
-                </Link>
-              </div>
-            ))}
-          </StorefrontCarousel>
-        </div>
-      </div>
-
-      {/* Small Banners */}
-      <div className="small-banner pb-100">
-        <div className="container wow fadeInUp" data-wow-delay=".25s">
-          <div className="row g-4">
-            {(promoBanners.length > 0 ? promoBanners : [
-              { label: 'Travel Sale', title: 'Best Travel Sale\nCollections', image: '/assets/img/banner/mini-banner-1.jpg', buttonLabel: 'Shop Now' },
-              { label: 'Hot Sale', title: 'Headphone Sale\nCollections', image: '/assets/img/banner/mini-banner-2.jpg', buttonLabel: 'Discover Now' },
-              { label: 'Shoe Sale', title: 'Summer Shoe Sale\nUp To 50% Off', image: '/assets/img/banner/mini-banner-3.jpg', buttonLabel: 'Discover Now' },
-            ]).slice(0, 3).map((banner, i) => (
-              <div className="col-12 col-md-6 col-lg-4" key={i}>
-                <div className="banner-item">
-                  <img src={banner.image || `/assets/img/banner/mini-banner-${i + 1}.jpg`} alt="" loading="lazy" />
-                  <div className="banner-content">
-                    <p>{banner.label}</p>
-                    <h3 dangerouslySetInnerHTML={{ __html: (banner.title || '').replace(/\n/g, '<br/>') }} />
-                    <Link href={banner.buttonHref || '/search'}>{banner.buttonLabel || 'Shop Now'}</Link>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* Trending Items */}
-      <div className="product-area pb-100">
-        <div className="container">
-          <div className="row">
-            <div className="col-12 wow fadeInDown" data-wow-delay=".25s">
-              <div className="site-heading-inline">
-                <h2 className="site-title">Trending Items</h2>
-                <Link href="/search">View More <i className="fas fa-angle-double-right"></i></Link>
-              </div>
-            </div>
-          </div>
-          <div className="product-wrap item-2 wow fadeInUp" data-wow-delay=".25s">
-            <StorefrontCarousel className="storefront-product-carousel" label="trending products">
-              {trendingProducts.map(p => (
-                <MocartProductItem key={p.id} product={p} />
-              ))}
-            </StorefrontCarousel>
-          </div>
-        </div>
-      </div>
-
-      {/* Sponsored Products */}
-      {sponsoredProducts.length > 0 && (
-        <div className="product-area pb-100">
+      {features.length > 0 && (
+        <section className="sd-feature-strip" aria-label="Shopping benefits">
           <div className="container">
-            <div className="row">
-              <div className="col-12 wow fadeInDown" data-wow-delay=".25s">
-                <div className="site-heading-inline">
-                  <h2 className="site-title"><i className="fas fa-bolt me-2" style={{ color: 'var(--theme-color)' }}></i>Sponsored Products</h2>
-                  <Link href="/search?sponsored=true">View All <i className="fas fa-angle-double-right"></i></Link>
-                </div>
-              </div>
-            </div>
-            <div className="product-wrap item-2 wow fadeInUp" data-wow-delay=".25s">
-              <StorefrontCarousel className="storefront-product-carousel" label="sponsored products">
-                {sponsoredProducts.map(p => (
-                  <MocartProductItem key={p.id} product={p} />
-                ))}
-              </StorefrontCarousel>
+            <div className="sd-feature-grid">
+              {features.map((feature, index) => {
+                const featureImage = imageSource(feature.image)
+                  || (feature.icon ? '/assets/img/icon/' + feature.icon : '');
+                return (
+                  <article className="sd-feature" key={feature.id || feature.title || index}>
+                    {featureImage && (
+                      <span className="sd-feature-icon">
+                        <img src={featureImage} alt="" loading="lazy" decoding="async" />
+                      </span>
+                    )}
+                    <div>
+                      {feature.title && <h3>{feature.title}</h3>}
+                      {(feature.desc || feature.description) && <p>{feature.desc || feature.description}</p>}
+                    </div>
+                  </article>
+                );
+              })}
             </div>
           </div>
-        </div>
+        </section>
       )}
 
-      {/* Feature Area */}
-      <div className="feature-area pb-100">
-        <div className="container wow fadeInUp" data-wow-delay=".25s">
-          <div className="feature-wrap">
-            <div className="row g-0">
-              {(features.length > 0 ? features : [
-                { title: 'Free Delivery', desc: `Orders Over ${formatPrice(5000)}`, icon: 'delivery-2.svg' },
-                { title: 'Get Refund', desc: 'Within 30 Days Returns', icon: 'refund.svg' },
-                { title: 'Safe Payment', desc: '100% Secure Payment', icon: 'payment.svg' },
-                { title: '24/7 Support', desc: 'Feel Free To Call Us', icon: 'support.svg' },
-              ]).map((feature, i) => (
-                <div className="col-12 col-md-6 col-lg-3" key={i}>
-                  <div className="feature-item">
-                    <div className="feature-icon">
-                      <img src={feature.image || `/assets/img/icon/${feature.icon || 'delivery-2.svg'}`} alt="" loading="lazy" />
-                    </div>
-                    <div className="feature-content">
-                      <h4>{feature.title}</h4>
-                      <p>{feature.desc}</p>
-                    </div>
+      {categories.length > 0 && (
+        <section className="sd-section sd-category-section">
+          <div className="container">
+            <SectionHeading title="Top Category" actionHref="/search" actionLabel="View More" />
+            <StorefrontCarousel className="storefront-category-carousel" label="Categories">
+              {categories.map((category) => {
+                const categoryImage = imageSource(category.image)
+                  || getCategory3DIcon(category.slug)
+                  || '/assets/img/icon/' + getCategoryIcon(category.slug);
+                const productCount = category._count?.products ?? category.productCount ?? 0;
+                return (
+                  <article className="sd-category-card" key={category.id}>
+                    <Link href={'/categories/' + category.slug}>
+                      <span className="sd-category-image">
+                        <img src={categoryImage} alt="" loading="lazy" decoding="async" />
+                      </span>
+                      <h3>{getName(category)}</h3>
+                      <p>{productCount} Items</p>
+                    </Link>
+                  </article>
+                );
+              })}
+            </StorefrontCarousel>
+          </div>
+        </section>
+      )}
+
+      {promoBanners.length > 0 && (
+        <section className="sd-section-compact">
+          <div className="container">
+            <div className="sd-promo-grid">
+              {promoBanners.slice(0, 3).map((banner, index) => (
+                <article className="sd-promo-card" key={banner.id || banner.title || index}>
+                  <img src={imageSource(banner.image)} alt="" loading="lazy" decoding="async" />
+                  <span className="sd-promo-overlay" aria-hidden="true" />
+                  <div className="sd-promo-content">
+                    {banner.label && <span>{banner.label}</span>}
+                    {banner.title && <h2><MultilineText value={banner.title} /></h2>}
+                    {banner.buttonLabel && banner.buttonHref && (
+                      <Link href={banner.buttonHref}>
+                        {banner.buttonLabel} <i className="far fa-arrow-right" aria-hidden="true" />
+                      </Link>
+                    )}
                   </div>
-                </div>
+                </article>
               ))}
             </div>
           </div>
-        </div>
-      </div>
+        </section>
+      )}
 
-      {/* Popular Items (Tabbed by Category) */}
-      <div className="product-area">
-        <div className="container">
-          <div className="row g-4">
-            <div className="col-lg-3">
-              <div className="product-banner wow fadeInLeft" data-wow-delay=".25s">
-                <Link href="/search">
-                  <img src={home.productBannerImage || '/assets/img/banner/product-banner.jpg'} alt="" loading="lazy" />
-                </Link>
-              </div>
+      <ProductCarouselSection
+        title="New Arrivals"
+        products={trendingProducts}
+        label="Trending products"
+      />
+
+      <ProductCarouselSection
+        title="Sponsored Products"
+        products={realSponsoredProducts}
+        href="/search?sponsored=true"
+        actionLabel="View All"
+        label="Sponsored products"
+        tinted
+      />
+
+      {tabCategories.length > 0 && tabProducts.length > 0 && (
+        <section className="sd-section">
+          <div className="container">
+            <SectionHeading title="Popular Items" actionHref="/search" actionLabel="All Products" />
+            <div className="sd-product-tabs" role="tablist" aria-label="Popular product categories">
+              {tabCategories.map((category) => {
+                const isActive = String(category.id) === String(selectedCategory?.id);
+                return (
+                  <button
+                    type="button"
+                    role="tab"
+                    aria-selected={isActive}
+                    className={isActive ? 'active' : ''}
+                    key={category.id}
+                    onClick={() => setActiveTab(category.id)}
+                  >
+                    {getName(category)}
+                  </button>
+                );
+              })}
             </div>
-            <div className="col-lg-9">
-              <div className="row">
-                <div className="col-12 wow fadeInDown" data-wow-delay=".25s">
-                  <div className="site-heading-inline">
-                    <h2 className="site-title">Popular Items</h2>
-                    <Link href="/search">All Products <i className="fas fa-angle-double-right"></i></Link>
-                  </div>
-                  <div className="item-tab">
-                    <ul className="nav nav-pills mt-40 mb-50" role="tablist">
-                      {tabCategories.map((cat, i) => (
-                        <li className="nav-item" key={cat.id} role="presentation">
-                          <button
-                            className={`nav-link${activeTab === i ? ' active' : ''}`}
-                            onClick={() => setActiveTab(i)}
-                            type="button"
-                            role="tab"
-                          >
-                            {getName(cat)}
-                          </button>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                </div>
-              </div>
-              <div className="wow fadeInUp" data-wow-delay=".25s">
-                <div className="row g-3 item-2">
-                  {getTabProducts(activeTab).slice(0, 8).map(p => (
-                    <div className="col-md-6 col-lg-4 col-xl-3" key={p.id}>
-                      <MocartProductItem product={p} />
-                    </div>
-                  ))}
-                </div>
-              </div>
+            <div className="sd-product-grid">
+              {tabProducts.map((product) => <MocartProductItem key={product.id} product={product} />)}
             </div>
           </div>
-        </div>
-      </div>
+        </section>
+      )}
 
-      {/* Brand Area */}
-      <div className="brand-area py-100">
-        <div className="container">
-          <div className="row">
-            <div className="col-12">
-              <div className="site-heading-inline">
-                <h2 className="site-title">{brands.title || 'Popular Brands'}</h2>
-                <Link href="/search">All Brands <i className="fas fa-angle-double-right"></i></Link>
-              </div>
-            </div>
-          </div>
-          <StorefrontCarousel className="storefront-brand-carousel" label="brands">
-            {(brandItems.length > 0 ? brandItems : [1, 2, 3, 4, 5, 6].map(n => ({ image: `/assets/img/brand/0${n}.png` }))).map((brand, i) => (
-              <div className="brand-item" key={i}>
-                <Link href="/search">
-                  <img src={brand.image || `/assets/img/brand/0${i + 1}.png`} alt={brand.name || ''} loading="lazy" />
-                </Link>
-              </div>
-            ))}
-          </StorefrontCarousel>
-        </div>
-      </div>
-
-      {/* Big Banner */}
-      <div className="big-banner">
-        <div className="container wow fadeInUp" data-wow-delay=".25s">
-          <div className="banner-wrap" style={{ backgroundImage: `url(${bigBanner.image || '/assets/img/banner/big-banner.jpg'})` }}>
-            <div className="row">
-              <div className="col-lg-8 mx-auto">
-                <div className="banner-content">
-                  <div className="banner-info">
-                    <h6>{bigBanner.subtitle || 'Mega Collections'}</h6>
-                    <h2>{bigBanner.title ? bigBanner.title.split(/(\d+%)/).map((part, i) => /\d+%/.test(part) ? <span key={i}>{part}</span> : part) : <>Huge Sale Up To <span>40%</span> Off</>}</h2>
-                    <p>{bigBanner.description || 'at our outlet stores'}</p>
-                  </div>
-                  <Link href={bigBanner.buttonHref || '/search'} className="theme-btn">
-                    {bigBanner.buttonLabel || 'Shop Now'}<i className="fas fa-arrow-right"></i>
+      {brandItems.length > 0 && (
+        <section className="sd-section sd-brand-section">
+          <div className="container">
+            <SectionHeading
+              title={brandsConfig.title}
+              actionHref="/search"
+              actionLabel="All Brands"
+            />
+            <StorefrontCarousel className="storefront-brand-carousel" label="Brands">
+              {brandItems.map((brand, index) => (
+                <article className="sd-brand-card" key={brand.id || brand.name || index}>
+                  <Link href={brand.href || brand.link || '/search'}>
+                    {imageSource(brand.image) && (
+                      <span className="sd-brand-logo">
+                        <img src={imageSource(brand.image)} alt={brand.name || ''} loading="lazy" decoding="async" />
+                      </span>
+                    )}
+                    {brand.name && <span className="sd-brand-name">{brand.name}</span>}
+                    {(brand.location || brand.description) && <small>{brand.location || brand.description}</small>}
                   </Link>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Featured Items */}
-      <div className="product-area pt-80">
-        <div className="container">
-          <div className="row">
-            <div className="col-12 wow fadeInDown" data-wow-delay=".25s">
-              <div className="site-heading-inline">
-                <h2 className="site-title">Featured Items</h2>
-                <Link href="/search">View More <i className="fas fa-angle-double-right"></i></Link>
-              </div>
-            </div>
-          </div>
-          <div className="product-wrap item-2 wow fadeInUp" data-wow-delay=".25s">
-            <StorefrontCarousel className="storefront-product-carousel" label="featured products">
-              {featuredProducts.map(p => (
-                <MocartProductItem key={p.id} product={p} />
+                </article>
               ))}
             </StorefrontCarousel>
           </div>
-        </div>
-      </div>
+        </section>
+      )}
 
-      {/* Video Area */}
-      <div className="video-area pt-100">
-        <div className="container-fluid px-0">
-          <div className="video-content" style={{ backgroundImage: !videoPlaying ? `url(${home.video?.backgroundImage || '/assets/img/video/01.jpg'})` : 'none', position: 'relative', overflow: 'hidden' }}>
-            {videoPlaying ? (
-              <div style={{ position: 'relative', width: '100%', paddingBottom: '56.25%' }}>
+      {hasBigBanner && (
+        <section className="sd-section">
+          <div className="container">
+            <div
+              className="sd-collection-banner"
+              style={{ '--sd-banner-image': 'url("' + bigBannerImage + '")' }}
+            >
+              <div className="sd-collection-copy">
+                {bigBanner.subtitle && <span>{bigBanner.subtitle}</span>}
+                {bigBanner.title && <h2>{bigBanner.title}</h2>}
+                {bigBanner.description && <p>{bigBanner.description}</p>}
+                {bigBanner.buttonLabel && bigBanner.buttonHref && (
+                  <Link href={bigBanner.buttonHref} className="sd-button sd-button-light">
+                    {bigBanner.buttonLabel} <i className="far fa-arrow-right" aria-hidden="true" />
+                  </Link>
+                )}
+              </div>
+            </div>
+          </div>
+        </section>
+      )}
+
+      <ProductCarouselSection
+        title="Featured Items"
+        products={featuredProducts}
+        label="Featured products"
+      />
+
+      {videoId && (
+        <section className="sd-section sd-editorial-section">
+          <div className="container">
+            <div
+              className="sd-video-card"
+              style={{ '--sd-video-image': videoImage ? 'url("' + videoImage + '")' : 'none' }}
+            >
+              {videoPlaying ? (
                 <iframe
-                  src={`https://www.youtube.com/embed/${getYouTubeId(videoUrl)}?autoplay=1&rel=0`}
-                  style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', border: 0 }}
-                  allow="autoplay; encrypted-media"
+                  src={'https://www.youtube.com/embed/' + videoId + '?autoplay=1&rel=0'}
+                  title={video.title || 'Sawdagar video'}
+                  allow="autoplay; encrypted-media; picture-in-picture"
                   allowFullScreen
-                  title="Video"
                 />
+              ) : (
+                <div className="sd-video-cover">
+                  {video.label && <span>{video.label}</span>}
+                  {video.title && <h2>{video.title}</h2>}
+                  <button type="button" onClick={() => setVideoPlaying(true)} aria-label="Play video">
+                    <i className="fas fa-play" aria-hidden="true" />
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {listPanels.length > 0 && (
+        <section className="sd-section sd-product-lists-section">
+          <div className="container">
+            <div className="sd-product-list-grid">
+              {listPanels.map((panel) => (
+                <article className="sd-product-list-panel" key={panel.title}>
+                  <Link href={panel.href} className="sd-list-heading">
+                    {panel.title} <i className="far fa-arrow-right" aria-hidden="true" />
+                  </Link>
+                  {panel.products.map((product) => (
+                    <MocartProductListItem key={product.id} product={product} />
+                  ))}
+                </article>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {hasDeal && (
+        <section className="sd-section sd-deal-section">
+          <div className="container">
+            <div
+              className="sd-deal-card"
+              style={dealImage ? undefined : { gridTemplateColumns: 'minmax(0, 1fr)' }}
+            >
+              <div className="sd-deal-copy">
+                {dealOfWeek.badge && <span className="sd-deal-label">{dealOfWeek.badge}</span>}
+                {dealOfWeek.title && <h2>{dealOfWeek.title}</h2>}
+                {dealOfWeek.description && <p>{dealOfWeek.description}</p>}
+                {dealTarget && <DealCountdown target={dealTarget} />}
+                {dealOfWeek.buttonLabel && dealOfWeek.buttonHref && (
+                  <Link href={dealOfWeek.buttonHref} className="sd-button sd-button-light">
+                    {dealOfWeek.buttonLabel} <i className="far fa-arrow-right" aria-hidden="true" />
+                  </Link>
+                )}
               </div>
-            ) : (
-              <div className="video-wrapper">
+              {dealImage && (
+                <div className="sd-deal-visual">
+                  <img src={dealImage} alt="" loading="lazy" decoding="async" />
+                  {dealOfWeek.discountPercent !== undefined && dealOfWeek.discountPercent !== '' && (
+                    <span className="sd-deal-discount">
+                      <strong>
+                        {String(dealOfWeek.discountPercent).includes('%')
+                          ? dealOfWeek.discountPercent
+                          : dealOfWeek.discountPercent + '%'}
+                      </strong>
+                      <span>Off</span>
+                    </span>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {galleryImages.length > 0 && (
+        <section className="sd-section">
+          <div className="container">
+            <SectionHeading
+              eyebrow={gallery.tagline}
+              title={gallery.title}
+              description={gallery.description}
+              centered
+            />
+            <div className="sd-gallery-grid">
+              {galleryImages.map((item, index) => (
                 <button
-                  className="play-btn"
-                  onClick={() => setVideoPlaying(true)}
-                  style={{ background: 'none', border: 'none', cursor: 'pointer' }}
-                  aria-label="Play video"
+                  type="button"
+                  className={'sd-gallery-item' + (item.isWide ? ' sd-gallery-wide' : '')}
+                  key={item.id || item.resolvedImage || index}
+                  onClick={() => openGallery(index)}
+                  aria-label={'Open gallery image ' + (index + 1)}
                 >
-                  <i className="fas fa-play"></i>
+                  <img src={item.resolvedImage} alt={item.alt || ''} loading="lazy" decoding="async" />
+                  <span><i className="fal fa-plus" aria-hidden="true" /></span>
                 </button>
-              </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {galleryOpen && galleryImages[galleryIndex] && (
+        <div className="sd-gallery-modal" role="dialog" aria-modal="true" aria-label="Gallery image viewer">
+          <button type="button" className="sd-gallery-backdrop" onClick={() => setGalleryOpen(false)} aria-label="Close gallery" />
+          <div className="sd-gallery-dialog">
+            <img
+              src={galleryImages[galleryIndex].resolvedImage}
+              alt={galleryImages[galleryIndex].alt || ''}
+            />
+            <button type="button" className="sd-gallery-close" onClick={() => setGalleryOpen(false)} aria-label="Close gallery">
+              <i className="far fa-times" aria-hidden="true" />
+            </button>
+            {galleryImages.length > 1 && (
+              <>
+                <button
+                  type="button"
+                  className="sd-gallery-nav sd-gallery-prev"
+                  onClick={() => setGalleryIndex((current) => (current - 1 + galleryImages.length) % galleryImages.length)}
+                  aria-label="Previous gallery image"
+                >
+                  <i className="far fa-arrow-left" aria-hidden="true" />
+                </button>
+                <button
+                  type="button"
+                  className="sd-gallery-nav sd-gallery-next"
+                  onClick={() => setGalleryIndex((current) => (current + 1) % galleryImages.length)}
+                  aria-label="Next gallery image"
+                >
+                  <i className="far fa-arrow-right" aria-hidden="true" />
+                </button>
+              </>
             )}
           </div>
         </div>
-      </div>
-
-      {/* Product List (On Sale, Best Seller, Top Rated) */}
-      <div className="product-list py-100">
-        <div className="container wow fadeInUp" data-wow-delay=".25s">
-          <div className="row g-4">
-            <div className="col-12 col-md-6 col-lg-6 col-xl-4">
-              <div className="product-list-box border">
-                <Link href="/search?sort=price_asc" style={{ textDecoration: 'none' }}><h2 className="product-list-title" style={{ cursor: 'pointer' }}>On Sale <i className="fas fa-angle-right" style={{ fontSize: 14, marginLeft: 6 }}></i></h2></Link>
-                {onSaleProducts.map(p => <MocartProductListItem key={p.id} product={p} />)}
-                {onSaleProducts.length === 0 && products.slice(0, 3).map(p => <MocartProductListItem key={p.id} product={p} />)}
-              </div>
-            </div>
-            <div className="col-12 col-md-6 col-lg-6 col-xl-4">
-              <div className="product-list-box border">
-                <Link href="/search?sort=best_seller" style={{ textDecoration: 'none' }}><h2 className="product-list-title" style={{ cursor: 'pointer' }}>Best Seller <i className="fas fa-angle-right" style={{ fontSize: 14, marginLeft: 6 }}></i></h2></Link>
-                {bestSellerProducts.map(p => <MocartProductListItem key={p.id} product={p} />)}
-              </div>
-            </div>
-            <div className="col-12 col-md-6 col-lg-6 col-xl-4">
-              <div className="product-list-box border">
-                <Link href="/search?sort=price_desc" style={{ textDecoration: 'none' }}><h2 className="product-list-title" style={{ cursor: 'pointer' }}>Top Rated <i className="fas fa-angle-right" style={{ fontSize: 14, marginLeft: 6 }}></i></h2></Link>
-                {topRatedProducts.map(p => <MocartProductListItem key={p.id} product={p} />)}
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Deal Area */}
-      <div className="deal-area pt-50 pb-50">
-        <div className="deal-text-shape">Deal</div>
-        <div className="container">
-          <div className="deal-wrap wow fadeInUp" data-wow-delay=".25s">
-            <div className="storefront-deal">
-              <div className="deal-item">
-                <div className="row align-items-center">
-                  <div className="col-lg-6">
-                    <div className="deal-content">
-                      <div className="deal-info">
-                        <span>{dealOfWeek.badge || 'Weekly Deal'}</span>
-                        <h1>{dealOfWeek.title || 'Best Deal For This Week'}</h1>
-                        <p>{dealOfWeek.description || 'There are many variations of passages available but the majority have suffered alteration in some form.'}</p>
-                      </div>
-                      <div className="deal-countdown"><DealCountdown target={dealOfWeek.endsAt || '2027-12-30T00:00:00'} /></div>
-                      <Link href={dealOfWeek.buttonHref || '/search?sort=price_asc&inStock=true'} className="theme-btn theme-btn2">
-                        {dealOfWeek.buttonLabel || 'Shop Now'} <i className="fas fa-arrow-right"></i>
-                      </Link>
-                    </div>
-                  </div>
-                  <div className="col-lg-6">
-                    <div className="deal-img">
-                      <img src={dealOfWeek.image || '/assets/img/deal/01.png'} alt="" loading="lazy" />
-                      <div className="deal-discount">
-                        <span>{dealOfWeek.discountPercent || '35'}%</span>
-                        <span>off</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Gallery Area */}
-      <div className="gallery-area pb-100">
-        <div className="container">
-          <div className="row">
-            <div className="col-lg-6 mx-auto wow fadeInDown" data-wow-delay=".25s">
-              <div className="site-heading text-center">
-                <span className="site-title-tagline">{gallery.tagline || 'Our Gallery'}</span>
-                <h2 className="site-title">{gallery.title ? gallery.title.split(' ').slice(0, -1).join(' ') : "Let's Check Our Photo"} <span>{gallery.title ? gallery.title.split(' ').pop() : 'Gallery'}</span></h2>
-              </div>
-            </div>
-          </div>
-          <div className="row g-4 popup-gallery">
-            {galleryImages.map((item, i) => (
-              <div className={item.size || 'col-md-4 col-lg-3'} key={i}>
-                <div className="gallery-item wow fadeInDown" data-wow-delay=".25s">
-                  <div className="gallery-img">
-                    <img src={item.image} alt="" loading="lazy" />
-                    <a
-                      className="gallery-link"
-                      href="#"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        openGallery(i);
-                      }}
-                    >
-                      <i className="fal fa-plus"></i>
-                    </a>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* Testimonial Area */}
-      <div className="testimonial-area ts-bg py-80">
-        <div className="container">
-          <div className="row">
-            <div className="col-lg-6 mx-auto wow fadeInDown" data-wow-delay=".25s">
-              <div className="site-heading text-center">
-                <span className="site-title-tagline">{testimonials.tagline || 'Testimonials'}</span>
-                <h2 className="site-title text-white">{testimonials.title || "What Our Client Say's"} <span>About Us</span></h2>
-              </div>
-            </div>
-          </div>
-          <StorefrontCarousel className="storefront-testimonial-carousel" label="customer testimonials">
-            {(testimonialItems.length > 0 ? testimonialItems : [
-              { name: 'Sylvia H Green', role: 'Customer', image: '/assets/img/testimonial/01.jpg', text: 'There are many variations of long passages available but the content majority have suffered to the editor page when looking at its layout alteration in some injected.' },
-              { name: 'Gordo Novak', role: 'Customer', image: '/assets/img/testimonial/02.jpg', text: 'There are many variations of long passages available but the content majority have suffered to the editor page when looking at its layout alteration in some injected.' },
-              { name: 'Reid E Butt', role: 'Customer', image: '/assets/img/testimonial/03.jpg', text: 'There are many variations of long passages available but the content majority have suffered to the editor page when looking at its layout alteration in some injected.' },
-              { name: 'Parker Jimenez', role: 'Customer', image: '/assets/img/testimonial/04.jpg', text: 'There are many variations of long passages available but the content majority have suffered to the editor page when looking at its layout alteration in some injected.' },
-            ]).map((t, i) => (
-              <div className="testimonial-item" key={i}>
-                <div className="testimonial-author">
-                  <div className="testimonial-author-img">
-                    <img src={t.image || `/assets/img/testimonial/0${i + 1}.jpg`} alt="" loading="lazy" />
-                  </div>
-                  <div className="testimonial-author-info">
-                    <h4>{t.name}</h4>
-                    <p>{t.role || 'Customer'}</p>
-                  </div>
-                </div>
-                <div className="testimonial-quote">
-                  <p>{t.text}</p>
-                </div>
-                <div className="testimonial-rate">
-                  {[...Array(t.rating || 5)].map((_, si) => <i className="fas fa-star" key={si}></i>)}
-                </div>
-                <div className="testimonial-quote-icon"><img src="/assets/img/icon/quote.svg" alt="" /></div>
-              </div>
-            ))}
-          </StorefrontCarousel>
-        </div>
-      </div>
-
-      {/* Gallery Modal (fallback for Magnific Popup) */}
-      {galleryOpen && (
-        <div className="gallery-modal" role="dialog" aria-modal="true">
-          <div className="gallery-modal-backdrop" onClick={closeGallery} />
-          <div className="gallery-modal-content">
-            <button type="button" className="gallery-modal-close" onClick={closeGallery} aria-label="Close">
-              <i className="fas fa-times"></i>
-            </button>
-            <div className="gallery-modal-body">
-              <button className="gallery-modal-nav prev" onClick={goPrev} aria-label="Previous">
-                <i className="fas fa-chevron-left"></i>
-              </button>
-              <img src={galleryImages[galleryIndex]?.image} alt="Gallery" />
-              <button className="gallery-modal-nav next" onClick={goNext} aria-label="Next">
-                <i className="fas fa-chevron-right"></i>
-              </button>
-            </div>
-          </div>
-        </div>
       )}
 
-      {/* Blog Area */}
-      <div className="blog-area py-100">
-        <div className="container">
-          <div className="row">
-            <div className="col-lg-6 mx-auto wow fadeInDown" data-wow-delay=".25s">
-              <div className="site-heading text-center">
-                <span className="site-title-tagline">{home.blog?.tagline || 'Our Blog'}</span>
-                <h2 className="site-title">{home.blog?.title || 'Our Latest News &'} <span>Blog</span></h2>
-              </div>
-            </div>
-          </div>
-          <div className="row g-4">
-            {(blogPosts.length > 0 ? blogPosts : [
-              { slug: '#', image: '/assets/img/blog/01.jpg', createdAt: '2025-08-12', authorName: 'Admin', viewCount: 0, titleEn: 'There are many variations of passage available majority suffered.', excerptEn: 'There are many variations available the majority have suffered alteration randomised words.' },
-              { slug: '#', image: '/assets/img/blog/02.jpg', createdAt: '2025-08-15', authorName: 'Admin', viewCount: 0, titleEn: 'Contrary to popular belief making simply random text latin.', excerptEn: 'There are many variations available the majority have suffered alteration randomised words.' },
-              { slug: '#', image: '/assets/img/blog/03.jpg', createdAt: '2025-08-18', authorName: 'Admin', viewCount: 0, titleEn: 'If you are going use passage you need sure there middle text.', excerptEn: 'There are many variations available the majority have suffered alteration randomised words.' },
-            ]).slice(0, 3).map((blog, i) => {
-              const blogTitle = lang === 'ps' ? (blog.titlePs || blog.titleEn) : lang === 'dr' ? (blog.titleDr || blog.titleEn) : blog.titleEn;
-              const blogExcerpt = lang === 'ps' ? (blog.excerptPs || blog.excerptEn) : lang === 'dr' ? (blog.excerptDr || blog.excerptEn) : blog.excerptEn;
-              return (
-                <div className="col-md-6 col-lg-4" key={blog.id || i}>
-                  <div className="blog-item wow fadeInUp" data-wow-delay=".25s">
-                    <div className="blog-item-img">
-                      <img src={blog.image || `/assets/img/blog/0${i + 1}.jpg`} alt={blogTitle} loading="lazy" onError={e => { e.target.src = `/assets/img/blog/0${(i % 3) + 1}.jpg`; }} />
-                      <span className="blog-date"><i className="far fa-calendar-alt"></i> {new Date(blog.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
-                    </div>
-                    <div className="blog-item-info">
-                      <div className="blog-item-meta">
-                        <ul>
-                          <li><i className="far fa-user-circle"></i> By {blog.authorName || 'Admin'}</li>
-                          <li><i className="far fa-eye"></i> {blog.viewCount || 0} Views</li>
-                        </ul>
+      {testimonialItems.length > 0 && (
+        <section className="sd-section sd-testimonial-section">
+          <div className="container">
+            <SectionHeading
+              eyebrow={testimonials.tagline}
+              title={testimonials.title}
+              description={testimonials.description}
+              centered
+            />
+            <StorefrontCarousel className="storefront-testimonial-carousel" label="Testimonials">
+              {testimonialItems.map((item, index) => {
+                const rating = Math.max(0, Math.min(5, Math.round(Number(item.rating || 0))));
+                const text = item.text || item.review || item.comment;
+                return (
+                  <figure className="sd-testimonial-card" key={item.id || item.name || index}>
+                    {rating > 0 && (
+                      <div className="sd-testimonial-stars" aria-label={rating + ' out of 5 stars'}>
+                        {Array.from({ length: rating }, (_, starIndex) => (
+                          <i className="fas fa-star" aria-hidden="true" key={starIndex} />
+                        ))}
                       </div>
-                      <h4 className="blog-title">
-                        <Link href={blog.slug === '#' ? '#' : `/blog/${blog.slug}`}>{blogTitle}</Link>
-                      </h4>
-                      <p>{blogExcerpt}</p>
-                      <Link className="theme-btn" href={blog.slug === '#' ? '#' : `/blog/${blog.slug}`}>Read More<i className="fas fa-arrow-right"></i></Link>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-          {blogPosts.length > 0 && (
-            <div className="text-center mt-4">
-              <Link href="/blog" className="theme-btn">View All Posts <i className="fas fa-arrow-right"></i></Link>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Newsletter Area */}
-      <div className="newsletter-area pb-100">
-        <div className="container wow fadeInUp" data-wow-delay=".25s">
-          <div className="newsletter-wrap">
-            <div className="row">
-              <div className="col-lg-6 mx-auto">
-                <div className="newsletter-content">
-                  <h3>{newsletter.title ? newsletter.title.split(/(\d+%)/).map((part, i) => /\d+%/.test(part) ? <span key={i}>{part}</span> : part) : <>Get <span>20%</span> Off Discount Coupon</>}</h3>
-                  <p>{newsletter.description || 'By Subscribe Our Newsletter'}</p>
-                  <div className="subscribe-form">
-                    {subscribeStatus === 'success' ? (
-                      <div className="alert alert-success text-center" style={{ borderRadius: 30, padding: '12px 20px' }}>{subscribeMsg}</div>
-                    ) : (
-                      <form onSubmit={handleSubscribe}>
-                        <input type="email" className="form-control" placeholder="Your Email Address" value={subscribeEmail} onChange={e => setSubscribeEmail(e.target.value)} required />
-                        <button className="theme-btn" type="submit" disabled={subscribeStatus === 'loading'}>
-                          {subscribeStatus === 'loading' ? 'Subscribing...' : (newsletter.buttonLabel || 'Subscribe')} <i className="far fa-paper-plane"></i>
-                        </button>
-                      </form>
                     )}
-                    {subscribeStatus === 'error' && <p className="text-danger mt-2 text-center" style={{ fontSize: 14 }}>{subscribeMsg}</p>}
-                  </div>
-                </div>
-              </div>
-            </div>
+                    {text && <blockquote>{text}</blockquote>}
+                    {(item.name || item.role || imageSource(item.image)) && (
+                      <figcaption>
+                        {imageSource(item.image) && (
+                          <img src={imageSource(item.image)} alt="" loading="lazy" decoding="async" />
+                        )}
+                        <span>
+                          {item.name && <strong>{item.name}</strong>}
+                          {item.role && <small>{item.role}</small>}
+                        </span>
+                      </figcaption>
+                    )}
+                  </figure>
+                );
+              })}
+            </StorefrontCarousel>
           </div>
-        </div>
-      </div>
+        </section>
+      )}
 
-      {/* Instagram Area */}
-      <div className="instagram-area pb-100">
-        <div className="container wow fadeInUp" data-wow-delay=".25s">
-          <div className="row">
-            <div className="col-lg-6 mx-auto">
-              <div className="site-heading text-center">
-                <h2 className="site-title">Instagram <span>{home.instagram?.title || '@sawdagar'}</span></h2>
+      {liveBlogPosts.length > 0 && (
+        <section className="sd-section">
+          <div className="container">
+            <SectionHeading
+              eyebrow={blogConfig.tagline}
+              title={blogConfig.title}
+              description={blogConfig.description}
+              actionHref="/blog"
+              actionLabel="View All Posts"
+            />
+            <div className="sd-blog-grid">
+              {liveBlogPosts.slice(0, 3).map((post, index) => {
+                const title = localizedValue(post, 'title', lang);
+                const excerpt = localizedValue(post, 'excerpt', lang);
+                const postHref = post.slug ? '/blog/' + post.slug : '';
+                const postImage = imageSource(post.image);
+                const date = formatBlogDate(post.createdAt || post.date);
+                const author = post.authorName || post.author;
+                const hasViews = post.viewCount !== undefined && post.viewCount !== null;
+
+                return (
+                  <article className="sd-blog-card" key={post.id || post.slug || index}>
+                    {postImage && (
+                      postHref ? (
+                        <Link href={postHref} className="sd-blog-image">
+                          <img src={postImage} alt={title} loading="lazy" decoding="async" />
+                        </Link>
+                      ) : (
+                        <span className="sd-blog-image">
+                          <img src={postImage} alt={title} loading="lazy" decoding="async" />
+                        </span>
+                      )
+                    )}
+                    <div className="sd-blog-content">
+                      {(date || author || hasViews) && (
+                        <div className="sd-blog-meta">
+                          {date && <span><i className="far fa-calendar-alt" aria-hidden="true" /> {date}</span>}
+                          {author && <span><i className="far fa-user" aria-hidden="true" /> {author}</span>}
+                          {hasViews && <span><i className="far fa-eye" aria-hidden="true" /> {post.viewCount}</span>}
+                        </div>
+                      )}
+                      <h3>{postHref ? <Link href={postHref}>{title}</Link> : title}</h3>
+                      {excerpt && <p>{excerpt}</p>}
+                      {postHref && (
+                        <Link href={postHref} className="sd-text-link">
+                          Read More <i className="far fa-arrow-right" aria-hidden="true" />
+                        </Link>
+                      )}
+                    </div>
+                  </article>
+                );
+              })}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {hasNewsletter && (
+        <section className="sd-newsletter-section">
+          <div className="container">
+            <div className="sd-newsletter-card">
+              <div className="sd-newsletter-copy">
+                {newsletter.label && <span className="sd-eyebrow">{newsletter.label}</span>}
+                {newsletter.title && <h2>{newsletter.title}</h2>}
+                {newsletter.description && <p>{newsletter.description}</p>}
+              </div>
+              <div className="sd-newsletter-form-wrap">
+                {subscribeStatus === 'success' ? (
+                  <div className="sd-form-message" role="status">
+                    <i className="far fa-check-circle" aria-hidden="true" /> {subscribeMsg}
+                  </div>
+                ) : (
+                  <form className="sd-newsletter-form" onSubmit={handleSubscribe}>
+                    <label className="sd-visually-hidden" htmlFor="home-newsletter-email">Email address</label>
+                    <input
+                      id="home-newsletter-email"
+                      type="email"
+                      autoComplete="email"
+                      placeholder="Your Email Address"
+                      value={subscribeEmail}
+                      onChange={(event) => setSubscribeEmail(event.target.value)}
+                      required
+                    />
+                    <button type="submit" disabled={subscribeStatus === 'loading'}>
+                      {subscribeStatus === 'loading' ? 'Subscribing...' : newsletter.buttonLabel}
+                      <i className="far fa-paper-plane" aria-hidden="true" />
+                    </button>
+                  </form>
+                )}
+                {subscribeStatus === 'error' && (
+                  <p className="sd-form-error" role="alert">{subscribeMsg}</p>
+                )}
               </div>
             </div>
           </div>
-          <StorefrontCarousel className="storefront-instagram-carousel" label="Instagram products">
-            {(instagramItems.length > 0 ? instagramItems : products.slice(0, 7).map(p => ({ image: p.images?.[0] || `/assets/img/instagram/01.jpg`, link: `/products/${p.slug || p.id}` }))).concat(
-              instagramItems.length === 0 && products.length < 7 ? [1, 2, 3, 4, 5, 6, 7].slice(products.length).map(n => ({ image: `/assets/img/instagram/0${n}.jpg`, link: '#' })) : []
-            ).map((item, i) => (
-              <div className="instagram-item" key={i}>
-                <div className="instagram-img">
-                  <img src={(typeof item.image === 'string' ? item.image : item.image?.url) || `/assets/img/instagram/0${i + 1}.jpg`} alt="" loading="lazy" onError={e => { e.target.src = `/assets/img/instagram/0${(i % 7) + 1}.jpg`; }} />
-                  <Link href={item.link || '#'}><i className="fab fa-instagram"></i></Link>
-                </div>
-              </div>
-            ))}
-          </StorefrontCarousel>
-        </div>
-      </div>
-    </>
+        </section>
+      )}
+
+      {instagramItems.length > 0 && (
+        <section className="sd-section sd-instagram-section">
+          <div className="container">
+            <SectionHeading title={instagram.title} centered />
+            <StorefrontCarousel className="storefront-instagram-carousel" label="Instagram">
+              {instagramItems.map((item, index) => {
+                const content = (
+                  <>
+                    <img src={item.resolvedImage} alt={item.alt || ''} loading="lazy" decoding="async" />
+                    <span><i className="fab fa-instagram" aria-hidden="true" /></span>
+                  </>
+                );
+                return item.link || item.href ? (
+                  <Link
+                    href={item.link || item.href}
+                    className="sd-instagram-card"
+                    key={item.id || item.resolvedImage || index}
+                  >
+                    {content}
+                  </Link>
+                ) : (
+                  <div className="sd-instagram-card" key={item.id || item.resolvedImage || index}>
+                    {content}
+                  </div>
+                );
+              })}
+            </StorefrontCarousel>
+          </div>
+        </section>
+      )}
+    </div>
   );
+}
+
+// Map live category slugs to the same 3D PNG icons the mobile app uses
+// (copied to /public/category-icons). Falls back to undefined when no match.
+function getCategory3DIcon(slug) {
+  if (!slug) return undefined;
+  const s = String(slug).toLowerCase();
+  const map = {
+    'auto-parts': 'auto-parts', automotive: 'auto-parts', auto: 'auto-parts',
+    bathroom: 'bathroom',
+    baverages: 'beverages', beverages: 'beverages', beverage: 'beverages', juice: 'juice',
+    clothing: 'clothing', fashion: 'clothing',
+    curd: 'curd', milk: 'milk', dairy: 'milk',
+    electronics: 'electronics', phones: 'phones', phone: 'phones',
+    food: 'food-groceries', 'food-groceries': 'food-groceries', grocery: 'food-groceries', groceries: 'food-groceries',
+    health: 'health-beauty', 'health-beauty': 'health-beauty', beauty: 'health-beauty', medical: 'medical',
+    home: 'home-garden', 'home-garden': 'home-garden', garden: 'home-garden', furniture: 'home-garden',
+    jewelry: 'jewelry', jewellery: 'jewelry',
+    kitchen: 'kitchen',
+    marketplace: 'marketplace', general: 'general',
+    paste: 'tomato-paste', 'tomato-paste': 'tomato-paste', tomato: 'tomato-paste',
+    shoes: 'shoes', shoe: 'shoes',
+    sports: 'sports', sport: 'sports', toys: 'sports', toy: 'sports',
+  };
+  const file = map[s];
+  return file ? `/category-icons/${file}.png` : undefined;
 }
 
 function getCategoryIcon(slug) {
   const iconMap = {
-    fashion: 'fashion.svg', electronics: 'electronics.svg', grocery: 'grocery.svg',
-    furniture: 'furniture.svg', music: 'music.svg', toys: 'toy.svg', toy: 'toy.svg',
-    gifts: 'gift.svg', gift: 'gift.svg', babies: 'baby-mom.svg', baby: 'baby-mom.svg',
-    beauty: 'beauty.svg', health: 'beauty.svg', sports: 'sports.svg', sport: 'sports.svg',
-    garden: 'garden.svg', automotive: 'automotive.svg', auto: 'automotive.svg',
+    fashion: 'fashion.svg',
+    electronics: 'electronics.svg',
+    grocery: 'grocery.svg',
+    furniture: 'furniture.svg',
+    music: 'music.svg',
+    toys: 'toy.svg',
+    toy: 'toy.svg',
+    gifts: 'gift.svg',
+    gift: 'gift.svg',
+    babies: 'baby-mom.svg',
+    baby: 'baby-mom.svg',
+    beauty: 'beauty.svg',
+    health: 'beauty.svg',
+    sports: 'sports.svg',
+    sport: 'sports.svg',
+    garden: 'garden.svg',
+    automotive: 'automotive.svg',
+    auto: 'automotive.svg',
   };
+
   if (!slug) return 'new.svg';
   for (const [key, icon] of Object.entries(iconMap)) {
     if (slug.includes(key)) return icon;

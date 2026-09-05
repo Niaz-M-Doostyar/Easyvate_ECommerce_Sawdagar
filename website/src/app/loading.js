@@ -1,7 +1,20 @@
 export default function Loading() {
   return (
-    <div className="preloader" style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(255,255,255,0.85)' }}>
-      <div className="loader-ripple"><div></div><div></div></div>
-    </div>
+    <main className="sv-route-loading" aria-label="Loading page" aria-live="polite">
+      <div className="container">
+        <div className="sv-loading-hero" />
+        <div className="sv-loading-heading" />
+        <div className="sv-loading-grid">
+          {Array.from({ length: 8 }, (_, index) => (
+            <div className="sv-loading-card" key={index}>
+              <div className="sv-loading-image" />
+              <div className="sv-loading-line sv-loading-line-short" />
+              <div className="sv-loading-line" />
+            </div>
+          ))}
+        </div>
+        <span className="visually-hidden">Loading Sawdagar</span>
+      </div>
+    </main>
   );
 }

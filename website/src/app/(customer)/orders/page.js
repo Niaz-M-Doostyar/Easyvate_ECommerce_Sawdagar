@@ -5,6 +5,7 @@ import { useAuth, authHeaders } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { formatPrice } from "@/lib/currency";
 import Pagination from "@/components/Pagination";
+import AccountLayout from "@/components/AccountLayout";
 
 export default function OrdersPage() {
   const { user } = useAuth();
@@ -26,84 +27,80 @@ export default function OrdersPage() {
     return () => clearInterval(interval);
   }, [fetchOrders, user]);
 
-  const statusBadge = { pending: "badge bg-warning", confirmed: "badge bg-info", shipped: "badge bg-primary", delivered: "badge bg-success", cancelled: "badge bg-danger" };
-
   if (!user) return (
-    <>
-      <div className="site-breadcrumb" style={{ background: "url(/assets/img/breadcrumb/01.jpg)" }}>
-        <div className="site-breadcrumb-bg" />
-        <div className="container"><div className="site-breadcrumb-wrap"><h4 className="breadcrumb-title">{t('my_orders') || 'My Orders'}</h4><ul className="breadcrumb-menu"><li><Link href="/"><i className="far fa-home"></i> {t('home') || 'Home'}</Link></li><li className="active">{t('my_orders') || 'My Orders'}</li></ul></div></div>
-      </div>
-      <div className="py-100 text-center"><div className="container"><h3>{t('please_sign_in') || 'Please Sign In'}</h3><Link href="/login" className="theme-btn mt-3">{t('sign_in') || 'Sign In'}</Link></div></div>
-    </>
+    <section className="f2-account-gate">
+      <div className="f2-account-gate__icon" aria-hidden="true"><i className="far fa-receipt" /></div>
+      <span>{t('my_orders') || 'My orders'}</span>
+      <h1>{t('please_sign_in') || 'Please sign in'}</h1>
+      <p>Sign in to review your orders and delivery status.</p>
+      <Link href="/login" className="f2-account-button">{t('sign_in') || 'Sign in'}</Link>
+    </section>
   );
 
   return (
-    <>
-      {/* Breadcrumb */}
-      <div className="site-breadcrumb" style={{ background: "url(/assets/img/breadcrumb/01.jpg)" }}>
-        <div className="site-breadcrumb-bg" />
-        <div className="container">
-          <div className="site-breadcrumb-wrap">
-            <h4 className="breadcrumb-title">{t('my_orders') || 'My Orders'}</h4>
-            <ul className="breadcrumb-menu">
-              <li><Link href="/"><i className="far fa-home"></i> {t('home') || 'Home'}</Link></li>
-              <li className="active">{t('my_orders') || 'My Orders'}</li>
-            </ul>
+    <AccountLayout
+      title={t('my_orders') || 'My orders'}
+      description="Review purchases and follow each order from confirmation to delivery."
+    >
+      <section className="f2-account-card">
+        <div className="f2-account-card__heading f2-account-card__heading--split">
+          <div>
+            <span>Order history</span>
+            <h2>{t('my_orders') || 'My orders'}</h2>
           </div>
+          <span className="f2-account-card__meta">Page {page} of {totalPages}</span>
         </div>
-      </div>
 
-      {/* Orders */}
-      <div className="py-100">
-        <div className="container">
-          {/* Status Filter */}
-          <div className="mb-4 d-flex gap-2 flex-wrap">
-            {["all", "pending", "confirmed", "shipped", "delivered", "cancelled"].map(s => (
-              <button key={s} onClick={() => { setStatusFilter(s); setPage(1); }}
-                className={`theme-btn ${statusFilter === s ? '' : 'theme-btn2'}`}
-                style={{ padding: '8px 16px', fontSize: '13px' }}>
-                {s === "all" ? (t('all') || "All") : (t(s) || s.charAt(0).toUpperCase() + s.slice(1))}
-              </button>
-            ))}
+        <div className="f2-account-filters" aria-label="Filter orders by status">
+          {["all", "pending", "confirmed", "shipped", "delivered", "cancelled"].map((s) => (
+            <button
+              type="button"
+              key={s}
+              onClick={() => { setStatusFilter(s); setPage(1); }}
+              className={statusFilter === s ? 'is-active' : ''}
+              aria-pressed={statusFilter === s}
+            >
+              {s === "all" ? (t('all') || "All") : (t(s) || s.charAt(0).toUpperCase() + s.slice(1))}
+            </button>
+          ))}
+        </div>
+
+        {orders.length === 0 ? (
+          <div className="f2-account-empty">
+            <span className="f2-account-empty__icon" aria-hidden="true"><i className="far fa-box-open" /></span>
+            <h3>{t('no_orders') || 'No orders found'}</h3>
+            <p>Orders matching this status will appear here.</p>
           </div>
-
-          {orders.length === 0 ? (
-            <div className="text-center py-5">
-              <i className="far fa-box-open" style={{ fontSize: '48px', color: '#ddd', display: 'block', marginBottom: '15px' }}></i>
-              <p>{t('no_orders') || 'No orders found'}</p>
-            </div>
-          ) : (
-            <div className="table-responsive">
-              <table className="table table-bordered">
-                <thead>
-                  <tr>
-                    <th>{t('order_number') || 'Order #'}</th>
-                    <th>{t('date') || 'Date'}</th>
-                    <th>{t('items') || 'Items'}</th>
-                    <th>{t('total') || 'Total'}</th>
-                    <th>{t('status') || 'Status'}</th>
-                    <th>{t('action') || 'Action'}</th>
+        ) : (
+          <div className="f2-account-table-wrap">
+            <table className="f2-account-table">
+              <thead>
+                <tr>
+                  <th>{t('order_number') || 'Order #'}</th>
+                  <th>{t('date') || 'Date'}</th>
+                  <th>{t('items') || 'Items'}</th>
+                  <th>{t('total') || 'Total'}</th>
+                  <th>{t('status') || 'Status'}</th>
+                  <th>{t('action') || 'Action'}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {orders.map((o) => (
+                  <tr key={o.id}>
+                    <td><strong>#{o.orderNumber || o.id}</strong></td>
+                    <td>{new Date(o.createdAt).toLocaleDateString()}</td>
+                    <td>{o.items?.length || 0} {t('items') || 'items'}</td>
+                    <td><strong>{formatPrice(o.totalAmount)}</strong></td>
+                    <td><span className={`f2-account-status f2-account-status--${o.status}`}>{t(o.status) || o.status}</span></td>
+                    <td><Link href={`/orders/${o.id}`} className="f2-account-link">{t('view_details') || 'View details'} <i className="far fa-arrow-right" /></Link></td>
                   </tr>
-                </thead>
-                <tbody>
-                  {orders.map(o => (
-                    <tr key={o.id}>
-                      <td><strong>#{o.orderNumber || o.id}</strong></td>
-                      <td>{new Date(o.createdAt).toLocaleDateString()}</td>
-                      <td>{o.items?.length || 0} {t('items') || 'items'}</td>
-                      <td><strong>{formatPrice(o.totalAmount)}</strong></td>
-                      <td><span className={statusBadge[o.status] || "badge bg-secondary"} style={{ textTransform: 'capitalize' }}>{t(o.status) || o.status}</span></td>
-                      <td><Link href={`/orders/${o.id}`} className="theme-btn" style={{ padding: '6px 14px', fontSize: '12px' }}>{t('view_details') || 'View Details'}</Link></td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-          <div className="mt-4"><Pagination page={page} totalPages={totalPages} onPageChange={setPage} /></div>
-        </div>
-      </div>
-    </>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+        <div className="f2-account-pagination"><Pagination page={page} totalPages={totalPages} onPageChange={setPage} /></div>
+      </section>
+    </AccountLayout>
   );
 }

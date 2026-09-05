@@ -3,9 +3,9 @@ import { fetchPublicJson } from '@/lib/serverApi';
 
 export default async function HomePage() {
   const [productsData, sponsoredData, blogData] = await Promise.all([
-    fetchPublicJson('/api/products?limit=24&status=approved', { products: [] }, { next: { revalidate: 60 } }),
-    fetchPublicJson('/api/products/sponsored', { products: [] }, { next: { revalidate: 60 } }),
-    fetchPublicJson('/api/blog?limit=3', { posts: [] }, { next: { revalidate: 60 } }),
+    fetchPublicJson('/api/products?limit=50&status=approved', { products: [] }),
+    fetchPublicJson('/api/products/sponsored', { products: [] }),
+    fetchPublicJson('/api/blog?limit=3', { posts: [] }),
   ]);
 
   return (

@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useTheme } from '../../contexts/ThemeContext';
@@ -15,8 +15,8 @@ export default function OrderSuccessScreen({ navigation, route }) {
   const order = route.params?.order;
 
   return (
-    <SafeAreaView style={[styles.safe, { backgroundColor: c.background }]}>
-      <View style={styles.center}>
+    <SafeAreaView style={[styles.safe, { backgroundColor: c.background }]} edges={['top', 'bottom']}>
+      <ScrollView contentContainerStyle={styles.center} showsVerticalScrollIndicator={false}>
         <View style={[styles.card, { backgroundColor: c.card, borderColor: c.border }, shadows.lg]}>
           <BrandLogo variant="symbol" size={72} style={styles.logo} />
           <View style={[styles.iconWrap, { backgroundColor: c.success + '20' }]}> 
@@ -36,7 +36,7 @@ export default function OrderSuccessScreen({ navigation, route }) {
             title={t.orderDetails}
             onPress={() => navigation.replace('OrderDetail', { id: order?.id })}
             style={styles.primaryAction}
-            icon={<MaterialCommunityIcons name="receipt-text-check-outline" size={20} color={c.white} />}
+            icon={<MaterialCommunityIcons name="receipt-text-outline" size={20} color={c.white} />}
           />
           <Button
             title={t.startShopping}
@@ -46,20 +46,20 @@ export default function OrderSuccessScreen({ navigation, route }) {
             icon={<MaterialCommunityIcons name="shopping-outline" size={20} color={c.primary} />}
           />
         </View>
-      </View>
+      </ScrollView>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   safe: { flex: 1 },
-  center: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: spacing.xl },
+  center: { flexGrow: 1, justifyContent: 'center', alignItems: 'center', padding: spacing.xl },
   card: { width: '100%', borderWidth: 1, borderRadius: borderRadius.xxl, padding: spacing.xl, alignItems: 'center' },
   logo: { marginBottom: spacing.base },
   iconWrap: { width: 120, height: 120, borderRadius: 60, justifyContent: 'center', alignItems: 'center', marginBottom: spacing.lg },
   eyebrow: { fontSize: fontSize.xs, fontWeight: fontWeight.bold, textTransform: 'uppercase', letterSpacing: 1.1, marginBottom: spacing.sm },
   title: { fontSize: fontSize.xxl, fontWeight: fontWeight.bold, marginBottom: 8 },
-  ordNum: { fontSize: fontSize.md, fontWeight: '500', marginBottom: 8 },
+  ordNum: { fontSize: fontSize.md, fontWeight: fontWeight.medium, marginBottom: 8 },
   sub: { fontSize: fontSize.base, textAlign: 'center', lineHeight: 22 },
   note: { width: '100%', flexDirection: 'row', alignItems: 'center', gap: 10, borderRadius: borderRadius.xl, padding: spacing.base, marginTop: spacing.xl },
   noteText: { flex: 1, fontSize: fontSize.sm, lineHeight: 21 },

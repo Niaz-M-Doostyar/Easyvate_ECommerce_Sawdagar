@@ -1,7 +1,8 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { useTheme } from '../contexts/ThemeContext';
-import { fontSize, borderRadius, spacing } from '../theme';
+import { useLanguage } from '../contexts/LanguageContext';
+import { fontSize, fontWeight, borderRadius, spacing } from '../theme';
 
 const STATUS_MAP = {
   pending: { label: 'Pending', colorKey: 'warning' },
@@ -17,18 +18,28 @@ const STATUS_MAP = {
 
 export default function StatusBadge({ status }) {
   const { theme } = useTheme();
+  const { t } = useLanguage();
   const c = theme.colors;
   const s = STATUS_MAP[status] || { label: status, colorKey: 'textMuted' };
-  const color = c[s.colorKey] || c.textMuted;
+  const lightForegrounds = {
+    warning: '#744600',
+    info: '#075985',
+    primary: c.primaryDark || c.primary,
+    success: '#087443',
+    error: '#B42318',
+    textMuted: c.textSecondary,
+  };
+  const color = theme.dark ? (c[s.colorKey] || c.textSecondary) : lightForegrounds[s.colorKey];
+  const label = t[status] || s.label || status;
 
   return (
-    <View style={[styles.badge, { backgroundColor: color + '18' }]}>
-      <Text style={[styles.text, { color }]}>{s.label}</Text>
+    <View accessibilityRole="text" accessibilityLabel={`${t.status || 'Status'}: ${label}`} style={[styles.badge, { backgroundColor: color + '16', borderColor: color + '38' }]}>
+      <Text style={[styles.text, { color }]}>{label}</Text>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  badge: { paddingHorizontal: spacing.sm, paddingVertical: 3, borderRadius: borderRadius.sm, alignSelf: 'flex-start' },
-  text: { fontSize: fontSize.xs, fontWeight: '600', textTransform: 'capitalize' },
+  badge: { minHeight: 26, justifyContent: 'center', paddingHorizontal: spacing.sm, paddingVertical: 3, borderRadius: borderRadius.full, borderWidth: 1, alignSelf: 'flex-start' },
+  text: { fontSize: fontSize.xs, fontWeight: fontWeight.bold, textTransform: 'capitalize' },
 });

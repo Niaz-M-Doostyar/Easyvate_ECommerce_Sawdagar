@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, FlatList, Image, RefreshControl, StyleSheet, Animated, useWindowDimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
@@ -12,6 +12,9 @@ import RemoteImage from '../../components/RemoteImage';
 import SectionHeader from '../../components/SectionHeader';
 import SkeletonLoader from '../../components/SkeletonLoader';
 import BrandLogo from '../../components/BrandLogo';
+import PressableScale from '../../components/PressableScale';
+import Gradient from '../../components/Gradient';
+import CategoryIcon3D from '../../components/CategoryIcon3D';
 import { productsApi, categoriesApi, siteApi } from '../../services/api';
 import { CURRENCY_SYMBOL, optimizedImageUri, buildImageUriCandidates } from '../../config';
 import { spacing, fontSize, fontWeight, borderRadius, shadows } from '../../theme';
@@ -31,10 +34,19 @@ function normalizeBannerImage(src) {
   return src;
 }
 
+// Richer, deeper gradients for the primary action tiles (cobalt / teal / indigo / azure).
+const ACTION_GRADIENTS = [
+  ['#3D8BFF', '#1B33A6'],
+  ['#22C3D6', '#155E9E'],
+  ['#6A5CFF', '#2B2A8F'],
+  ['#2FBF9B', '#136F8F'],
+];
+
 export default function HomeScreen({ navigation }) {
+  const scrollRef = useRef(null);
   const { width } = useWindowDimensions();
   const { theme } = useTheme();
-  const { t, getName } = useLanguage();
+  const { t, getName, isRTL } = useLanguage();
   const { user } = useAuth();
   const { count: cartCount } = useCart();
   const c = theme.colors;
@@ -42,8 +54,9 @@ export default function HomeScreen({ navigation }) {
   const promoCardWidth = Math.min(width * (isTablet ? 0.52 : 0.78), 560);
   const actionCardWidth = Math.min(width * (isTablet ? 0.42 : 0.72), 420);
   const sponsoredCardWidth = Math.min(width * (isTablet ? 0.34 : 0.6), 360);
-  const newArrivalCardWidth = Math.min(width * (isTablet ? 0.32 : 0.55), 340);
-  const gridColumns = isTablet ? 3 : 2;
+  const newArrivalCardWidth = isTablet ? Math.min(width * 0.32, 340) : Math.max(104, (width - spacing.base * 2 - spacing.md * 2) / 3);
+  const gridColumns = 3;
+  const gridCardWidth = Math.max(0, (width - spacing.base * 2) / gridColumns - 8);
 
   const [categories, setCategories] = useState([]);
   const [featured, setFeatured] = useState([]);
@@ -60,14 +73,14 @@ export default function HomeScreen({ navigation }) {
     try {
       const [cats, prod, spon, siteData] = await Promise.all([
         categoriesApi.list(),
-        productsApi.list({ limit: 20, status: 'approved' }),
+        productsApi.list({ limit: 50, status: 'approved' }),
         productsApi.sponsored().catch(() => []),
         siteApi.content().catch(() => null),
       ]);
       setCategories(cats.categories || cats || []);
       const products = prod.products || prod || [];
-      setFeatured(products.slice(0, 8));
-      setNewArrivals(products.slice(-8).reverse());
+      setFeatured(products.slice(0, 30));
+      setNewArrivals(products.slice(0, 20));
       setSponsored(spon.products || spon || []);
       const homeContent = siteData?.content?.home || siteData?.home || {};
       setHeroContent(homeContent.hero || null);
@@ -93,6 +106,12 @@ export default function HomeScreen({ navigation }) {
 
   useEffect(() => { load(); }, [load]);
 
+  useEffect(() => {
+    if (loading) return undefined;
+    const resetTimer = setTimeout(() => scrollRef.current?.scrollTo({ y: 0, animated: false }), 60);
+    return () => clearTimeout(resetTimer);
+  }, [loading]);
+
   const onRefresh = async () => {
     setRefreshing(true);
     await load();
@@ -110,7 +129,7 @@ export default function HomeScreen({ navigation }) {
   };
 
   const goProduct = (p) => navigation.navigate('ProductDetail', { id: p.id, product: p });
-  const goCategory = (cat) => navigation.navigate('Products', { categoryId: cat.id, title: getName(cat) });
+  const goCategory = (cat) => navigation.navigate('Products', { categoryId: cat.id, title: getName(cat), categoriesMode: true });
 
   const getBannerTitle = (title) => (title || '').split(/\n+/).filter(Boolean);
 
@@ -211,38 +230,7 @@ export default function HomeScreen({ navigation }) {
     openPromo(target, fallbackTitle || 'Explore Products');
   };
 
-  const catIcons = ['shape-outline', 'hanger', 'cellphone', 'sofa-outline', 'dumbbell', 'silverware-fork-knife', 'book-open-page-variant-outline', 'palette-outline'];
-  const actionCards = user ? [
-    {
-      key: 'orders',
-      title: 'Track your orders',
-      subtitle: 'See delivery progress, order history, and purchase details in one place.',
-      icon: 'clipboard-text-clock-outline',
-      onPress: () => openTab('OrdersTab'),
-    },
-    {
-      key: 'cart',
-      title: 'Continue checkout',
-      subtitle: cartCount > 0 ? `${cartCount} item${cartCount === 1 ? '' : 's'} waiting in your cart.` : 'Review saved items and finish checkout faster.',
-      icon: 'cart-check-outline',
-      onPress: () => openTab('CartTab'),
-    },
-  ] : [
-    {
-      key: 'signin',
-      title: 'Sign in for faster checkout',
-      subtitle: 'Save addresses, keep your cart, and track every order from one account.',
-      icon: 'account-check-outline',
-      onPress: () => navigation.navigate('Auth', { redirectTo: { tab: 'HomeTab' } }),
-    },
-    {
-      key: 'arrivals',
-      title: 'See new arrivals',
-      subtitle: 'Fresh fashion, essentials, and trending finds added regularly.',
-      icon: 'shopping-search-outline',
-      onPress: () => navigation.navigate('Products', { sort: 'newest', title: t.newArrivals }),
-    },
-  ];
+
 
   const serviceHighlights = [
     { key: 'trusted', title: 'Trusted sellers', icon: 'shield-check-outline' },
@@ -260,20 +248,24 @@ export default function HomeScreen({ navigation }) {
           </Text>
         </View>
         <View style={styles.headerRight}>
-          <TouchableOpacity onPress={() => navigation.navigate('Search')} style={[styles.iconBtn, { backgroundColor: c.surfaceElevated, borderColor: c.border }]}> 
+          <TouchableOpacity onPress={() => navigation.navigate('Search')} accessibilityRole="button" accessibilityLabel={t.searchTitle || 'Search'} style={[styles.iconBtn, { backgroundColor: c.surfaceElevated, borderColor: c.border }]}>
             <MaterialCommunityIcons name="magnify" size={24} color={c.text} />
           </TouchableOpacity>
-          <TouchableOpacity onPress={() => openTab('CartTab')} style={[styles.iconBtn, { backgroundColor: c.surfaceElevated, borderColor: c.border }]}> 
+          <TouchableOpacity onPress={() => openTab('CartTab')} accessibilityRole="button" accessibilityLabel={t.cart} style={[styles.iconBtn, { backgroundColor: c.surfaceElevated, borderColor: c.border }]}>
             <MaterialCommunityIcons name="cart-outline" size={24} color={c.text} />
-            {cartCount > 0 && <View style={[styles.cartBadge, { backgroundColor: c.error }]}><Text style={styles.cartBadgeText}>{cartCount}</Text></View>}
+            {cartCount > 0 && <View style={[styles.cartBadge, { backgroundColor: c.error }]}><Text numberOfLines={1} maxFontSizeMultiplier={1} style={styles.cartBadgeText}>{cartCount > 99 ? '99+' : cartCount}</Text></View>}
           </TouchableOpacity>
         </View>
       </View>
 
-      <ScrollView refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={c.primary} />} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        ref={scrollRef}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={c.primary} />}
+        showsVerticalScrollIndicator={false}
+      >
         <TouchableOpacity onPress={() => navigation.navigate('Search')} style={[styles.searchBar, { backgroundColor: c.card, borderColor: c.border }]}>
           <MaterialCommunityIcons name="magnify" size={20} color={c.textMuted} />
-          <Text style={[styles.searchText, { color: c.placeholder }]}>{t.search}</Text>
+          <Text numberOfLines={1} maxFontSizeMultiplier={1.15} style={[styles.searchText, { color: c.placeholder }]}>{t.search}</Text>
         </TouchableOpacity>
 
         {audienceMessage ? (
@@ -298,7 +290,7 @@ export default function HomeScreen({ navigation }) {
         <SectionReveal delay={90}>
           <View style={styles.carouselMeta}>
             {serviceHighlights.map((item) => (
-              <View key={item.key} style={[styles.carouselPill, shadows.sm, { backgroundColor: c.card, borderColor: c.border }]}> 
+              <View key={item.key} style={[styles.carouselPill, shadows.sm, { backgroundColor: c.card, borderColor: c.border }]}>
                 <MaterialCommunityIcons name={item.icon} size={16} color={c.primary} />
                 <Text style={[styles.carouselPillText, { color: c.textSecondary }]}>{item.title}</Text>
               </View>
@@ -320,8 +312,8 @@ export default function HomeScreen({ navigation }) {
                 const accentSource = heroSlides[index % heroSlides.length]?.image;
 
                 return (
-                  <TouchableOpacity
-                    activeOpacity={0.9}
+                  <PressableScale
+                    scaleTo={0.97}
                     onPress={() => openPromo(item.buttonHref, item.title)}
                     style={[
                       styles.promoCard,
@@ -330,21 +322,21 @@ export default function HomeScreen({ navigation }) {
                       { backgroundColor: c.card, borderColor: c.borderLight || c.border },
                     ]}
                   >
-                    <View style={[styles.promoFallback, { backgroundColor: '#16253C' }]} />
+                    <View style={[styles.promoFallback, { backgroundColor: c.secondary }]} />
                     <View style={styles.promoAuraPrimary} />
-                    <View style={styles.promoAuraSecondary} />
+                    <View style={[styles.promoAuraSecondary, { backgroundColor: c.primary + '33' }]} />
                     <View style={styles.promoImageWrap}>
                       <RemoteImage source={item.image} fallbackSource={accentSource} style={styles.promoImageLayer} />
                     </View>
                     <View style={[styles.promoOverlay, { backgroundColor: 'rgba(8, 16, 28, 0.38)' }]} />
                     <View style={[styles.promoSoftOverlay, { backgroundColor: 'rgba(25, 43, 78, 0.28)' }]} />
                     <View style={styles.promoContent}>
-                      <View style={[styles.promoContentPanel, { backgroundColor: 'rgba(10, 17, 32, 0.52)', borderColor: 'rgba(255,255,255,0.16)' }]}> 
-                        <Text style={[styles.promoLabel, { color: '#D6E4FF' }]}>{item.label || `Offer ${index + 1}`}</Text>
-                        {lines.map((line, lineIndex) => (
+                      <View style={[styles.promoContentPanel, { backgroundColor: 'rgba(10, 17, 32, 0.76)', borderColor: 'rgba(255,255,255,0.18)' }]}>
+                        <Text numberOfLines={1} style={[styles.promoLabel, { color: c.heroTextMuted }]}>{item.label || `Offer ${index + 1}`}</Text>
+                        {lines.slice(0, 2).map((line, lineIndex) => (
                           <Text
                             key={`${line}-${lineIndex}`}
-                            style={[styles.promoTitle, { color: '#FFFFFF' }]}
+                            style={[styles.promoTitle, { color: c.heroText }]}
                             numberOfLines={1}
                             adjustsFontSizeToFit
                             minimumFontScale={0.6}
@@ -353,13 +345,13 @@ export default function HomeScreen({ navigation }) {
                             {line}
                           </Text>
                         ))}
-                        <View style={[styles.promoButton, { backgroundColor: '#FFFFFF', borderColor: '#FFFFFF' }]}> 
-                          <Text style={[styles.promoButtonText, { color: c.primary }]}>{item.buttonLabel || 'Shop now'}</Text>
-                          <MaterialCommunityIcons name="arrow-right" size={16} color={c.primary} />
+                        <View style={[styles.promoButton, { backgroundColor: c.white, borderColor: c.white }]}>
+                          <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.82} maxFontSizeMultiplier={1.15} style={[styles.promoButtonText, { color: c.primary }]}>{item.buttonLabel || 'Shop now'}</Text>
+                          <MaterialCommunityIcons name={isRTL ? 'arrow-left' : 'arrow-right'} size={16} color={c.primary} />
                         </View>
                       </View>
                     </View>
-                  </TouchableOpacity>
+                  </PressableScale>
                 );
               }}
             />
@@ -370,40 +362,43 @@ export default function HomeScreen({ navigation }) {
           <FlatList
             horizontal
             showsHorizontalScrollIndicator={false}
-            data={actionCards}
             keyExtractor={(item) => item.key}
             contentContainerStyle={{ paddingHorizontal: spacing.base, paddingTop: spacing.base }}
-            renderItem={({ item }) => (
-              <TouchableOpacity onPress={item.onPress} activeOpacity={0.9} style={[styles.actionCard, { width: actionCardWidth }, shadows.sm, { backgroundColor: c.card, borderColor: c.border }]}> 
-                <View style={[styles.actionStripe, { backgroundColor: c.primary + '1F' }]} />
-                <View style={[styles.actionIcon, { backgroundColor: c.brandSurface }]}> 
-                  <MaterialCommunityIcons name={item.icon} size={20} color={c.primary} />
-                </View>
-                <Text style={[styles.actionTitle, { color: c.text }]}>{item.title}</Text>
-                <Text style={[styles.actionSubtitle, { color: c.textSecondary }]}>{item.subtitle}</Text>
-              </TouchableOpacity>
+            renderItem={({ item, index }) => (
+              <PressableScale onPress={item.onPress} scaleTo={0.95} style={[styles.actionCard, { width: actionCardWidth }, shadows.md]}>
+                <Gradient colors={ACTION_GRADIENTS[index % ACTION_GRADIENTS.length]} style={styles.actionCardFill} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}>
+                  <View style={styles.actionGlow} />
+                  <View style={styles.actionIconGlass}>
+                    <MaterialCommunityIcons name={item.icon} size={20} color="#FFFFFF" />
+                  </View>
+                  <Text numberOfLines={2} maxFontSizeMultiplier={1.15} style={styles.actionTitleGlass}>{item.title}</Text>
+                  <Text numberOfLines={2} maxFontSizeMultiplier={1.15} style={styles.actionSubtitleGlass}>{item.subtitle}</Text>
+                  <View style={[styles.actionArrow, isRTL && styles.actionArrowRTL]}>
+                    <MaterialCommunityIcons name={isRTL ? 'arrow-left' : 'arrow-right'} size={14} color="#FFFFFF" />
+                  </View>
+                </Gradient>
+              </PressableScale>
             )}
           />
         </SectionReveal>
 
         <SectionReveal delay={210}>
-          <SectionHeader title={t.categories} actionLabel={t.viewAll} onAction={() => navigation.navigate('Products')} />
+          <SectionHeader title={t.categories} actionLabel={t.viewAll} onAction={() => openTab('CategoriesTab')} />
           <FlatList
             horizontal showsHorizontalScrollIndicator={false}
             data={categories.slice(0, 8)} keyExtractor={i => String(i.id)}
-            contentContainerStyle={{ paddingHorizontal: spacing.base }}
-            renderItem={({ item, index }) => (
-              <TouchableOpacity onPress={() => goCategory(item)} activeOpacity={0.9} style={[styles.catCard, shadows.sm, { backgroundColor: c.card, borderColor: c.border }]}>
+            contentContainerStyle={styles.categoryListContent}
+            renderItem={({ item }) => (
+              <PressableScale onPress={() => goCategory(item)} scaleTo={0.93} style={styles.catCardNew}>
                 {item.image ? (
-                  <Image source={{ uri: optimizedImageUri(item.image, { width: 80 }) }} style={styles.catImg} />
-                ) : (
-                  <View style={[styles.catIcon, { backgroundColor: c.brandSurface }]}> 
-                    <MaterialCommunityIcons name={catIcons[index % catIcons.length]} size={24} color={c.primary} />
+                  <View style={[styles.catImgRing, { borderColor: c.border }]}>
+                    <Image source={{ uri: optimizedImageUri(item.image, { width: 96 }) }} style={styles.catImgNew} />
                   </View>
+                ) : (
+                  <CategoryIcon3D category={item} size={66} />
                 )}
-                <Text numberOfLines={1} style={[styles.catName, { color: c.text }]}>{getName(item)}</Text>
-                <MaterialCommunityIcons name="chevron-right" size={16} color={c.textMuted} style={{ marginTop: 4 }} />
-              </TouchableOpacity>
+                <Text numberOfLines={1} style={[styles.catNameNew, { color: c.text }]}>{getName(item)}</Text>
+              </PressableScale>
             )}
           />
         </SectionReveal>
@@ -424,46 +419,46 @@ export default function HomeScreen({ navigation }) {
 
         {bigBanner?.title ? (
           <SectionReveal delay={290}>
-            <TouchableOpacity
-              activeOpacity={0.92}
+            <PressableScale
+              scaleTo={0.98}
               onPress={() => openPromo(bigBanner.buttonHref, bigBanner.title)}
               style={[styles.bigBannerCard, shadows.md, { backgroundColor: c.card, borderColor: c.borderLight || c.border }]}
             >
-            <View style={[styles.bigBannerFallback, { backgroundColor: '#16253C' }]} />
+            <View style={[styles.bigBannerFallback, { backgroundColor: c.secondary }]} />
             <View style={styles.bigBannerAuraPrimary} />
-            <View style={styles.bigBannerAuraSecondary} />
+            <View style={[styles.bigBannerAuraSecondary, { backgroundColor: c.primary + '33' }]} />
             <View style={styles.bigBannerImageWrap}>
               <RemoteImage source={bigBanner.image} fallbackSource={heroSlides[0]?.image} style={styles.bigBannerImageLayer} />
             </View>
             <View style={[styles.bigBannerOverlay, { backgroundColor: 'rgba(8,16,28,0.36)' }]} />
             <View style={[styles.bigBannerSoftOverlay, { backgroundColor: 'rgba(25, 43, 78, 0.24)' }]} />
             <View style={styles.bigBannerContent}>
-              <View style={[styles.bigBannerContentPanel, { backgroundColor: 'rgba(10,17,32,0.52)', borderColor: 'rgba(255,255,255,0.16)' }]}> 
-                {bigBanner.subtitle ? <Text style={[styles.bigBannerLabel, { color: '#D6E4FF' }]}>{bigBanner.subtitle}</Text> : null}
-                <Text style={[styles.bigBannerTitle, { color: '#FFFFFF' }]}>{String(bigBanner.title).replace(/\n/g, ' ')}</Text>
-                {bigBanner.description ? <Text style={[styles.bigBannerBody, { color: '#DDE8FF' }]}>{bigBanner.description}</Text> : null}
-                <View style={[styles.bigBannerButton, { backgroundColor: '#FFFFFF', borderColor: '#FFFFFF' }]}> 
-                  <Text style={[styles.bigBannerButtonText, { color: c.primary }]}>{bigBanner.buttonLabel || 'Shop now'}</Text>
-                  <MaterialCommunityIcons name="arrow-right" size={16} color={c.primary} />
+              <View style={[styles.bigBannerContentPanel, { backgroundColor: 'rgba(10,17,32,0.72)', borderColor: 'rgba(255,255,255,0.18)' }]}>
+                {bigBanner.subtitle ? <Text numberOfLines={1} maxFontSizeMultiplier={1.15} style={[styles.bigBannerLabel, { color: c.heroTextMuted }]}>{bigBanner.subtitle}</Text> : null}
+                <Text numberOfLines={2} maxFontSizeMultiplier={1.15} style={[styles.bigBannerTitle, { color: c.heroText }]}>{String(bigBanner.title).replace(/\n/g, ' ')}</Text>
+                {bigBanner.description ? <Text numberOfLines={2} maxFontSizeMultiplier={1.15} style={[styles.bigBannerBody, { color: c.heroTextMuted }]}>{bigBanner.description}</Text> : null}
+                <View style={[styles.bigBannerButton, { backgroundColor: c.white, borderColor: c.white }]}>
+                  <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.82} maxFontSizeMultiplier={1.15} style={[styles.bigBannerButtonText, { color: c.primary }]}>{bigBanner.buttonLabel || 'Shop now'}</Text>
+                  <MaterialCommunityIcons name={isRTL ? 'arrow-left' : 'arrow-right'} size={16} color={c.primary} />
                 </View>
               </View>
             </View>
-            </TouchableOpacity>
+            </PressableScale>
           </SectionReveal>
         ) : null}
 
         <SectionReveal delay={330}>
           <SectionHeader title={t.featured} actionLabel={t.seeAll} onAction={() => navigation.navigate('Products')} />
           <View style={styles.grid}>
-            {loading ? Array.from({ length: 4 }).map((_, i) => (
+            {loading ? Array.from({ length: 6 }).map((_, i) => (
               <View key={i} style={styles.gridItem}>
                 <SkeletonLoader width="100%" height={180} radius={borderRadius.lg} />
                 <SkeletonLoader width="80%" height={14} style={{ marginTop: 8 }} />
                 <SkeletonLoader width="40%" height={14} style={{ marginTop: 4 }} />
               </View>
             )) : featured.map(p => (
-              <View key={p.id} style={[styles.gridItem, { width: `${100 / gridColumns}%` }]}> 
-                <ProductCard product={p} onPress={() => goProduct(p)} />
+              <View key={p.id} style={[styles.gridItem, { width: `${100 / gridColumns}%` }]}>
+                <ProductCard product={p} onPress={() => goProduct(p)} style={{ width: gridCardWidth }} />
               </View>
             ))}
           </View>
@@ -482,7 +477,7 @@ export default function HomeScreen({ navigation }) {
             />
           </SectionReveal>
         )}
-        <View style={{ height: spacing.xxl }} />
+        <View style={{ height: 120 }} />
       </ScrollView>
     </SafeAreaView>
   );
@@ -522,55 +517,59 @@ const styles = StyleSheet.create({
   brandBlock: { flex: 1, paddingRight: spacing.base },
   greeting: { fontSize: fontSize.sm, marginTop: 8 },
   headerRight: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  iconBtn: { width: 42, height: 42, borderRadius: 21, justifyContent: 'center', alignItems: 'center', borderWidth: 1 },
-  cartBadge: { position: 'absolute', top: 2, right: 2, width: 18, height: 18, borderRadius: 9, justifyContent: 'center', alignItems: 'center' },
-  cartBadgeText: { color: '#FFF', fontSize: 10, fontWeight: '700' },
-  searchBar: { flexDirection: 'row', alignItems: 'center', marginHorizontal: spacing.base, marginTop: spacing.md, paddingHorizontal: spacing.md, height: 48, borderRadius: borderRadius.lg, borderWidth: 1, gap: 10 },
-  searchText: { fontSize: fontSize.base },
-  carouselMeta: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, paddingHorizontal: spacing.base, marginTop: spacing.sm },
-  carouselPill: { flexDirection: 'row', alignItems: 'center', gap: 6, borderWidth: 1, borderRadius: borderRadius.full, paddingHorizontal: 12, paddingVertical: 10 },
-  carouselPillText: { fontSize: fontSize.xs, fontWeight: '700' },
-  promoCard: { borderRadius: borderRadius.xxl, overflow: 'hidden', marginRight: spacing.md, borderWidth: 1 },
-  promoImageWrap: { ...StyleSheet.absoluteFillObject },
+  iconBtn: { width: 44, height: 44, borderRadius: borderRadius.full, justifyContent: 'center', alignItems: 'center', borderWidth: 1 },
+  cartBadge: { position: 'absolute', top: -2, right: -2, minWidth: 20, height: 20, paddingHorizontal: 3, borderRadius: borderRadius.full, justifyContent: 'center', alignItems: 'center' },
+  cartBadgeText: { color: '#FFF', fontSize: 10, lineHeight: 14, fontWeight: fontWeight.bold, includeFontPadding: false, textAlign: 'center', textAlignVertical: 'center' },
+  searchBar: { flexDirection: 'row', alignItems: 'center', marginHorizontal: spacing.base, marginTop: spacing.sm, paddingHorizontal: spacing.md, height: 46, borderRadius: borderRadius.md, borderWidth: 1, gap: 10 },
+  searchText: { flex: 1, minWidth: 0, fontSize: fontSize.base, lineHeight: 20, includeFontPadding: false, textAlignVertical: 'center' },
+  carouselMeta: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, paddingHorizontal: spacing.base, marginTop: spacing.sm },
+  carouselPill: { flexDirection: 'row', alignItems: 'center', gap: 6, borderWidth: 1, borderRadius: borderRadius.full, paddingHorizontal: 12, paddingVertical: 8 },
+  carouselPillText: { fontSize: fontSize.xs, fontWeight: fontWeight.semibold },
+  promoCard: { borderRadius: borderRadius.xl, overflow: 'hidden', marginRight: spacing.md, borderWidth: 1 },
+  promoImageWrap: { ...StyleSheet.absoluteFillObject, zIndex: 1 },
   promoImageLayer: { width: '100%', height: '100%' },
-  promoOverlay: { ...StyleSheet.absoluteFillObject },
-  promoSoftOverlay: { ...StyleSheet.absoluteFillObject },
+  promoOverlay: { ...StyleSheet.absoluteFillObject, zIndex: 2 },
+  promoSoftOverlay: { ...StyleSheet.absoluteFillObject, zIndex: 2 },
   promoFallback: { ...StyleSheet.absoluteFillObject },
-  promoAuraPrimary: { position: 'absolute', top: -42, right: -28, width: 160, height: 160, borderRadius: 80, backgroundColor: 'rgba(80, 156, 255, 0.22)' },
-  promoAuraSecondary: { position: 'absolute', bottom: -54, left: -34, width: 142, height: 142, borderRadius: 71, backgroundColor: 'rgba(114, 84, 255, 0.18)' },
-  promoContent: { flex: 1, justifyContent: 'flex-end', padding: spacing.md },
-  promoContentPanel: { alignSelf: 'flex-start', maxWidth: '64%', borderWidth: 1, borderRadius: borderRadius.xl, paddingHorizontal: spacing.md, paddingVertical: spacing.md },
-  promoLabel: { fontSize: fontSize.xs, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 1.1 },
-  promoTitle: { fontSize: fontSize.lg, fontWeight: '800', lineHeight: 26, marginTop: spacing.sm },
-  promoButton: { alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center', gap: 6, borderWidth: 1, borderRadius: borderRadius.full, paddingHorizontal: 14, paddingVertical: 10, marginTop: spacing.lg },
-  promoButtonText: { fontSize: fontSize.sm, fontWeight: '700' },
+  promoAuraPrimary: { position: 'absolute', top: -42, right: -28, width: 160, height: 160, borderRadius: borderRadius.full, backgroundColor: 'rgba(80, 156, 255, 0.22)' },
+  promoAuraSecondary: { position: 'absolute', bottom: -54, left: -34, width: 142, height: 142, borderRadius: borderRadius.full },
+  promoContent: { ...StyleSheet.absoluteFillObject, justifyContent: 'flex-end', padding: spacing.md, zIndex: 10, elevation: 10 },
+  promoContentPanel: { alignSelf: 'flex-start', maxWidth: '80%', borderWidth: 1, borderRadius: borderRadius.lg, paddingHorizontal: spacing.md, paddingVertical: spacing.sm },
+  promoLabel: { fontSize: fontSize.xs, fontWeight: fontWeight.bold, textTransform: 'uppercase', letterSpacing: 1.1 },
+  promoTitle: { fontSize: fontSize.md, fontWeight: fontWeight.heavy, lineHeight: 22, marginTop: 4 },
+  promoButton: { height: 44, alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 5, borderWidth: 1, borderRadius: borderRadius.full, paddingHorizontal: 14, marginTop: spacing.md },
+  promoButtonText: { fontSize: fontSize.sm, lineHeight: 18, fontWeight: fontWeight.bold, includeFontPadding: false, textAlign: 'center', textAlignVertical: 'center' },
   audienceMessage: { flexDirection: 'row', alignItems: 'flex-start', gap: 10, marginHorizontal: spacing.base, borderRadius: borderRadius.lg, padding: spacing.md, marginTop: spacing.sm, borderWidth: 1 },
-  audienceIcon: { width: 34, height: 34, borderRadius: 17, justifyContent: 'center', alignItems: 'center' },
+  audienceIcon: { width: 34, height: 34, borderRadius: borderRadius.full, justifyContent: 'center', alignItems: 'center' },
   audienceText: { flex: 1, fontSize: fontSize.sm, lineHeight: 20, fontWeight: fontWeight.semibold },
-  actionCard: { marginRight: 12, borderRadius: borderRadius.xl, borderWidth: 1, padding: spacing.lg, overflow: 'hidden' },
-  actionStripe: { position: 'absolute', left: 0, top: 0, bottom: 0, width: 5 },
-  actionIcon: { width: 44, height: 44, borderRadius: 22, justifyContent: 'center', alignItems: 'center', marginBottom: spacing.base },
-  actionTitle: { fontSize: fontSize.base, fontWeight: '800' },
-  actionSubtitle: { fontSize: fontSize.sm, lineHeight: 20, marginTop: spacing.sm },
-  catCard: { alignItems: 'center', justifyContent: 'center', marginRight: 12, width: 94, paddingVertical: spacing.md, borderRadius: borderRadius.xl, borderWidth: 1 },
-  catImg: { width: 44, height: 44, borderRadius: 22 },
-  catIcon: { width: 44, height: 44, borderRadius: 22, justifyContent: 'center', alignItems: 'center' },
-  catName: { fontSize: fontSize.xs, marginTop: 8, textAlign: 'center', fontWeight: '700' },
-  bigBannerCard: { marginHorizontal: spacing.base, marginBottom: spacing.base, borderRadius: borderRadius.xxl, overflow: 'hidden', height: 236, borderWidth: 1 },
+  actionCard: { height: 172, marginRight: 12, borderRadius: borderRadius.xl, overflow: 'hidden' },
+  actionCardFill: { height: '100%', padding: spacing.base, justifyContent: 'flex-end' },
+  actionGlow: { position: 'absolute', top: -30, right: -24, width: 110, height: 110, borderRadius: borderRadius.full, backgroundColor: 'rgba(255,255,255,0.18)' },
+  actionIconGlass: { width: 38, height: 38, borderRadius: borderRadius.md, backgroundColor: 'rgba(255,255,255,0.22)', justifyContent: 'center', alignItems: 'center', marginBottom: spacing.sm, borderWidth: 1, borderColor: 'rgba(255,255,255,0.28)' },
+  actionTitleGlass: { fontSize: fontSize.base, lineHeight: 20, fontWeight: fontWeight.bold, color: '#FFFFFF', letterSpacing: 0.1, includeFontPadding: false },
+  actionSubtitleGlass: { fontSize: fontSize.xs, lineHeight: 16, marginTop: 3, color: 'rgba(255,255,255,0.82)' },
+  actionArrow: { position: 'absolute', top: spacing.base, right: spacing.base, width: 26, height: 26, borderRadius: borderRadius.full, backgroundColor: 'rgba(255,255,255,0.22)', justifyContent: 'center', alignItems: 'center' },
+  actionArrowRTL: { right: undefined, left: spacing.base },
+  categoryListContent: { paddingHorizontal: spacing.base, paddingBottom: spacing.xl },
+  catCardNew: { alignItems: 'center', marginRight: 16, width: 72 },
+  catImgRing: { width: 62, height: 62, borderRadius: borderRadius.full, borderWidth: 1, padding: 2, backgroundColor: '#FFF', overflow: 'hidden', justifyContent: 'center', alignItems: 'center' },
+  catImgNew: { width: 54, height: 54, borderRadius: borderRadius.full },
+  catNameNew: { fontSize: fontSize.xs, lineHeight: 16, marginTop: 10, textAlign: 'center', fontWeight: fontWeight.semibold, includeFontPadding: false },
+  bigBannerCard: { marginHorizontal: spacing.base, marginBottom: spacing.base, borderRadius: borderRadius.xl, overflow: 'hidden', height: 210, borderWidth: 1 },
   bigBannerFallback: { ...StyleSheet.absoluteFillObject },
-  bigBannerImageWrap: { ...StyleSheet.absoluteFillObject },
+  bigBannerImageWrap: { ...StyleSheet.absoluteFillObject, zIndex: 1 },
   bigBannerImageLayer: { width: '100%', height: '100%' },
-  bigBannerOverlay: { ...StyleSheet.absoluteFillObject },
-  bigBannerSoftOverlay: { ...StyleSheet.absoluteFillObject },
-  bigBannerAuraPrimary: { position: 'absolute', top: -64, right: -42, width: 220, height: 220, borderRadius: 110, backgroundColor: 'rgba(80, 156, 255, 0.2)' },
-  bigBannerAuraSecondary: { position: 'absolute', bottom: -86, left: -56, width: 210, height: 210, borderRadius: 105, backgroundColor: 'rgba(114, 84, 255, 0.18)' },
-  bigBannerContent: { flex: 1, justifyContent: 'flex-end', padding: spacing.lg },
-  bigBannerContentPanel: { maxWidth: '64%', borderWidth: 1, borderRadius: borderRadius.xl, paddingHorizontal: spacing.lg, paddingVertical: spacing.lg },
-  bigBannerLabel: { fontSize: fontSize.xs, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 1.1 },
-  bigBannerTitle: { fontSize: fontSize.xxl, fontWeight: '800', lineHeight: 34, marginTop: spacing.sm },
-  bigBannerBody: { fontSize: fontSize.base, lineHeight: 22, marginTop: spacing.sm },
-  bigBannerButton: { alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center', gap: 6, borderWidth: 1, borderRadius: borderRadius.full, paddingHorizontal: 14, paddingVertical: 10, marginTop: spacing.lg },
-  bigBannerButtonText: { fontSize: fontSize.sm, fontWeight: '700' },
+  bigBannerOverlay: { ...StyleSheet.absoluteFillObject, zIndex: 2 },
+  bigBannerSoftOverlay: { ...StyleSheet.absoluteFillObject, zIndex: 2 },
+  bigBannerAuraPrimary: { position: 'absolute', top: -64, right: -42, width: 220, height: 220, borderRadius: borderRadius.full, backgroundColor: 'rgba(80, 156, 255, 0.2)' },
+  bigBannerAuraSecondary: { position: 'absolute', bottom: -86, left: -56, width: 210, height: 210, borderRadius: borderRadius.full },
+  bigBannerContent: { ...StyleSheet.absoluteFillObject, justifyContent: 'flex-end', padding: spacing.md, zIndex: 10, elevation: 10 },
+  bigBannerContentPanel: { maxWidth: '72%', borderWidth: 1, borderRadius: borderRadius.lg, paddingHorizontal: spacing.md, paddingVertical: spacing.md },
+  bigBannerLabel: { fontSize: fontSize.xs, lineHeight: 16, fontWeight: fontWeight.bold, textTransform: 'uppercase', letterSpacing: 1.1, includeFontPadding: false },
+  bigBannerTitle: { fontSize: fontSize.xl, fontWeight: fontWeight.heavy, lineHeight: 28, marginTop: 4 },
+  bigBannerBody: { fontSize: fontSize.sm, lineHeight: 19, marginTop: 4 },
+  bigBannerButton: { height: 44, alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 5, borderWidth: 1, borderRadius: borderRadius.full, paddingHorizontal: 14, marginTop: spacing.md },
+  bigBannerButtonText: { fontSize: fontSize.sm, lineHeight: 18, fontWeight: fontWeight.bold, includeFontPadding: false, textAlign: 'center', textAlignVertical: 'center' },
   grid: { flexDirection: 'row', flexWrap: 'wrap', paddingHorizontal: spacing.base },
   gridItem: { paddingHorizontal: 4 },
 });

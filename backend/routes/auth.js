@@ -7,10 +7,10 @@ const { generateToken: generateUUID } = require('../lib/utils');
 const { sendVerificationEmail, sendPasswordResetEmail, sendAdminNotification, getLastEmailError } = require('../lib/email');
 const { authenticate } = require('../middleware/auth');
 const { logTransaction } = require('../lib/transactionLog');
+const { normalizeProvince } = require('../lib/afghanistanProvinces');
 
 const DELETED_CUSTOMER_EMAIL = 'deleted-user@sawdagar.local';
 const DELETED_SUPPLIER_EMAIL = 'deleted-supplier@sawdagar.local';
-const autoApproveSupplier = process.env.AUTO_APPROVE_SUPPLIER !== 'false';
 
 async function ensureDeletedCustomerUser(tx) {
   const existing = await tx.user.findUnique({
@@ -94,6 +94,10 @@ router.post('/register', async (req, res) => {
     if (userRole === 'supplier' && !companyName) {
       return res.status(400).json({ error: 'Company name is required for suppliers' });
     }
+    const supplierProvince = userRole === 'supplier' ? normalizeProvince(province) : null;
+    if (userRole === 'supplier' && !supplierProvince) {
+      return res.status(400).json({ error: 'Please select a valid Afghanistan province' });
+    }
 
     const hashedPassword = await hashPassword(password);
 
@@ -101,7 +105,6 @@ router.post('/register', async (req, res) => {
     // By default, users must verify their email to login.
     const autoVerify = process.env.AUTO_VERIFY_CUSTOMER === 'true';
     const verificationToken = autoVerify ? null : generateUUID();
-    const supplierApprovedOnCreate = userRole === 'supplier' && autoVerify && autoApproveSupplier;
 
     const user = await prisma.user.create({
       data: {
@@ -112,7 +115,7 @@ router.post('/register', async (req, res) => {
         role: userRole,
         isActive: autoVerify,
         emailVerified: autoVerify,
-        province: province || null,
+        province: userRole === 'supplier' ? supplierProvince : (province || null),
         district: district || null,
         village: village || null,
         landmark: landmark || null,
@@ -121,7 +124,7 @@ router.post('/register', async (req, res) => {
         businessLicense: businessLicense || null,
         taxId: taxId || null,
         verifyToken: verificationToken,
-        isApproved: userRole === 'customer' || supplierApprovedOnCreate,
+        isApproved: userRole === 'customer',
       },
     });
 
@@ -144,15 +147,15 @@ router.post('/register', async (req, res) => {
 
     await logTransaction(req, 'REGISTER', 'User', user.id, { email: user.email, role: userRole });
 
-    if (autoVerify) {
-      res.status(201).json({ message: 'Registration successful! You can now log in.' });
-    } else if (userRole === 'supplier') {
+    if (userRole === 'supplier') {
       res.status(201).json({
-        message: autoApproveSupplier
-          ? 'Registration successful. Please verify your email. After verification, you can log in.'
+        message: autoVerify
+          ? 'Registration successful. Your supplier account is pending admin approval.'
           : 'Registration successful. Please verify your email. After verification, an admin must approve your supplier account before you can log in.',
-        pendingApproval: !autoApproveSupplier,
+        pendingApproval: true,
       });
+    } else if (autoVerify) {
+      res.status(201).json({ message: 'Registration successful! You can now log in.' });
     } else {
       res.status(201).json({ message: 'Registration successful. Please verify your email.' });
     }
@@ -165,7 +168,7 @@ router.post('/register', async (req, res) => {
 // POST /api/auth/login
 router.post('/login', async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const { email, password, rememberMe } = req.body;
     if (!email || !password) return res.status(400).json({ error: 'Email and password are required' });
 
     const user = await prisma.user.findUnique({ where: { email: email.toLowerCase() } });
@@ -179,13 +182,15 @@ router.post('/login', async (req, res) => {
     const valid = await comparePassword(password, user.password);
     if (!valid) return res.status(401).json({ error: 'Invalid credentials' });
 
-    const token = generateToken({ userId: user.id, role: user.role });
+    const persistentSession = rememberMe === true || rememberMe === 'true';
+    const token = generateToken({ userId: user.id, role: user.role }, { persistent: persistentSession });
+    const cookieDays = persistentSession ? 3650 : 7;
 
     res.cookie('token', token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
-      maxAge: 7 * 24 * 60 * 60 * 1000,
+      maxAge: cookieDays * 24 * 60 * 60 * 1000,
       path: '/',
     });
 
@@ -310,7 +315,7 @@ const verifyEmail = async (token, res) => {
       data: {
         emailVerified: true,
         isActive: true,
-        isApproved: user.role === 'supplier' && autoApproveSupplier ? true : user.isApproved,
+        isApproved: user.isApproved,
       },
       // Keep verifyToken in the database so the link remains usable if clicked again.
     });

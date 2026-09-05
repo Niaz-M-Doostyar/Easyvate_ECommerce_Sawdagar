@@ -31,70 +31,73 @@ export default function LoginPage() {
   };
 
   return (
-    <>
-      <div className="site-breadcrumb">
+    <div className="f2-content-page f2-auth-page f2-auth-page--with-crumb">
+      <div className="site-breadcrumb f2-content-crumb">
         <div className="site-breadcrumb-bg" style={{ background: "url(/assets/img/breadcrumb/01.jpg)" }} />
         <div className="container">
           <div className="site-breadcrumb-wrap">
-            <h4 className="breadcrumb-title">{t('login')}</h4>
+            <h1 className="breadcrumb-title">{t('login') || 'Sign In'}</h1>
             <ul className="breadcrumb-menu">
               <li><Link href="/"><i className="far fa-home"></i> Home</Link></li>
-              <li className="active">{t('login')}</li>
+              <li className="active">{t('login') || 'Sign In'}</li>
             </ul>
           </div>
         </div>
       </div>
 
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-primary/5 flex items-center justify-center py-20 px-4">
-      <div className="w-full max-w-md animate-fade-up">
-        <div className="text-center mb-8">
-          <Link href="/" className="inline-flex items-center gap-2.5 mb-6">
+      <div className="f2-auth-shell">
+        <div className="f2-auth-panel animate-fade-up">
+          <header className="f2-auth-heading">
+            <Link href="/" className="f2-auth-brand f2-auth-brand--image" aria-label="Sawdagar home">
             <img src={logoUrl} alt="Sawdagar" style={{height:48,objectFit:'contain',maxWidth:200}} />
-          </Link>
-          <h2 className="text-2xl font-bold text-midnight font-display">{t('login')}</h2>
-          <p className="text-body mt-2">{t('welcome') || 'Login with your Sawdagar account'}</p>
-        </div>
+            </Link>
+            <span className="f2-content-eyebrow">Welcome back</span>
+            <h2>{t('login') || 'Sign In'}</h2>
+            <p>{t('welcome') || 'Login with your Sawdagar account'}</p>
+          </header>
 
-        <div className="bg-white rounded-2xl shadow-card p-8">
-          <form onSubmit={handleSubmit} className="space-y-5">
-            <div>
-              <label className="text-sm font-semibold text-midnight mb-1.5 block font-display">{t('email')}</label>
+          <div className="f2-auth-card">
+          <form onSubmit={handleSubmit} className="f2-content-form" aria-busy={loading}>
+            <div className="f2-content-field">
+              <label htmlFor="login-email">{t('email') || 'Email'}</label>
               <input
+                id="login-email"
                 type="email"
                 value={form.email}
                 onChange={e => setForm({ ...form, email: e.target.value })}
-                className="w-full rounded-lg border border-gray-200 px-4 py-3 text-sm text-midnight placeholder:text-body focus:border-theme-color focus:outline-none focus:ring-2 focus:ring-theme-color/30"
-                placeholder={t('email')}
+                placeholder={t('email') || 'Email'}
+                autoComplete="email"
                 required
               />
             </div>
 
-            <div>
-              <label className="text-sm font-semibold text-midnight mb-1.5 block font-display">{t('password')}</label>
+            <div className="f2-content-field">
+              <label htmlFor="login-password">{t('password') || 'Password'}</label>
               <input
+                id="login-password"
                 type="password"
                 value={form.password}
                 onChange={e => setForm({ ...form, password: e.target.value })}
-                className="w-full rounded-lg border border-gray-200 px-4 py-3 text-sm text-midnight placeholder:text-body focus:border-theme-color focus:outline-none focus:ring-2 focus:ring-theme-color/30"
-                placeholder={t('password')}
+                placeholder={t('password') || 'Password'}
+                autoComplete="current-password"
                 required
               />
             </div>
 
-            <div className="flex items-center justify-between">
-              <Link href="/forgot-password" className="text-sm font-semibold text-gold hover:text-gold/80">
-                {t('forgot_password')}
+            <div className="f2-auth-form-links">
+              <Link href="/forgot-password">
+                {t('forgot_password') || 'Forgot password?'}
               </Link>
-              <span className="text-sm text-body">{t('dont_have_account')} <Link href="/register" className="font-semibold text-gold hover:text-gold/80">{t('register')}</Link></span>
+              <span>{t('dont_have_account') || "Don't have an account?"} <Link href="/register">{t('register') || 'Register'}</Link></span>
             </div>
 
-            <button type="submit" disabled={loading} className="theme-btn w-full justify-center text-base py-3.5 disabled:opacity-60">
-              {loading ? `${t('sending') || 'Sending...'} ` : `${t('login')}`}
+            <button type="submit" disabled={loading} className="f2-content-button f2-content-button--wide">
+              {loading ? `${t('sending') || 'Sending...'} ` : `${t('login') || 'Sign In'}`}
             </button>
           </form>
+          </div>
         </div>
       </div>
     </div>
-    </>
   );
 }

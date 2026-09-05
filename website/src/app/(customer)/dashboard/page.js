@@ -22,109 +22,100 @@ export default function DashboardPage() {
   const balanceAmount = orders.reduce((sum, o) => sum + (o.totalAmount || 0), 0);
 
   if (!user) return (
-    <>
-      <div className="site-breadcrumb">
-        <div className="site-breadcrumb-bg" style={{ background: "url(/assets/img/breadcrumb/01.jpg)" }} />
-        <div className="container"><div className="site-breadcrumb-wrap"><h4 className="breadcrumb-title">Dashboard</h4><ul className="breadcrumb-menu"><li><Link href="/"><i className="far fa-home"></i> Home</Link></li><li className="active">Dashboard</li></ul></div></div>
-      </div>
-      <div className="py-100 text-center"><div className="container"><h3>Please Sign In</h3><Link href="/login" className="theme-btn mt-3">Sign In</Link></div></div>
-    </>
+    <section className="f2-account-gate">
+      <div className="f2-account-gate__icon" aria-hidden="true"><i className="far fa-user" /></div>
+      <span>Customer account</span>
+      <h1>Please sign in</h1>
+      <p>Sign in to see your orders and account summary.</p>
+      <Link href="/login" className="f2-account-button">Sign in</Link>
+    </section>
   );
 
   return (
-    <>
-      <div className="site-breadcrumb">
-        <div className="site-breadcrumb-bg" style={{ background: "url(/assets/img/breadcrumb/01.jpg)" }} />
-        <div className="container"><div className="site-breadcrumb-wrap"><h4 className="breadcrumb-title">Dashboard</h4><ul className="breadcrumb-menu"><li><Link href="/"><i className="far fa-home"></i> Home</Link></li><li className="active">Dashboard</li></ul></div></div>
-      </div>
-
-      <AccountLayout>
-        <div className="user-card">
-          <h4 className="user-card-title">Summary</h4>
-          <div className="row">
-            <div className="col-md-6 col-lg-4">
-              <div className="dashboard-widget color-1">
-                <div className="dashboard-widget-info">
-                  <h1>{pendingCount}</h1>
-                  <span>Pending Orders</span>
-                </div>
-                <div className="dashboard-widget-icon">
-                  <i className="fal fa-list"></i>
-                </div>
-              </div>
-            </div>
-            <div className="col-md-6 col-lg-4">
-              <div className="dashboard-widget color-2">
-                <div className="dashboard-widget-info">
-                  <h1>{completedCount}</h1>
-                  <span>Completed Orders</span>
-                </div>
-                <div className="dashboard-widget-icon">
-                  <i className="fal fa-layer-group"></i>
-                </div>
-              </div>
-            </div>
-            <div className="col-md-6 col-lg-4">
-              <div className="dashboard-widget color-3">
-                <div className="dashboard-widget-info">
-                  <h1>{formatPrice(balanceAmount)}</h1>
-                  <span>Order Value</span>
-                </div>
-                <div className="dashboard-widget-icon">
-                  <i className="fal fa-wallet"></i>
-                </div>
-              </div>
-            </div>
+    <AccountLayout
+      title="Dashboard"
+      description="A quick look at your recent orders and account activity."
+    >
+      <section className="f2-account-card">
+        <div className="f2-account-card__heading">
+          <div>
+            <span>At a glance</span>
+            <h2>Account summary</h2>
           </div>
         </div>
 
-        <div className="user-card">
-          <div className="user-card-header">
-            <h4 className="user-card-title">Recent Orders</h4>
-            <div className="user-card-header-right">
-              <Link href="/orders" className="theme-btn">View All Orders</Link>
+        <div className="f2-account-metrics">
+          <article className="f2-account-metric">
+            <span className="f2-account-metric__icon"><i className="far fa-clock" /></span>
+            <div>
+              <strong>{pendingCount}</strong>
+              <span>Pending orders</span>
             </div>
+          </article>
+          <article className="f2-account-metric">
+            <span className="f2-account-metric__icon"><i className="far fa-check" /></span>
+            <div>
+              <strong>{completedCount}</strong>
+              <span>Completed orders</span>
+            </div>
+          </article>
+          <article className="f2-account-metric">
+            <span className="f2-account-metric__icon"><i className="far fa-wallet" /></span>
+            <div>
+              <strong>{formatPrice(balanceAmount)}</strong>
+              <span>Total order value</span>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <section className="f2-account-card">
+        <div className="f2-account-card__heading f2-account-card__heading--split">
+          <div>
+            <span>Latest activity</span>
+            <h2>Recent orders</h2>
           </div>
-          {orders.length === 0 ? (
-            <div className="text-center py-4">
-              <p>No orders yet. <Link href="/search" className="theme-btn">Start Shopping</Link></p>
-            </div>
-          ) : (
-            <div className="table-responsive">
-              <table className="table table-borderless text-nowrap">
-                <thead>
-                  <tr>
-                    <th>#Order No</th>
-                    <th>Date</th>
-                    <th>Total</th>
-                    <th>Status</th>
-                    <th>Action</th>
+          <Link href="/orders" className="f2-account-button f2-account-button--secondary">View all orders</Link>
+        </div>
+
+        {orders.length === 0 ? (
+          <div className="f2-account-empty">
+            <span className="f2-account-empty__icon" aria-hidden="true"><i className="far fa-box-open" /></span>
+            <h3>No orders yet</h3>
+            <p>Your recent orders will appear here after you make a purchase.</p>
+            <Link href="/search" className="f2-account-button">Start shopping</Link>
+          </div>
+        ) : (
+          <div className="f2-account-table-wrap">
+            <table className="f2-account-table">
+              <thead>
+                <tr>
+                  <th>Order</th>
+                  <th>Date</th>
+                  <th>Total</th>
+                  <th>Status</th>
+                  <th><span className="visually-hidden">Action</span></th>
+                </tr>
+              </thead>
+              <tbody>
+                {orders.map((o) => (
+                  <tr key={o.id}>
+                    <td><strong>#{o.orderNumber || o.id}</strong></td>
+                    <td>{new Date(o.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}</td>
+                    <td><strong>{formatPrice(o.totalAmount)}</strong></td>
+                    <td><span className={`f2-account-status f2-account-status--${o.status}`}>{o.status.charAt(0).toUpperCase() + o.status.slice(1)}</span></td>
+                    <td>
+                      <Link href={`/orders/${o.id}`} className="f2-account-icon-button" aria-label={`View order ${o.orderNumber || o.id}`}>
+                        <i className="far fa-arrow-right" />
+                      </Link>
+                    </td>
                   </tr>
-                </thead>
-                <tbody>
-                  {orders.map(o => (
-                    <tr key={o.id}>
-                      <td><span className="table-list-code">#{o.orderNumber || o.id}</span></td>
-                      <td>{new Date(o.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</td>
-                      <td>{formatPrice(o.totalAmount)}</td>
-                      <td>
-                        <span className={`badge badge-${o.status === 'pending' ? 'info' : o.status === 'confirmed' ? 'primary' : o.status === 'shipped' ? 'primary' : o.status === 'delivered' ? 'success' : o.status === 'cancelled' ? 'danger' : 'info'}`}>
-                          {o.status.charAt(0).toUpperCase() + o.status.slice(1)}
-                        </span>
-                      </td>
-                      <td>
-                        <Link href={`/orders/${o.id}`} className="btn btn-sm btn-outline-secondary">
-                          <i className="far fa-eye"></i>
-                        </Link>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
-      </AccountLayout>
-    </>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </section>
+    </AccountLayout>
   );
 }

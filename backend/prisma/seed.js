@@ -82,33 +82,33 @@ async function main() {
   const categories = await Promise.all([
     prisma.category.upsert({
       where: { slug: 'electronics' },
-      update: {},
-      create: { slug: 'electronics', nameEn: 'Electronics', namePs: 'بریښنایی توکي', nameDr: 'الکترونیک' },
+      update: { iconKey: 'electronics' },
+      create: { slug: 'electronics', nameEn: 'Electronics', namePs: 'بریښنایی توکي', nameDr: 'الکترونیک', iconKey: 'electronics' },
     }),
     prisma.category.upsert({
       where: { slug: 'clothing' },
-      update: {},
-      create: { slug: 'clothing', nameEn: 'Clothing', namePs: 'جامې', nameDr: 'پوشاک' },
+      update: { iconKey: 'clothing' },
+      create: { slug: 'clothing', nameEn: 'Clothing', namePs: 'جامې', nameDr: 'پوشاک', iconKey: 'clothing' },
     }),
     prisma.category.upsert({
       where: { slug: 'food' },
-      update: {},
-      create: { slug: 'food', nameEn: 'Food & Groceries', namePs: 'خوراکي توکي', nameDr: 'مواد غذایی' },
+      update: { iconKey: 'food-groceries' },
+      create: { slug: 'food', nameEn: 'Food & Groceries', namePs: 'خوراکي توکي', nameDr: 'مواد غذایی', iconKey: 'food-groceries' },
     }),
     prisma.category.upsert({
       where: { slug: 'home' },
-      update: {},
-      create: { slug: 'home', nameEn: 'Home & Garden', namePs: 'کور او باغ', nameDr: 'خانه و باغ' },
+      update: { iconKey: 'home-garden' },
+      create: { slug: 'home', nameEn: 'Home & Garden', namePs: 'کور او باغ', nameDr: 'خانه و باغ', iconKey: 'home-garden' },
     }),
     prisma.category.upsert({
       where: { slug: 'health' },
-      update: {},
-      create: { slug: 'health', nameEn: 'Health & Beauty', namePs: 'روغتیا او ښکلا', nameDr: 'صحت و زیبایی' },
+      update: { iconKey: 'health-beauty' },
+      create: { slug: 'health', nameEn: 'Health & Beauty', namePs: 'روغتیا او ښکلا', nameDr: 'صحت و زیبایی', iconKey: 'health-beauty' },
     }),
     prisma.category.upsert({
       where: { slug: 'sports' },
-      update: {},
-      create: { slug: 'sports', nameEn: 'Sports & Outdoors', namePs: 'ورزش', nameDr: 'ورزش و فضای باز' },
+      update: { iconKey: 'sports' },
+      create: { slug: 'sports', nameEn: 'Sports & Outdoors', namePs: 'ورزش', nameDr: 'ورزش و فضای باز', iconKey: 'sports' },
     }),
   ]);
 

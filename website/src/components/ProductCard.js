@@ -33,7 +33,7 @@ export default function ProductCard({ product, layout = 'grid' }) {
   if (images.length === 0) images.push(fallbackImg);
   const activeImgResp = responsiveImage(images[activeImg], { widths: [320, 560, 760], quality: 75, sizes: '(max-width: 576px) 90vw, (max-width: 992px) 45vw, 280px' });
   const listImgResp = responsiveImage(images[0], { widths: [280, 420, 560], quality: 75, sizes: '(max-width: 576px) 40vw, 200px' });
-  const rating = product.rating || 4;
+  const rating = Number(product.averageRating || product.rating || 0);
   const inStock = product.stock > 0;
 
   const handleAdd = async (e) => {
@@ -57,31 +57,34 @@ export default function ProductCard({ product, layout = 'grid' }) {
     setActiveImg(Math.min(segment, images.length - 1));
   };
 
-  const badge = product.isNew ? { text: 'New', cls: 'new' } : !inStock ? { text: 'Out Of Stock', cls: 'oos' } : discount > 0 ? { text: `${discount}% Off`, cls: 'discount' } : product.isSponsored ? { text: 'Hot', cls: 'hot' } : null;
+  const badge = product.isNew ? { text: 'New', cls: 'new' } : !inStock ? { text: 'Out Of Stock', cls: 'oos' } : discount > 0 ? { text: `${discount}% Off`, cls: 'discount' } : product.isSponsored ? { text: 'Sponsored', cls: 'hot' } : null;
 
   if (layout === 'list') {
     return (
-      <div className={`product-item flex flex-row ${visible ? 'animate-fade-up' : 'opacity-0'}`}>
-        <div className="product-img w-48 flex-shrink-0">
-          {badge && <span className={`type ${badge.cls}`}>{badge.text}</span>}
-          <Link href={`/products/${product.id}`}><img src={listImgResp.src} srcSet={listImgResp.srcSet} sizes={listImgResp.sizes} alt={getName()} loading="lazy" decoding="async" onError={(e) => { e.target.src=fallbackImg; }} /></Link>
-        </div>
-        <div className="product-content flex-1 flex flex-col justify-center">
-          <h3 className="product-title"><Link href={`/products/${product.id}`}>{getName()}</Link></h3>
-          <div className="product-rate">{[1,2,3,4,5].map(i => <span key={i} className={i <= rating ? 'star-filled' : 'star-empty'}>★</span>)}</div>
-          <div className="product-bottom mt-2">
-            <div className="product-price">{oldPrice && <del>{formatPrice(oldPrice)}</del>}<span>{formatPrice(price)}</span></div>
-            <div className="product-action-btns">
-              <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); setShowModal(true); }} className="product-cart-btn" title="Quick View">
-                <i className="far fa-eye"></i>
-              </button>
-              {inStock && <button onClick={handleAdd} className="product-cart-btn" title="Add To Cart">
-                <i className="far fa-shopping-bag"></i>
-              </button>}
+      <>
+        <div className={`product-item flex flex-row ${visible ? 'animate-fade-up' : 'opacity-0'}`}>
+          <div className="product-img w-48 flex-shrink-0">
+            {badge && <span className={`type ${badge.cls}`}>{badge.text}</span>}
+            <Link href={`/products/${product.id}`}><img src={listImgResp.src} srcSet={listImgResp.srcSet} sizes={listImgResp.sizes} alt={getName()} loading="lazy" decoding="async" onError={(e) => { e.target.src=fallbackImg; }} /></Link>
+          </div>
+          <div className="product-content flex-1 flex flex-col justify-center">
+            <h3 className="product-title"><Link href={`/products/${product.id}`}>{getName()}</Link></h3>
+            {rating > 0 && <div className="product-rate">{[1,2,3,4,5].map(i => <span key={i} className={i <= Math.round(rating) ? 'star-filled' : 'star-empty'}>★</span>)}</div>}
+            <div className="product-bottom mt-2">
+              <div className="product-price">{oldPrice && <del>{formatPrice(oldPrice)}</del>}<span>{formatPrice(price)}</span></div>
+              <div className="product-action-btns">
+                <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); setShowModal(true); }} className="product-cart-btn" title="Quick View">
+                  <i className="far fa-eye"></i>
+                </button>
+                {inStock && <button onClick={handleAdd} className="product-cart-btn" title="Add To Cart">
+                  <i className="far fa-shopping-bag"></i>
+                </button>}
+              </div>
             </div>
           </div>
         </div>
-      </div>
+        {showModal && <QuickViewModal product={product} onClose={() => setShowModal(false)} />}
+      </>
     );
   }
 
@@ -111,7 +114,7 @@ export default function ProductCard({ product, layout = 'grid' }) {
       </div>
       <div className="product-content">
         <h3 className="product-title"><Link href={`/products/${product.id}`}>{getName()}</Link></h3>
-        <div className="product-rate">{[1,2,3,4,5].map(i => <span key={i} className={i <= rating ? 'star-filled' : 'star-empty'}>★</span>)}</div>
+        {rating > 0 && <div className="product-rate">{[1,2,3,4,5].map(i => <span key={i} className={i <= Math.round(rating) ? 'star-filled' : 'star-empty'}>★</span>)}</div>}
         <div className="product-bottom">
           <div className="product-price">{oldPrice && <del>{formatPrice(oldPrice)}</del>}<span>{formatPrice(price)}</span></div>
           <div className="product-action-btns">

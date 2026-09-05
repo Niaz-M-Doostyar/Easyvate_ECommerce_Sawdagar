@@ -25,6 +25,8 @@ export default function EditProduct({ params }) {
   }, [id]);
   const handleSubmit = async (e) => {
     e.preventDefault();
+    const required = [form.nameEn, form.namePs, form.nameDr, form.descEn, form.descPs, form.descDr, form.categoryId, form.wholesaleCost, form.suggestedPrice, form.stock];
+    if (required.some(value => String(value).trim() === "")) { toast.error("Fill every required product field"); return; }
     setSubmitting(true);
     const body = { ...form, wholesaleCost: parseFloat(form.wholesaleCost), suggestedPrice: form.suggestedPrice ? parseFloat(form.suggestedPrice) : null, stock: parseInt(form.stock), categoryId: form.categoryId ? parseInt(form.categoryId) : null };
     const r = await fetch(`/api/supplier/products/${id}`, { method: "PUT", headers: { "Content-Type": "application/json" }, credentials: "include", body: JSON.stringify(body) });
@@ -46,19 +48,19 @@ export default function EditProduct({ params }) {
           </div>
         </div>
         <div className="card card-p mb-6">
-          <h3 className="font-bold text-navy mb-4">Descriptions</h3>
+          <h3 className="font-bold text-navy mb-4">Descriptions (Required)</h3>
           <div className="space-y-4">
-            <div><label className="label">English</label><textarea value={form.descEn} onChange={e => set("descEn", e.target.value)} className="input" rows={3} /></div>
-            <div><label className="label">Pashto</label><textarea value={form.descPs} onChange={e => set("descPs", e.target.value)} className="input" rows={3} dir="rtl" /></div>
-            <div><label className="label">Dari</label><textarea value={form.descDr} onChange={e => set("descDr", e.target.value)} className="input" rows={3} dir="rtl" /></div>
+            <div><label className="label">English *</label><textarea value={form.descEn} onChange={e => set("descEn", e.target.value)} className="input" rows={3} required /></div>
+            <div><label className="label">Pashto *</label><textarea value={form.descPs} onChange={e => set("descPs", e.target.value)} className="input" rows={3} dir="rtl" required /></div>
+            <div><label className="label">Dari *</label><textarea value={form.descDr} onChange={e => set("descDr", e.target.value)} className="input" rows={3} dir="rtl" required /></div>
           </div>
         </div>
         <div className="card card-p mb-6">
           <h3 className="font-bold text-navy mb-4">Pricing & Stock</h3>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div><label className="label">{t("category")}</label><select value={form.categoryId} onChange={e => set("categoryId", e.target.value)} className="input"><option value="">Select...</option>{categories.map(c => <option key={c.id} value={c.id}>{c.nameEn}</option>)}</select></div>
+            <div><label className="label">{t("category")} *</label><select value={form.categoryId} onChange={e => set("categoryId", e.target.value)} className="input" required><option value="">Select...</option>{categories.map(c => <option key={c.id} value={c.id}>{c.nameEn}</option>)}</select></div>
             <div><label className="label">{t("wholesale")} (؋)</label><input type="number" step="0.01" value={form.wholesaleCost} onChange={e => set("wholesaleCost", e.target.value)} className="input" required /></div>
-            <div><label className="label">{t("suggested")} (؋)</label><input type="number" step="0.01" value={form.suggestedPrice} onChange={e => set("suggestedPrice", e.target.value)} className="input" /></div>
+            <div><label className="label">{t("suggested")} (؋) *</label><input type="number" min="0.01" step="0.01" value={form.suggestedPrice} onChange={e => set("suggestedPrice", e.target.value)} className="input" required /></div>
             <div><label className="label">{t("stock")}</label><input type="number" value={form.stock} onChange={e => set("stock", e.target.value)} className="input" required /></div>
           </div>
         </div>

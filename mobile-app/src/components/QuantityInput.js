@@ -25,6 +25,8 @@ export default function QuantityInput({
   const [draft, setDraft] = useState(String(normalize(value)));
   const compact = size === 'sm';
   const current = normalize(draft);
+  const decreaseDisabled = disabled || current <= min;
+  const increaseDisabled = disabled || current >= (boundedMax ?? Number.MAX_SAFE_INTEGER);
 
   useEffect(() => {
     setDraft(String(normalize(value)));
@@ -64,14 +66,16 @@ export default function QuantityInput({
       ]}
     >
       <TouchableOpacity
+        accessibilityRole="button"
         accessibilityLabel="Decrease quantity"
+        accessibilityState={{ disabled: decreaseDisabled }}
         onPress={() => changeBy(-1)}
-        disabled={disabled || current <= min}
+        disabled={decreaseDisabled}
         style={[
           styles.stepButton,
           compact && styles.stepButtonSmall,
           { backgroundColor: c.brandSurface },
-          (disabled || current <= min) && { opacity: 0.45 },
+          decreaseDisabled && { opacity: 0.45 },
         ]}
       >
         <MaterialCommunityIcons name="minus" size={compact ? 17 : 19} color={c.text} />
@@ -79,6 +83,8 @@ export default function QuantityInput({
 
       <TextInput
         accessibilityLabel="Quantity"
+        accessibilityValue={{ min, max: boundedMax, now: current, text: String(current) }}
+        accessibilityState={{ disabled }}
         value={draft}
         onChangeText={handleTextChange}
         onEndEditing={commit}
@@ -96,14 +102,16 @@ export default function QuantityInput({
       />
 
       <TouchableOpacity
+        accessibilityRole="button"
         accessibilityLabel="Increase quantity"
+        accessibilityState={{ disabled: increaseDisabled }}
         onPress={() => changeBy(1)}
-        disabled={disabled || current >= (boundedMax ?? Number.MAX_SAFE_INTEGER)}
+        disabled={increaseDisabled}
         style={[
           styles.stepButton,
           compact && styles.stepButtonSmall,
           { backgroundColor: c.brandSurface },
-          (disabled || current >= (boundedMax ?? Number.MAX_SAFE_INTEGER)) && { opacity: 0.45 },
+          increaseDisabled && { opacity: 0.45 },
         ]}
       >
         <MaterialCommunityIcons name="plus" size={compact ? 17 : 19} color={c.text} />
@@ -126,20 +134,20 @@ const styles = StyleSheet.create({
     padding: 4,
   },
   stepButton: {
-    width: 40,
-    height: 40,
+    width: 44,
+    height: 44,
     borderRadius: borderRadius.md,
     justifyContent: 'center',
     alignItems: 'center',
   },
   stepButtonSmall: {
-    width: 34,
-    height: 34,
+    width: 44,
+    height: 44,
     borderRadius: borderRadius.sm,
   },
   input: {
     width: 78,
-    height: 40,
+    height: 44,
     borderRadius: borderRadius.md,
     borderWidth: 1,
     paddingHorizontal: 8,
@@ -149,8 +157,8 @@ const styles = StyleSheet.create({
     fontWeight: fontWeight.bold,
   },
   inputSmall: {
-    width: 68,
-    height: 34,
+    width: 62,
+    height: 44,
     borderRadius: borderRadius.sm,
     fontSize: fontSize.base,
   },

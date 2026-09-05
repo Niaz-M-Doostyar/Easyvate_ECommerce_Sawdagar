@@ -7,7 +7,7 @@ const sharp = require('sharp');
 
 const execFileAsync = util.promisify(execFile);
 
-const uploadsRoot = path.join(__dirname, '..', 'uploads');
+const uploadsRoot = path.resolve(process.env.UPLOADS_DIR || path.join(__dirname, '..', 'uploads'));
 const processingScriptPath = path.join(__dirname, 'process_product_image.py');
 const stylingScriptPath = path.join(__dirname, 'style_product_image.py');
 const minLongestSide = Math.max(500, parseInt(process.env.PRODUCT_IMAGE_AI_MIN_LONGEST_SIDE || '500', 10));

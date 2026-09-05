@@ -3,11 +3,25 @@ const router = express.Router();
 const prisma = require('../lib/prisma');
 const { authenticate, requireRole } = require('../middleware/auth');
 const { paginate } = require('../lib/utils');
+const { sendOrderStatusUpdate, sendOrderStatusRecord, getLastEmailError } = require('../lib/email');
+
+function logOrderEmailFailure(label, order, to) {
+  const err = typeof getLastEmailError === 'function' ? getLastEmailError() : null;
+  console.error(`${label} failed:`, {
+    orderNumber: order.orderNumber,
+    to,
+    error: err ? err.message : 'Unknown email error',
+  });
+}
 
 // GET /api/delivery/orders
 router.get('/orders', authenticate, requireRole('delivery'), async (req, res) => {
   try {
-    const { skip, take, page, limit } = paginate(req.query.page, req.query.limit);
+    const pagination = paginate(req.query.page, req.query.limit);
+    const showAll = req.query.all === 'true' || req.query.all === '1';
+    const { page, limit } = pagination;
+    const skip = showAll ? undefined : pagination.skip;
+    const take = showAll ? undefined : pagination.take;
     const status = req.query.status;
 
     const where = { deliveryPersonId: req.user.id };
@@ -27,7 +41,7 @@ router.get('/orders', authenticate, requireRole('delivery'), async (req, res) =>
       prisma.order.count({ where }),
     ]);
 
-    const totalPages = Math.max(1, Math.ceil(total / limit));
+    const totalPages = showAll ? 1 : Math.max(1, Math.ceil(total / limit));
     res.json({ orders, total, totalPages, pagination: { page, limit, total, totalPages } });
   } catch (err) {
     res.status(500).json({ error: 'Failed to fetch delivery orders' });
@@ -39,6 +53,7 @@ router.put('/orders/:id', authenticate, requireRole('delivery'), async (req, res
   try {
     const order = await prisma.order.findFirst({
       where: { id: parseInt(req.params.id), deliveryPersonId: req.user.id },
+      include: { user: true },
     });
     if (!order) return res.status(404).json({ error: 'Order not found' });
 
@@ -50,7 +65,14 @@ router.put('/orders/:id', authenticate, requireRole('delivery'), async (req, res
     const updated = await prisma.order.update({
       where: { id: order.id },
       data: { status, paymentStatus: status === 'delivered' ? 'paid' : order.paymentStatus },
+      include: { user: true, items: true },
     });
+
+    const customerEmailSent = await sendOrderStatusUpdate(updated.user.email, updated);
+    if (!customerEmailSent) logOrderEmailFailure('Delivery status customer email', updated, updated.user.email);
+
+    const salesEmailSent = await sendOrderStatusRecord(updated, updated.user, order.status);
+    if (!salesEmailSent) logOrderEmailFailure('Delivery status sales record email', updated, 'sales');
 
     res.json({ order: updated });
   } catch (err) {

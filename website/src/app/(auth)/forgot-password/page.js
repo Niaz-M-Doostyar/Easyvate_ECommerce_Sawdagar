@@ -22,38 +22,41 @@ export default function ForgotPasswordPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-primary/5 flex items-center justify-center py-20 px-4">
-      <div className="w-full max-w-md animate-fade-up">
-        <div className="text-center mb-8">
-          <Link href="/" className="inline-flex items-center gap-2.5 mb-6">
-            <div className="w-12 h-12 bg-gold rounded-xl flex items-center justify-center shadow-lg shadow-gold/20"><span className="text-white font-extrabold text-2xl font-display">S</span></div>
-            <span className="text-2xl font-extrabold text-midnight font-display">Sawdagar</span>
-          </Link>
-          <h2 className="text-2xl font-bold text-midnight font-display">Forgot Password</h2>
-          <p className="text-body mt-2">Enter your email and we&apos;ll send you a reset link</p>
-        </div>
-        <div className="bg-white rounded-2xl shadow-card p-8">
+    <div className="f2-content-page f2-auth-page">
+      <div className="f2-auth-shell">
+        <div className="f2-auth-panel animate-fade-up">
+          <header className="f2-auth-heading">
+            <Link href="/" className="f2-auth-brand" aria-label="Sawdagar home">
+              <span className="f2-auth-brand__mark" aria-hidden="true">S</span>
+              <span className="f2-auth-brand__name">Sawdagar</span>
+            </Link>
+            <span className="f2-content-eyebrow">Account recovery</span>
+            <h1>Forgot Password</h1>
+            <p>Enter your email and we&apos;ll send you a reset link</p>
+          </header>
+          <div className="f2-auth-card">
           {sent ? (
-            <div className="text-center py-6">
-              <div className="w-16 h-16 bg-green/10 rounded-full flex items-center justify-center mx-auto mb-4">
+            <div className="f2-auth-state f2-auth-state--success" role="status">
+              <div className="f2-auth-state__icon">
                 <svg className="w-8 h-8 text-green" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
               </div>
-              <h3 className="text-lg font-bold text-midnight mb-2">Check Your Email</h3>
-              <p className="text-body text-sm mb-6">We&apos;ve sent a password reset link to <strong className="text-midnight">{email}</strong></p>
-              <Link href="/login" className="theme-btn inline-flex">Back to Login</Link>
+              <h2>Check Your Email</h2>
+              <p>We&apos;ve sent a password reset link to <strong>{email}</strong></p>
+              <Link href="/login" className="f2-content-button">Back to Login</Link>
             </div>
           ) : (
-            <form onSubmit={handleSubmit} className="space-y-5">
-              <div>
-                <label className="text-sm font-semibold text-midnight mb-1.5 block font-display">Email Address</label>
-                <input type="email" value={email} onChange={e => setEmail(e.target.value)} className="w-full rounded-lg border border-gray-200 px-4 py-3 text-sm text-midnight placeholder:text-body focus:border-theme-color focus:outline-none focus:ring-2 focus:ring-theme-color/30" placeholder="Enter your email" required />
+            <form onSubmit={handleSubmit} className="f2-content-form" aria-busy={loading}>
+              <div className="f2-content-field">
+                <label htmlFor="forgot-email">Email Address</label>
+                <input id="forgot-email" type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="Enter your email" autoComplete="email" required />
               </div>
-              <button type="submit" disabled={loading} className="theme-btn w-full justify-center text-base py-3.5 disabled:opacity-60">
+              <button type="submit" disabled={loading} className="f2-content-button f2-content-button--wide">
                 {loading ? "Sending..." : "Send Reset Link"}
               </button>
-              <p className="text-center text-sm text-body">Remember your password? <Link href="/login" className="font-semibold text-gold">Sign In</Link></p>
+              <p className="f2-auth-alternative">Remember your password? <Link href="/login">Sign In</Link></p>
             </form>
           )}
+          </div>
         </div>
       </div>
     </div>

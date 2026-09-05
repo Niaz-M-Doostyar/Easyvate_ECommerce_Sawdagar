@@ -91,7 +91,16 @@ export default function AdminOrders() {
                     <div className="text-sm font-medium text-navy">{o.user?.fullName || "N/A"}</div>
                     <div className="text-xs text-body">{o.user?.phone || ""}</div>
                   </td>
-                  <td><span className="badge badge-gray">{o.items?.length || 0}</span></td>
+                  <td>
+                    <div className="flex items-center gap-2">
+                      <div className="flex -space-x-2">
+                        {(o.items || []).slice(0, 3).map((item, index) => item.product?.images?.[0]?.url ? (
+                          <img key={`${item.id || item.productId}-${index}`} src={item.product.images[0].url} alt="" className="w-9 h-9 rounded-md object-cover border-2 border-white" />
+                        ) : null)}
+                      </div>
+                      <span className="badge badge-gray">{o.items?.length || 0}</span>
+                    </div>
+                  </td>
                   <td className="font-semibold">{CURRENCY_SYMBOL}{o.totalAmount}</td>
                   <td><span className={`badge ${o.paymentStatus === "paid" ? "badge-green" : "badge-yellow"}`}>{o.paymentStatus}</span></td>
                   <td>
@@ -129,6 +138,8 @@ export default function AdminOrders() {
               <div><span className="text-body">{t("customer")}:</span> <strong className="text-navy">{detail.user?.fullName}</strong></div>
               <div><span className="text-body">{t("phone")}:</span> <strong>{detail.user?.phone || detail.phone || "N/A"}</strong></div>
               <div><span className="text-body">{t("address")}:</span> <strong>{[detail.province, detail.district, detail.village].filter(Boolean).join(", ") || "N/A"}</strong></div>
+              <div><span className="text-body">Landmark:</span> <strong>{detail.landmark || "N/A"}</strong></div>
+              <div className="col-span-2"><span className="text-body">Order notice:</span> <strong>{detail.notes || "N/A"}</strong></div>
               <div><span className="text-body">{t("status")}:</span> <span className={`badge ${statusColor[detail.status]}`}>{detail.status}</span></div>
               <div><span className="text-body">Payment:</span> <span className={`badge ${detail.paymentStatus === "paid" ? "badge-green" : "badge-yellow"}`}>{detail.paymentStatus} (COD)</span></div>
               <div><span className="text-body">Delivery:</span> <strong>{detail.deliveryPerson?.fullName || "Not assigned"}</strong></div>
@@ -141,7 +152,7 @@ export default function AdminOrders() {
               <h4 className="font-semibold text-navy mb-2">Items</h4>
               <table className="table text-sm">
                 <thead>
-                  <tr><th>Product</th><th>Qty</th><th>Retail</th><th>Wholesale</th><th>Subtotal</th><th>Profit</th></tr>
+                  <tr><th>Image</th><th>Product</th><th>Qty</th><th>Retail</th><th>Wholesale</th><th>Subtotal</th><th>Profit</th></tr>
                 </thead>
                 <tbody>
                   {(detailData?.items || detail.items || []).map((item, i) => {
@@ -150,6 +161,7 @@ export default function AdminOrders() {
                     const profit = (retail - wholesale) * item.quantity;
                     return (
                       <tr key={i}>
+                        <td>{item.product?.images?.[0]?.url ? <img src={item.product.images[0].url} alt="" className="w-14 h-14 rounded-lg object-cover" /> : <span className="text-body">—</span>}</td>
                         <td className="text-navy font-medium">{item.product?.nameEn || `Product #${item.productId}`}</td>
                         <td>{item.quantity}</td>
                         <td>{formatPriceDecimal(retail)}</td>

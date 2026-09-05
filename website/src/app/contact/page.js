@@ -50,13 +50,13 @@ export default function ContactPage() {
   const contactCards = content.cards || [];
 
   return (
-    <>
+    <div className="f2-content-page f2-contact-page">
       {/* Breadcrumb */}
-      <div className="site-breadcrumb">
+      <div className="site-breadcrumb f2-content-crumb">
         <div className="site-breadcrumb-bg" style={{ background: "url(/assets/img/breadcrumb/01.jpg)" }} />
         <div className="container">
           <div className="site-breadcrumb-wrap">
-            <h4 className="breadcrumb-title">Contact Us</h4>
+            <h1 className="breadcrumb-title">Contact Us</h1>
             <ul className="breadcrumb-menu">
               <li><Link href="/"><i className="far fa-home"></i> Home</Link></li>
               <li className="active">Contact Us</li>
@@ -66,15 +66,20 @@ export default function ContactPage() {
       </div>
 
       {/* Contact Area */}
-      <div className="contact-area pt-100 pb-80">
+      <section className="contact-area f2-content-section f2-contact-main">
         <div className="container">
-          <div className="contact-wrapper">
-            <div className="row">
+          <div className="contact-wrapper f2-contact-layout">
+            <div className="row f2-contact-layout__grid">
               <div className="col-lg-5">
-                <div className="contact-content">
-                  <div className="row">
+                <div className="contact-content f2-contact-cards">
+                  <div className="f2-contact-cards__intro">
+                    <span className="f2-content-eyebrow">Contact details</span>
+                    <h2>We&apos;re here to help</h2>
+                    <p>Use the details below or send us a message. Our team will get back to you as soon as possible.</p>
+                  </div>
+                  <div className="row f2-contact-cards__grid">
                     <div className="col-md-6">
-                      <div className="contact-info">
+                      <div className="contact-info f2-contact-card">
                         <div className="contact-info-icon"><i className="fal fa-map-location-dot"></i></div>
                         <div className="contact-info-content">
                           <h5>Office Address</h5>
@@ -83,7 +88,7 @@ export default function ContactPage() {
                       </div>
                     </div>
                     <div className="col-md-6">
-                      <div className="contact-info">
+                      <div className="contact-info f2-contact-card">
                         <div className="contact-info-icon"><i className="fal fa-headset"></i></div>
                         <div className="contact-info-content">
                           <h5>Call Us</h5>
@@ -92,7 +97,7 @@ export default function ContactPage() {
                       </div>
                     </div>
                     <div className="col-md-6">
-                      <div className="contact-info">
+                      <div className="contact-info f2-contact-card">
                         <div className="contact-info-icon"><i className="fal fa-envelopes"></i></div>
                         <div className="contact-info-content">
                           <h5>Email Us</h5>
@@ -101,7 +106,7 @@ export default function ContactPage() {
                       </div>
                     </div>
                     <div className="col-md-6">
-                      <div className="contact-info">
+                      <div className="contact-info f2-contact-card">
                         <div className="contact-info-icon"><i className="fal fa-alarm-clock"></i></div>
                         <div className="contact-info-content">
                           <h5>{content.businessHoursTitle || "Open Time"}</h5>
@@ -115,31 +120,36 @@ export default function ContactPage() {
                 </div>
               </div>
               <div className="col-lg-7">
-                <div className="contact-form">
+                <div className="contact-form f2-contact-form-card">
                   <div className="contact-form-header">
+                    <span className="f2-content-eyebrow">Send a message</span>
                     <h2>{content.formTitle || "Get In Touch"}</h2>
                     <p>{content.heroDescription || "We'd love to hear from you. Send us a message and we'll respond as soon as possible."}</p>
                   </div>
-                  <form onSubmit={handleSubmit}>
+                  <form onSubmit={handleSubmit} className="f2-content-form" aria-busy={loading}>
                     <div className="row">
                       <div className="col-md-6">
-                        <div className="form-group">
-                          <input type="text" className="form-control" placeholder="Your Name" value={form.name} onChange={(e) => set("name", e.target.value)} required />
+                        <div className="form-group f2-content-field">
+                          <label htmlFor="contact-name">Your Name</label>
+                          <input id="contact-name" type="text" placeholder="Your Name" value={form.name} onChange={(e) => set("name", e.target.value)} autoComplete="name" required />
                         </div>
                       </div>
                       <div className="col-md-6">
-                        <div className="form-group">
-                          <input type="email" className="form-control" placeholder="Your Email" value={form.email} onChange={(e) => set("email", e.target.value)} required />
+                        <div className="form-group f2-content-field">
+                          <label htmlFor="contact-email">Your Email</label>
+                          <input id="contact-email" type="email" placeholder="Your Email" value={form.email} onChange={(e) => set("email", e.target.value)} autoComplete="email" required />
                         </div>
                       </div>
                     </div>
-                    <div className="form-group">
-                      <input type="text" className="form-control" placeholder="Your Subject" value={form.subject} onChange={(e) => set("subject", e.target.value)} required />
+                    <div className="form-group f2-content-field">
+                      <label htmlFor="contact-subject">Your Subject</label>
+                      <input id="contact-subject" type="text" placeholder="Your Subject" value={form.subject} onChange={(e) => set("subject", e.target.value)} required />
                     </div>
-                    <div className="form-group">
-                      <textarea cols="30" rows="4" className="form-control" placeholder="Write Your Message" value={form.message} onChange={(e) => set("message", e.target.value)} required></textarea>
+                    <div className="form-group f2-content-field">
+                      <label htmlFor="contact-message">Your Message</label>
+                      <textarea id="contact-message" cols="30" rows="5" placeholder="Write Your Message" value={form.message} onChange={(e) => set("message", e.target.value)} required></textarea>
                     </div>
-                    <button type="submit" className="theme-btn" disabled={loading}>
+                    <button type="submit" className="f2-content-button" disabled={loading}>
                       {loading ? "Sending..." : "Send Message"} <i className="far fa-paper-plane"></i>
                     </button>
                   </form>
@@ -148,21 +158,23 @@ export default function ContactPage() {
             </div>
           </div>
         </div>
-      </div>
+      </section>
 
       {/* Newsletter Area */}
-      <div className="newsletter-area pb-100">
+      <section className="newsletter-area f2-contact-newsletter">
         <div className="container">
-          <div className="newsletter-wrap">
+          <div className="newsletter-wrap f2-contact-newsletter__wrap">
             <div className="row">
               <div className="col-lg-6 mx-auto">
                 <div className="newsletter-content">
+                  <span className="f2-content-eyebrow">Stay updated</span>
                   <h3>Get <span>20%</span> Off Discount Coupon</h3>
                   <p>By Subscribe Our Newsletter</p>
-                  <div className="subscribe-form">
+                  <div className="subscribe-form f2-contact-newsletter__form">
                     <form onSubmit={(e) => { e.preventDefault(); toast.success("Subscribed!"); }}>
-                      <input type="email" className="form-control" placeholder="Your Email Address" />
-                      <button className="theme-btn" type="submit">Subscribe <i className="far fa-paper-plane"></i></button>
+                      <label className="f2-sr-only" htmlFor="contact-newsletter-email">Your Email Address</label>
+                      <input id="contact-newsletter-email" type="email" placeholder="Your Email Address" />
+                      <button className="f2-content-button" type="submit">Subscribe <i className="far fa-paper-plane"></i></button>
                     </form>
                   </div>
                 </div>
@@ -170,7 +182,7 @@ export default function ContactPage() {
             </div>
           </div>
         </div>
-      </div>
-    </>
+      </section>
+    </div>
   );
 }

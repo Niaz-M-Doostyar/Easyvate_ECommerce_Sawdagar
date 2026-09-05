@@ -17,6 +17,9 @@ yarn-error.log*
 
 # Environment
 .env
+.env.*
+!.env.example
+!**/.env.example
 
 # Uploaded assets
 backend/uploads/
@@ -26,4 +29,3 @@ backend/uploads/
 
 # local demo HTML templates (unused)
 demo5/
-

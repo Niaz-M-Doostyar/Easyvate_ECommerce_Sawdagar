@@ -3,7 +3,7 @@ const router = express.Router();
 const prisma = require('../lib/prisma');
 const { authenticate } = require('../middleware/auth');
 const { generateOrderNumber, paginate } = require('../lib/utils');
-const { sendOrderConfirmation } = require('../lib/email');
+const { sendOrderConfirmation, sendNewOrderNotification, getLastEmailError } = require('../lib/email');
 const { logTransaction } = require('../lib/transactionLog');
 
 // GET /api/orders
@@ -128,7 +128,24 @@ router.post('/', authenticate, async (req, res) => {
     });
 
     const user = await prisma.user.findUnique({ where: { id: req.user.id } });
-    await sendOrderConfirmation(user.email, order);
+    const customerEmailSent = await sendOrderConfirmation(user.email, order);
+    if (!customerEmailSent) {
+      const err = typeof getLastEmailError === 'function' ? getLastEmailError() : null;
+      console.error('Order confirmation email failed:', {
+        orderNumber: order.orderNumber,
+        to: user.email,
+        error: err ? err.message : 'Unknown email error',
+      });
+    }
+
+    const salesEmailSent = await sendNewOrderNotification(order, user);
+    if (!salesEmailSent) {
+      const err = typeof getLastEmailError === 'function' ? getLastEmailError() : null;
+      console.error('New order sales notification failed:', {
+        orderNumber: order.orderNumber,
+        error: err ? err.message : 'Unknown email error',
+      });
+    }
 
     await logTransaction(req, 'CREATE', 'Order', order.id, { orderNumber: order.orderNumber, totalAmount: order.totalAmount, itemCount: order.items.length });
 

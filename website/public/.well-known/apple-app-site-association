@@ -1,0 +1,11 @@
+{
+  "applinks": {
+    "apps": [],
+    "details": [
+      {
+        "appID": "UFSF57GHNA.com.nabat.sawdagar.online.shoping",
+        "paths": ["/products/*", "/products"]
+      }
+    ]
+  }
+}
