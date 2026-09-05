@@ -232,7 +232,7 @@ export default function ProductDetailPage({ params }) {
         </nav>
 
         <section className="swd-product-hero" aria-labelledby="product-title">
-          <div className="swd-product-gallery">
+          <div className={`swd-product-gallery${images.length === 1 ? ' swd-product-gallery--single' : ''}`}>
             {images.length > 1 && (
               <div className="swd-product-thumbnails" aria-label={t("product_images") || "Product images"}>
                 {images.map((image, index) => (
