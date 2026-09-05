@@ -222,37 +222,10 @@ export default function AdminContentPage() {
             </Field>
           </div>
 
-          {/* ── Hero Slides ── */}
           <div className="card card-p">
-            <SectionTitle title="Hero Slides" description="Each slide shown in the hero carousel. Add/remove slides as needed." />
-            <ArrayManager
-              items={home.hero.slides || siteContentDefaults.home.hero.slides}
-              onUpdate={(slides) => setValue(["home", "hero", "slides"], slides)}
-              addItem={() => ({ subtitle: "Start From ؋999", title: "New Slide Title", description: "", image: "", priceLabel: "Price", priceValue: "؋2,500" })}
-              addLabel="Add Slide"
-              renderItem={(slide, idx) => (
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                  <Field label="Subtitle">
-                    <input className="input" value={slide.subtitle} onChange={(e) => { const s = [...(home.hero.slides || [])]; s[idx] = { ...s[idx], subtitle: e.target.value }; setValue(["home", "hero", "slides"], s); }} />
-                  </Field>
-                  <Field label="Title">
-                    <input className="input" value={slide.title} onChange={(e) => { const s = [...(home.hero.slides || [])]; s[idx] = { ...s[idx], title: e.target.value }; setValue(["home", "hero", "slides"], s); }} />
-                  </Field>
-                  <Field label="Price Label">
-                    <input className="input" value={slide.priceLabel} onChange={(e) => { const s = [...(home.hero.slides || [])]; s[idx] = { ...s[idx], priceLabel: e.target.value }; setValue(["home", "hero", "slides"], s); }} />
-                  </Field>
-                  <Field label="Price Value">
-                    <input className="input" value={slide.priceValue} onChange={(e) => { const s = [...(home.hero.slides || [])]; s[idx] = { ...s[idx], priceValue: e.target.value }; setValue(["home", "hero", "slides"], s); }} />
-                  </Field>
-                  <Field label="Image">
-                    <ImageUploader images={slide.image ? [slide.image] : []} onChange={(urls) => { const s = [...(home.hero.slides || [])]; s[idx] = { ...s[idx], image: urls[0] || "" }; setValue(["home", "hero", "slides"], s); }} max={1} label="" />
-                  </Field>
-                  <Field label="Description">
-                    <textarea className="input min-h-20" value={slide.description} onChange={(e) => { const s = [...(home.hero.slides || [])]; s[idx] = { ...s[idx], description: e.target.value }; setValue(["home", "hero", "slides"], s); }} />
-                  </Field>
-                </div>
-              )}
-            />
+            <SectionTitle title="Product slider" description="The home slider is generated automatically from promoted products." />
+            <p className="text-sm text-body">Open Products and select “Promote in slider”. Product names, prices and images stay synchronized, and each Shop button opens that product. Remove promotion to hide it. The slider is hidden when no eligible products are promoted.</p>
+            <a className="btn btn-primary mt-4" href="/sawdagar-admin/admin/products">Manage promoted products</a>
           </div>
 
           {/* ── Promo Banners ── */}

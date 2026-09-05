@@ -1,8 +1,9 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { StyleSheet, TextInput, TouchableOpacity, View } from 'react-native';
+import { StyleSheet, TextInput, View } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useTheme } from '../contexts/ThemeContext';
 import { borderRadius, fontSize, fontWeight, spacing } from '../theme';
+import PressableScale from './PressableScale';
 
 export default function QuantityInput({
   value,
@@ -61,25 +62,26 @@ export default function QuantityInput({
       style={[
         styles.control,
         compact && styles.controlSmall,
-        { backgroundColor: c.surfaceElevated, borderColor: c.border, opacity: disabled ? 0.55 : 1 },
+        { backgroundColor: c.surfaceElevated, borderColor: c.borderLight, opacity: disabled ? 0.55 : 1 },
         style,
       ]}
     >
-      <TouchableOpacity
+      <PressableScale
         accessibilityRole="button"
         accessibilityLabel="Decrease quantity"
         accessibilityState={{ disabled: decreaseDisabled }}
         onPress={() => changeBy(-1)}
         disabled={decreaseDisabled}
-        style={[
+        scaleTo={0.94}
+        style={({ pressed }) => [
           styles.stepButton,
           compact && styles.stepButtonSmall,
-          { backgroundColor: c.brandSurface },
+          { backgroundColor: pressed ? c.brandSurface : c.surface, borderColor: c.border, borderBottomWidth: pressed ? 1 : 2 },
           decreaseDisabled && { opacity: 0.45 },
         ]}
       >
         <MaterialCommunityIcons name="minus" size={compact ? 17 : 19} color={c.text} />
-      </TouchableOpacity>
+      </PressableScale>
 
       <TextInput
         accessibilityLabel="Quantity"
@@ -91,31 +93,33 @@ export default function QuantityInput({
         onSubmitEditing={commit}
         editable={!disabled}
         keyboardType="number-pad"
+        selectionColor={c.primary}
         returnKeyType="done"
         selectTextOnFocus
         maxLength={5}
         style={[
           styles.input,
           compact && styles.inputSmall,
-          { color: c.text, backgroundColor: c.card, borderColor: c.borderLight },
+          { color: c.text },
         ]}
       />
 
-      <TouchableOpacity
+      <PressableScale
         accessibilityRole="button"
         accessibilityLabel="Increase quantity"
         accessibilityState={{ disabled: increaseDisabled }}
         onPress={() => changeBy(1)}
         disabled={increaseDisabled}
-        style={[
+        scaleTo={0.94}
+        style={({ pressed }) => [
           styles.stepButton,
           compact && styles.stepButtonSmall,
-          { backgroundColor: c.brandSurface },
+          { backgroundColor: c.primaryDark, borderColor: c.primaryDark, borderTopColor: c.primary, borderBottomWidth: pressed ? 1 : 3 },
           increaseDisabled && { opacity: 0.45 },
         ]}
       >
-        <MaterialCommunityIcons name="plus" size={compact ? 17 : 19} color={c.text} />
-      </TouchableOpacity>
+        <MaterialCommunityIcons name="plus" size={compact ? 17 : 19} color={c.white} />
+      </PressableScale>
     </View>
   );
 }
@@ -130,26 +134,26 @@ const styles = StyleSheet.create({
     gap: spacing.xs,
   },
   controlSmall: {
-    borderRadius: borderRadius.md,
+    borderRadius: borderRadius.lg,
     padding: 4,
   },
   stepButton: {
     width: 44,
     height: 44,
     borderRadius: borderRadius.md,
+    borderWidth: 1,
     justifyContent: 'center',
     alignItems: 'center',
   },
   stepButtonSmall: {
     width: 44,
     height: 44,
-    borderRadius: borderRadius.sm,
+    borderRadius: borderRadius.md,
   },
   input: {
     width: 78,
     height: 44,
     borderRadius: borderRadius.md,
-    borderWidth: 1,
     paddingHorizontal: 8,
     paddingVertical: 0,
     textAlign: 'center',
@@ -157,7 +161,7 @@ const styles = StyleSheet.create({
     fontWeight: fontWeight.bold,
   },
   inputSmall: {
-    width: 62,
+    width: 54,
     height: 44,
     borderRadius: borderRadius.sm,
     fontSize: fontSize.base,

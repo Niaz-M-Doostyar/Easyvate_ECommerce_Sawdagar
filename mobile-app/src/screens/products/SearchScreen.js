@@ -15,7 +15,7 @@ export default function SearchScreen({ navigation }) {
   const { theme } = useTheme();
   const { t } = useLanguage();
   const c = theme.colors;
-  const numColumns = 3;
+  const numColumns = width >= 1024 ? 4 : width >= 700 ? 3 : 2;
   const gridCardWidth = Math.max(0, (width - (spacing.base - 4) * 2) / numColumns - 6);
   const quickSuggestions = ['Rice', 'Cooking oil', 'Fresh arrivals', 'Electronics'];
   const inputRef = useRef();

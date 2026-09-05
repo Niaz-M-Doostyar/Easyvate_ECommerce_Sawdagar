@@ -1,8 +1,9 @@
 import React from 'react';
-import { ScrollView, TouchableOpacity, Text, StyleSheet, View } from 'react-native';
+import { ScrollView, Text, StyleSheet, View } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useTheme } from '../contexts/ThemeContext';
 import { spacing, fontSize, fontWeight, borderRadius } from '../theme';
+import PressableScale from './PressableScale';
 
 /**
  * Shared horizontal filter chip row (order status tabs, product filters, ...).
@@ -16,24 +17,30 @@ export default function FilterTabs({ tabs, activeKey, onChange, style }) {
     <ScrollView
       horizontal
       showsHorizontalScrollIndicator={false}
+      keyboardShouldPersistTaps="handled"
       style={[styles.scroll, style]}
       contentContainerStyle={styles.content}
     >
       {tabs.map((tab) => {
         const active = tab.key === activeKey;
         return (
-          <TouchableOpacity
+          <PressableScale
             key={tab.key}
-            activeOpacity={0.85}
+            scaleTo={0.97}
             onPress={() => onChange(tab.key)}
-            style={[
+            style={({ pressed }) => [
               styles.chip,
               {
-                backgroundColor: active ? c.primary : c.surface,
-                borderColor: active ? c.primary : c.border,
+                backgroundColor: active ? c.primaryDark : pressed ? c.brandSurface : c.surface,
+                borderColor: active ? c.primaryDark : c.borderLight,
+                borderBottomColor: active ? c.primaryDark : c.border,
+                shadowColor: c.primaryDark,
+                shadowOpacity: active && !pressed ? 0.14 : 0,
+                elevation: active && !pressed ? 3 : 0,
               },
             ]}
-            accessibilityRole="button"
+            accessibilityRole="tab"
+            accessibilityLabel={tab.label}
             accessibilityState={{ selected: active }}
           >
             {tab.icon ? (
@@ -45,16 +52,16 @@ export default function FilterTabs({ tabs, activeKey, onChange, style }) {
             ) : null}
             <Text
               numberOfLines={1}
-              style={[styles.label, { color: active ? c.white : c.textSecondary }]}
+              style={[styles.label, { color: active ? c.white : c.textSecondary, fontWeight: active ? fontWeight.bold : fontWeight.semibold }]}
             >
               {tab.label}
             </Text>
             {tab.count != null ? (
               <View style={[styles.countPill, { backgroundColor: active ? 'rgba(255,255,255,0.2)' : c.brandSurface }]}>
-                <Text numberOfLines={1} maxFontSizeMultiplier={1.1} style={[styles.countText, { color: active ? c.white : c.primary }]}>{tab.count}</Text>
+                <Text numberOfLines={1} maxFontSizeMultiplier={1.1} style={[styles.countText, { color: active ? c.white : theme.dark ? c.primary : c.primaryDark }]}>{tab.count}</Text>
               </View>
             ) : null}
-          </TouchableOpacity>
+          </PressableScale>
         );
       })}
     </ScrollView>
@@ -63,7 +70,7 @@ export default function FilterTabs({ tabs, activeKey, onChange, style }) {
 
 const styles = StyleSheet.create({
   scroll: { flexGrow: 0 },
-  content: { gap: spacing.sm, paddingHorizontal: spacing.base },
+  content: { gap: spacing.sm, paddingHorizontal: spacing.base, paddingVertical: 5 },
   chip: {
     minHeight: 44,
     flexDirection: 'row',
@@ -74,6 +81,9 @@ const styles = StyleSheet.create({
     paddingVertical: 9,
     borderRadius: borderRadius.full,
     borderWidth: 1,
+    borderBottomWidth: 2,
+    shadowOffset: { width: 0, height: 3 },
+    shadowRadius: 5,
   },
   label: { fontSize: fontSize.sm, lineHeight: 18, fontWeight: fontWeight.semibold, includeFontPadding: false, textAlignVertical: 'center' },
   countPill: {

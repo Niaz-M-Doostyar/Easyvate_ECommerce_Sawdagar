@@ -29,6 +29,18 @@ export default function AdminProducts() {
   const [editImages, setEditImages] = useState([]);
   const [saving, setSaving] = useState(false);
   const [categories, setCategories] = useState([]);
+  const [promotionBusy, setPromotionBusy] = useState(null);
+
+  const togglePromotion = async (product) => {
+    if (promotionBusy !== null) return;
+    setPromotionBusy(product.id);
+    try {
+      const { product: updated } = await adminPut(`products/${product.id}/slider-promotion`, { promoted: !product.isSliderPromoted });
+      setProducts(items => items.map(item => item.id === product.id ? { ...item, ...updated } : item));
+      toast.success(updated.isSliderPromoted ? 'Product added to the website and mobile slider' : 'Product removed from the slider');
+    } catch (error) { toast.error(error.message || 'Unable to update promotion'); }
+    finally { setPromotionBusy(null); }
+  };
 
   const fetchProducts = useCallback(async () => {
     const q = new URLSearchParams({ page, limit: 20 });
@@ -122,6 +134,7 @@ export default function AdminProducts() {
       </div>
 
       {/* Search */}
+      <p className="text-sm text-body mb-4">Use “Promote in slider” to feature a product on the website and mobile home page. Its image, price and Shop link update automatically. Approved, in-stock products with an image and selling price are eligible.</p>
       <div className="card card-p mb-4">
         <div className="relative">
           <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-body" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" /></svg>
@@ -142,6 +155,7 @@ export default function AdminProducts() {
                     <div className="font-semibold text-navy text-sm max-w-[200px] truncate">{p.nameEn}</div>
                     <div className="text-xs text-body">{p.category?.nameEn || ""}</div>
                     {p.isSponsored && <span className="badge badge-yellow text-[10px] mt-0.5">★ Sponsored</span>}
+                    {p.isSliderPromoted && <span className="badge badge-green text-[10px] mt-0.5">In home slider</span>}
                   </td>
                   <td className="text-sm">
                     <div className="flex items-center gap-2">
@@ -163,6 +177,12 @@ export default function AdminProducts() {
                         <button onClick={() => { setModal({ type: "reject", product: p }); setRejectReason(""); }} className="btn btn-sm btn-danger">{t("reject")}</button>
                       </>}
                       <button onClick={() => openEdit(p)} className="btn btn-sm btn-outline">{t("edit")}</button>
+                      <button
+                        onClick={() => togglePromotion(p)}
+                        disabled={promotionBusy !== null || (!p.isSliderPromoted && (p.status !== 'approved' || p.stock <= 0 || !p.retailPrice || !p.images?.[0]?.url))}
+                        aria-pressed={Boolean(p.isSliderPromoted)}
+                        className={`btn btn-sm ${p.isSliderPromoted ? 'btn-primary' : 'btn-outline'}`}
+                      >{promotionBusy === p.id ? 'Saving…' : p.isSliderPromoted ? 'Remove promotion' : 'Promote in slider'}</button>
                       <button onClick={() => handleDelete(p)} className="btn btn-sm btn-danger" title="Delete">
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" /></svg>
                       </button>

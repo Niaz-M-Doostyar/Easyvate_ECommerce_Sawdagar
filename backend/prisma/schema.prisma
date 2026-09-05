@@ -73,6 +73,7 @@ model Product {
   status         String   @default("pending")
   adminNotes     String?  @map("admin_notes") @db.Text
   isSponsored    Boolean  @default(false) @map("is_sponsored")
+  isSliderPromoted Boolean @default(false) @map("is_slider_promoted")
   attributes     String?  @db.Text
   isDeleted      Boolean  @default(false) @map("is_deleted")
   supplierId     Int      @map("supplier_id")
@@ -88,6 +89,7 @@ model Product {
   sponsorshipReqs SponsorshipRequest[]
 
   @@index([status])
+  @@index([isSliderPromoted])
   @@index([supplierId])
   @@index([categoryId])
   @@fulltext([nameEn, namePs, nameDr])

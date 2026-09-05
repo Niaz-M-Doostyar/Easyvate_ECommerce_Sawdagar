@@ -1,13 +1,14 @@
 import React, { useCallback, useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useTheme } from '../contexts/ThemeContext';
 import { useLanguage } from '../contexts/LanguageContext';
-import { spacing, fontSize, fontWeight, borderRadius } from '../theme';
+import PressableScale from './PressableScale';
+import { spacing, fontSize, fontWeight, borderRadius, shadows } from '../theme';
 
 export default function ScreenHeader({ title, subtitle, onBack, right, showBack = true, style }) {
   const { theme } = useTheme();
-  const { isRTL } = useLanguage();
+  const { isRTL, lang } = useLanguage();
   const c = theme.colors;
   const [sideWidth, setSideWidth] = useState(44);
   const syncSideWidth = useCallback((event) => {
@@ -16,24 +17,24 @@ export default function ScreenHeader({ title, subtitle, onBack, right, showBack 
   }, []);
 
   return (
-    <View style={[styles.header, { borderBottomColor: c.border }, style]}>
+    <View style={[styles.header, { backgroundColor: c.headerBg }, style]}>
       <View style={[styles.leftWrap, { width: sideWidth }]}>
         {showBack ? (
-          <TouchableOpacity
+          <PressableScale
             onPress={onBack}
             disabled={!onBack}
-            style={[styles.iconBtn, { backgroundColor: c.surface, borderColor: c.borderLight }]}
+            style={[styles.iconBtn, shadows.sm, { backgroundColor: c.surface, borderColor: c.borderLight }]}
             hitSlop={{ top: 8, left: 8, right: 8, bottom: 8 }}
             accessibilityRole="button"
-            accessibilityLabel="Back"
+            accessibilityLabel={lang === 'ps' ? 'شاته' : lang === 'dr' ? 'بازگشت' : 'Back'}
             accessibilityState={{ disabled: !onBack }}
           >
-            <MaterialCommunityIcons name={isRTL ? 'arrow-right' : 'arrow-left'} size={22} color={c.text} />
-          </TouchableOpacity>
+            <MaterialCommunityIcons name={isRTL ? 'chevron-right' : 'chevron-left'} size={25} color={c.text} />
+          </PressableScale>
         ) : null}
       </View>
       <View style={styles.titleWrap}>
-        <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.86} maxFontSizeMultiplier={1.15} style={[styles.title, { color: c.text }]}>{title}</Text>
+        <Text accessibilityRole="header" numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.86} maxFontSizeMultiplier={1.2} style={[styles.title, { color: c.text }]}>{title}</Text>
         {subtitle ? <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.86} maxFontSizeMultiplier={1.15} style={[styles.subtitle, { color: c.textSecondary }]}>{subtitle}</Text> : null}
       </View>
       {right ? <View onLayout={syncSideWidth} style={styles.rightWrap}>{right}</View> : <View onLayout={syncSideWidth} style={styles.sidePlaceholder} />}
@@ -46,15 +47,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: spacing.base,
-    paddingVertical: spacing.sm,
-    borderBottomWidth: 0,
+    paddingVertical: spacing.md,
+    minHeight: 68,
   },
   iconBtn: {
     width: 44,
     height: 44,
     justifyContent: 'center',
     alignItems: 'center',
-    borderRadius: borderRadius.full,
+    borderRadius: borderRadius.md,
     borderWidth: 1,
   },
   leftWrap: { flexShrink: 0, alignItems: 'flex-start', justifyContent: 'center' },
@@ -75,7 +76,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: fontSize.lg,
     lineHeight: 26,
-    fontWeight: fontWeight.bold,
+    fontWeight: fontWeight.heavy,
     includeFontPadding: false,
     textAlign: 'center',
     textAlignVertical: 'center',

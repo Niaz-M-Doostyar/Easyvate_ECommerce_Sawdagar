@@ -193,7 +193,12 @@ export default function HomePageClient({
     .filter((item) => item.resolvedImage);
 
   const configuredSlides = asArray(hero.slides)
-    .map((slide) => ({ ...slide, image: imageSource(slide?.image) }))
+    .map((slide) => ({ ...slide,
+      title: (lang === 'ps' ? slide.titlePs : lang === 'dr' ? slide.titleDr : '') || slide.title,
+      subtitle: (lang === 'ps' ? slide.subtitlePs : lang === 'dr' ? slide.subtitleDr : '') || slide.subtitle,
+      description: (lang === 'ps' ? slide.descriptionPs : lang === 'dr' ? slide.descriptionDr : '') || slide.description,
+      image: imageSource(slide?.image),
+    }))
     .filter((slide) => slide.subtitle || slide.title || slide.description || slide.image || slide.priceValue);
   const singleConfiguredSlide = {
     subtitle: hero.badge,
@@ -205,7 +210,7 @@ export default function HomePageClient({
   };
   const heroSlides = configuredSlides.length > 0
     ? configuredSlides
-    : Object.values(singleConfiguredSlide).some(Boolean) ? [singleConfiguredSlide] : [];
+    : !hero.productDriven && Object.values(singleConfiguredSlide).some(Boolean) ? [singleConfiguredSlide] : [];
 
   const realProducts = asArray(products).filter((product) => product?.id);
   const realSponsoredProducts = asArray(sponsoredProducts).filter((product) => product?.id);

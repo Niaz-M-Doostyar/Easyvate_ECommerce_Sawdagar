@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator, useWindowDimensions } from 'react-native';
+import { View, Text, StyleSheet, ActivityIndicator, useWindowDimensions } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useTheme } from '../contexts/ThemeContext';
@@ -30,29 +30,26 @@ export default function ProductCard({ product, onPress, style }) {
 
   const flattenedStyle = StyleSheet.flatten(style) || {};
   const styleWidth = typeof flattenedStyle.width === 'number' ? flattenedStyle.width : 0;
-  // Product grids are three columns on phones. Infer that width on the first
-  // render so cards do not flash from the roomy layout into the compact one
-  // after onLayout fires.
+  // Match the two-column phone grid before the first layout measurement.
   const inferredGridWidth = viewportWidth < 768
-    ? Math.max(0, (viewportWidth - spacing.lg * 2) / 3)
+    ? Math.max(0, (viewportWidth - spacing.base * 2 - spacing.md) / 2)
     : 0;
   const cardWidth = styleWidth || measuredWidth || inferredGridWidth;
   const compact = cardWidth > 0 && cardWidth < 150;
-  const dynamicNameFontSize = (() => {
-    if (!cardWidth) return fontSize.base;
-    if (cardWidth < 200) return fontSize.sm;
-    if (cardWidth < 260) return fontSize.sm; // slight reduction
-    return fontSize.base;
-  })();
+  const dynamicNameFontSize = compact ? fontSize.sm : fontSize.base;
   const dynamicInfoPadding = (() => {
     if (!cardWidth) return spacing.md;
     if (cardWidth < 160) return spacing.sm;
     if (cardWidth < 220) return spacing.sm + 2;
     return spacing.md;
   })();
-  const dynamicTitleLines = compact ? 2 : 2;
+  const textAlignment = { textAlign: isRTL ? 'right' : 'left' };
+  const stockColor = available
+    ? (theme.dark ? c.success : '#087443')
+    : (theme.dark ? c.error : '#B42318');
 
   const handleAddToCart = async () => {
+    if (adding) return;
     if (!available) {
       toast.info(t.outOfStock);
       return;
@@ -64,88 +61,84 @@ export default function ProductCard({ product, onPress, style }) {
       toast.success('Added to cart');
     } catch (error) {
       toast.error(error.message || 'Could not add item');
+    } finally {
+      setAdding(false);
     }
-    setAdding(false);
   };
 
   return (
     <View
-      style={[styles.card, { backgroundColor: c.card, borderColor: c.borderLight }, shadows.sm, style]}
+      style={[styles.card, shadows.sm, { backgroundColor: c.card, borderColor: c.borderLight }, style]}
       onLayout={(e) => {
         if (!styleWidth) setMeasuredWidth(Math.round(e.nativeEvent.layout.width));
       }}
     >
-      <PressableScale scaleTo={0.97} onPress={onPress}>
-        <View style={[styles.imgWrap, cardWidth > 0 && cardWidth < 150 && styles.imgWrapCompact, { backgroundColor: c.brandSurface || c.skeleton }]}>
+      <PressableScale scaleTo={0.985} onPress={onPress} accessibilityLabel={`${getName(product)}, ${formatPrice(product.retailPrice)}`} style={styles.productLink}>
+        <View style={[styles.imgWrap, { backgroundColor: c.surfaceElevated }]}>
           {primaryImage ? (
             <RemoteImage
               source={primaryImage}
               fallbackSource={secondaryImage}
               width={400}
               quality={72}
+              resizeMode="contain"
               style={styles.img}
               fallback={(
-                <View style={[styles.img, styles.imageFallback, { backgroundColor: c.skeleton }]}>
+                <View style={[styles.img, styles.imageFallback, { backgroundColor: c.surfaceElevated }]}>
                   <MaterialCommunityIcons name="image-outline" size={34} color={c.textMuted} />
                 </View>
               )}
             />
           ) : (
-            <View style={[styles.img, styles.imageFallback, { backgroundColor: c.skeleton }]}>
+            <View style={[styles.img, styles.imageFallback, { backgroundColor: c.surfaceElevated }]}>
               <MaterialCommunityIcons name="image-outline" size={34} color={c.textMuted} />
             </View>
           )}
-          <View style={styles.viewChip}>
-            <MaterialCommunityIcons name={isRTL ? 'arrow-top-left' : 'arrow-top-right'} size={16} color="#FFFFFF" />
-          </View>
           {product.supplier?.supplierVerified ? (
-            <View style={[styles.verifiedBadge, { backgroundColor: c.success || '#2ecc71' }]}>
-              <MaterialCommunityIcons name="shield-check-outline" size={14} color="#FFFFFF" />
+            <View style={[styles.verifiedBadge, { backgroundColor: c.card, borderColor: c.borderLight }]}>
+              <MaterialCommunityIcons name="check-decagram" size={16} color={theme.dark ? c.success : '#087443'} />
             </View>
           ) : null}
-          {product.isSponsored && !compact && <View style={[styles.badge, { backgroundColor: c.accent }]}><Text style={styles.badgeText}>{t.featured}</Text></View>}
-          {discount > 0 && <View style={[styles.discBadge, { backgroundColor: c.error }]}><Text style={styles.badgeText}>-{discount}%</Text></View>}
+          {product.isSponsored && !compact && <View style={[styles.badge, { backgroundColor: c.primaryDark }]}><Text style={styles.badgeText}>{t.featured}</Text></View>}
+          {discount > 0 && <View style={[styles.discBadge, { backgroundColor: c.primaryDark }]}><Text style={styles.badgeText}>-{discount}%</Text></View>}
         </View>
         <View style={[styles.info, { paddingHorizontal: dynamicInfoPadding }]}>
-          {categoryName && !compact ? <Text numberOfLines={1} style={[styles.category, { color: c.textSecondary }]}>{categoryName}</Text> : null}
+          {categoryName && !compact ? <Text numberOfLines={1} style={[styles.category, textAlignment, { color: c.textSecondary }]}>{categoryName}</Text> : null}
           <Text
-            numberOfLines={dynamicTitleLines}
-            adjustsFontSizeToFit
-            minimumFontScale={0.88}
+            numberOfLines={2}
             allowFontScaling
-            style={[styles.name, compact && styles.nameCompact, { color: c.text, fontSize: dynamicNameFontSize, lineHeight: Math.round(dynamicNameFontSize * 1.25) }]}
+            style={[styles.name, textAlignment, { color: c.text, fontSize: dynamicNameFontSize, minHeight: Math.round(dynamicNameFontSize * 1.4) * 2, lineHeight: Math.round(dynamicNameFontSize * 1.4) }]}
           >
             {getName(product)}
           </Text>
           <View style={styles.priceRow}>
-            <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.85} style={[styles.price, compact && styles.priceCompact, { color: c.primary }]}>{formatPrice(product.retailPrice)}</Text>
-            {hasDiscount && !compact && <Text style={[styles.oldPrice, { color: c.textMuted }]}>{formatPrice(product.wholesaleCost)}</Text>}
+            <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.85} style={[styles.price, compact && styles.priceCompact, { color: c.text }]}>{formatPrice(product.retailPrice)}</Text>
+            {hasDiscount && !compact && <Text numberOfLines={1} style={[styles.oldPrice, { color: c.textSecondary }]}>{formatPrice(product.wholesaleCost)}</Text>}
           </View>
           {!compact ? <View style={styles.metaRow}>
-            <View style={[styles.stockPill, { backgroundColor: available ? c.success + '16' : c.error + '16' }]}>
-              <MaterialCommunityIcons name={available ? 'check-circle-outline' : 'close-circle-outline'} size={14} color={available ? c.success : c.error} />
-              <Text style={[styles.stock, { color: available ? c.success : c.error }]}>{available ? t.inStock : t.outOfStock}</Text>
+            <View style={styles.stockPill}>
+              <View style={[styles.stockDot, { backgroundColor: stockColor }]} />
+              <Text numberOfLines={1} style={[styles.stock, { color: stockColor }]}>{available ? t.inStock : t.outOfStock}</Text>
             </View>
-            {product.isSponsored ? <Text style={[styles.metaTag, { color: c.primary }]}>{t.featured}</Text> : null}
           </View> : null}
         </View>
       </PressableScale>
 
       <View style={[styles.actionWrap, compact && styles.actionWrapCompact]}>
-        <TouchableOpacity
-          activeOpacity={0.88}
+        <PressableScale
+          scaleTo={0.97}
           onPress={handleAddToCart}
           disabled={adding || !available}
           accessibilityRole="button"
           accessibilityLabel={available ? `${t.addToCart}: ${getName(product)}` : `${getName(product)}: ${t.outOfStock}`}
           accessibilityState={{ disabled: adding || !available, busy: adding }}
-          style={[styles.addBtn, compact && styles.addBtnCompact, !available && { backgroundColor: c.surfaceElevated }]}
+          style={[styles.addBtn, { backgroundColor: available ? c.primaryDark : c.surfaceElevated, borderBottomColor: available ? c.primaryDark : c.borderLight }, compact && styles.addBtnCompact]}
         >
           {available ? (
             <LinearGradient
               colors={[c.gradientStart, c.gradientEnd]}
               start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
+              end={{ x: 1, y: 1 }}
               style={[styles.addBtnFill, compact && styles.addBtnFillCompact]}
             >
               {adding ? (
@@ -163,41 +156,39 @@ export default function ProductCard({ product, onPress, style }) {
               <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={compact ? 0.85 : 0.9} maxFontSizeMultiplier={1.15} style={[styles.addText, compact && styles.addTextCompact, { color: c.textSecondary }]}>{compact ? t.soldOut : t.outOfStock}</Text>
             </View>
           )}
-        </TouchableOpacity>
+        </PressableScale>
       </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  card: { borderRadius: borderRadius.lg, borderWidth: 1, overflow: 'hidden', marginBottom: spacing.md },
-  imgWrap: { height: 172, overflow: 'hidden' },
-  imgWrapCompact: { height: 116 },
+  card: { borderRadius: borderRadius.xl, borderWidth: 1, marginBottom: spacing.md },
+  productLink: { minWidth: 0 },
+  imgWrap: { aspectRatio: 1, margin: 6, borderRadius: borderRadius.lg, padding: spacing.sm, overflow: 'hidden' },
   img: { width: '100%', height: '100%' },
   imageFallback: { justifyContent: 'center', alignItems: 'center' },
-  viewChip: { position: 'absolute', top: 8, right: 8, width: 28, height: 28, borderRadius: borderRadius.full, backgroundColor: 'rgba(17, 19, 23, 0.5)', justifyContent: 'center', alignItems: 'center', zIndex: 3 },
-  badge: { position: 'absolute', top: 8, left: 8, paddingHorizontal: 8, paddingVertical: 3, borderRadius: borderRadius.full },
-  discBadge: { position: 'absolute', bottom: 8, right: 8, paddingHorizontal: 8, paddingVertical: 3, borderRadius: borderRadius.full },
+  badge: { position: 'absolute', top: 8, start: 8, maxWidth: '80%', paddingHorizontal: 8, paddingVertical: 4, borderRadius: borderRadius.sm },
+  discBadge: { position: 'absolute', bottom: 8, start: 8, paddingHorizontal: 8, paddingVertical: 4, borderRadius: borderRadius.sm },
   badgeText: { color: '#FFF', fontSize: fontSize.xs, fontWeight: fontWeight.bold },
-  verifiedBadge: { position: 'absolute', bottom: 8, left: 8, paddingHorizontal: 7, paddingVertical: 3, borderRadius: borderRadius.full, zIndex: 4 },
+  verifiedBadge: { position: 'absolute', bottom: 8, end: 8, width: 28, height: 28, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderRadius: borderRadius.full },
   info: { paddingHorizontal: spacing.md, paddingTop: spacing.sm, paddingBottom: spacing.md },
-  category: { fontSize: fontSize.xs, fontWeight: fontWeight.semibold, textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 4 },
-  name: { fontSize: fontSize.base, fontWeight: fontWeight.semibold, marginBottom: 6, lineHeight: 20 },
-  nameCompact: { minHeight: 32 },
-  priceRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  price: { fontSize: fontSize.md, fontWeight: fontWeight.bold },
+  category: { fontSize: fontSize.xs, fontWeight: fontWeight.medium, marginBottom: 5 },
+  name: { fontWeight: fontWeight.semibold, marginBottom: spacing.sm },
+  priceRow: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'baseline', columnGap: 6, rowGap: 3 },
+  price: { maxWidth: '100%', fontSize: fontSize.md, fontWeight: fontWeight.heavy },
   priceCompact: { flexShrink: 1, fontSize: fontSize.sm },
-  oldPrice: { fontSize: fontSize.sm, textDecorationLine: 'line-through' },
-  metaRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: spacing.xs },
-  stockPill: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 7, paddingVertical: 4, borderRadius: borderRadius.full },
-  stock: { fontSize: fontSize.xs, fontWeight: fontWeight.semibold },
-  metaTag: { fontSize: fontSize.xs, fontWeight: fontWeight.bold },
-  actionWrap: { paddingHorizontal: spacing.md, paddingBottom: spacing.sm },
+  oldPrice: { maxWidth: '100%', fontSize: fontSize.xs, textDecorationLine: 'line-through' },
+  metaRow: { flexDirection: 'row', alignItems: 'center', marginTop: spacing.sm },
+  stockPill: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 5 },
+  stockDot: { width: 5, height: 5, borderRadius: borderRadius.full },
+  stock: { flexShrink: 1, fontSize: fontSize.xs, fontWeight: fontWeight.medium },
+  actionWrap: { paddingHorizontal: spacing.sm, paddingBottom: spacing.sm },
   actionWrapCompact: { alignItems: 'stretch', paddingHorizontal: 6, paddingBottom: 10 },
-  addBtn: { height: 44, borderRadius: borderRadius.full, overflow: 'hidden' },
-  addBtnCompact: { width: '100%', height: 44, borderRadius: borderRadius.full },
-  addBtnFill: { width: '100%', height: 44, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 6, paddingHorizontal: spacing.sm },
-  addBtnFillCompact: { height: 44, paddingHorizontal: 6, gap: 4, borderRadius: borderRadius.full },
-  addText: { fontSize: fontSize.sm, lineHeight: 18, fontWeight: fontWeight.bold, includeFontPadding: false, textAlignVertical: 'center' },
+  addBtn: { height: 46, borderRadius: borderRadius.md, borderBottomWidth: 3, overflow: 'hidden' },
+  addBtnCompact: { width: '100%' },
+  addBtnFill: { width: '100%', flex: 1, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 6, paddingHorizontal: spacing.sm },
+  addBtnFillCompact: { paddingHorizontal: 6, gap: 4 },
+  addText: { flexShrink: 1, fontSize: fontSize.sm, lineHeight: 18, fontWeight: fontWeight.bold, includeFontPadding: false, textAlignVertical: 'center' },
   addTextCompact: { flexShrink: 1, fontSize: 12, lineHeight: 16, textAlign: 'center' },
 });

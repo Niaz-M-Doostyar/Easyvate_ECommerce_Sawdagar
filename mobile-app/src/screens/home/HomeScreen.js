@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, FlatList, Image, RefreshControl, StyleSheet, Animated, useWindowDimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useFocusEffect } from '@react-navigation/native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useLanguage } from '../../contexts/LanguageContext';
@@ -54,8 +55,8 @@ export default function HomeScreen({ navigation }) {
   const promoCardWidth = Math.min(width * (isTablet ? 0.52 : 0.78), 560);
   const actionCardWidth = Math.min(width * (isTablet ? 0.42 : 0.72), 420);
   const sponsoredCardWidth = Math.min(width * (isTablet ? 0.34 : 0.6), 360);
-  const newArrivalCardWidth = isTablet ? Math.min(width * 0.32, 340) : Math.max(104, (width - spacing.base * 2 - spacing.md * 2) / 3);
-  const gridColumns = 3;
+  const newArrivalCardWidth = Math.min(300, width * 0.45);
+  const gridColumns = width >= 1024 ? 4 : width >= 700 ? 3 : 2;
   const gridCardWidth = Math.max(0, (width - spacing.base * 2) / gridColumns - 8);
 
   const [categories, setCategories] = useState([]);
@@ -104,7 +105,7 @@ export default function HomeScreen({ navigation }) {
     setLoading(false);
   }, []);
 
-  useEffect(() => { load(); }, [load]);
+  useFocusEffect(useCallback(() => { load(); }, [load]));
 
   useEffect(() => {
     if (loading) return undefined;
@@ -133,38 +134,12 @@ export default function HomeScreen({ navigation }) {
 
   const getBannerTitle = (title) => (title || '').split(/\n+/).filter(Boolean);
 
-  const heroSlides = (heroContent?.slides?.length ? heroContent.slides : [
-    {
-      subtitle: heroContent?.badge || `Start From ${CURRENCY_SYMBOL}999`,
-      title: heroContent?.titleLines?.join(' ') || 'Explore The Trendy products for you.',
-      description: heroContent?.description || 'Afghanistan\'s premier online marketplace with thousands of quality products.',
-      image: heroContent?.image || '/assets/img/hero/01.png',
-      priceLabel: heroContent?.priceLabel || 'Price',
-      priceValue: heroContent?.priceValue || `${CURRENCY_SYMBOL}2,500`,
-    },
-    {
-      subtitle: heroContent?.badge || `Start From ${CURRENCY_SYMBOL}999`,
-      title: 'Explore The Trendy products for you.',
-      description: heroContent?.description || 'Discover fashion, daily essentials, and curated offers in one storefront.',
-      image: '/assets/img/hero/02.png',
-      priceLabel: heroContent?.priceLabel || 'Price',
-      priceValue: heroContent?.priceValue || `${CURRENCY_SYMBOL}2,500`,
-    },
-    {
-      subtitle: heroContent?.badge || `Start From ${CURRENCY_SYMBOL}999`,
-      title: 'Explore The Trendy products for you.',
-      description: heroContent?.description || 'Fast delivery and a cleaner mobile shopping experience built for daily use.',
-      image: '/assets/img/hero/03.png',
-      priceLabel: heroContent?.priceLabel || 'Price',
-      priceValue: heroContent?.priceValue || `${CURRENCY_SYMBOL}2,500`,
-    },
-  ]).map((slide, index) => ({
-    subtitle: slide.subtitle || heroContent?.badge || `Start From ${CURRENCY_SYMBOL}999`,
-    title: slide.title || heroContent?.titleLines?.join(' ') || `Slide ${index + 1}`,
-    description: slide.description || heroContent?.description || 'Explore products and discover what is new this week.',
-    image: slide.image || heroContent?.image || `/assets/img/hero/0${(index % 3) + 1}.png`,
-    priceLabel: slide.priceLabel || heroContent?.priceLabel || 'Price',
-    priceValue: slide.priceValue || heroContent?.priceValue || `${CURRENCY_SYMBOL}2,500`,
+  const heroSlides = (heroContent?.slides || []).map(slide => ({
+    ...slide,
+    title: getName(slide, 'title') || slide.title,
+    subtitle: getName(slide, 'subtitle') || slide.subtitle || t.featured,
+    description: getName(slide, 'description') || slide.description || '',
+    priceValue: slide.priceValue || '',
   }));
 
   useEffect(() => {
@@ -282,7 +257,9 @@ export default function HomeScreen({ navigation }) {
             slides={heroSlides}
             primaryLabel={heroContent?.primaryButtonLabel || 'Shop now'}
             secondaryLabel={heroContent?.secondaryButtonLabel || 'Explore products'}
-            onPrimaryPress={() => openHeroDestination(heroContent?.primaryButtonHref || '/search', heroContent?.primaryButtonLabel || 'Shop now')}
+            onPrimaryPress={(slide) => slide?.productId
+              ? navigation.navigate('ProductDetail', { id: slide.productId })
+              : openHeroDestination(slide?.primaryButtonHref || heroContent?.primaryButtonHref || '/search', heroContent?.primaryButtonLabel || t.shop)}
             onSecondaryPress={() => openHeroDestination(heroContent?.secondaryButtonHref || '/search?sort=newest', heroContent?.secondaryButtonLabel || 'Explore products')}
           />
         </SectionReveal>

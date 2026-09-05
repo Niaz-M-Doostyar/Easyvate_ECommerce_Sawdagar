@@ -10,7 +10,8 @@ import Input from '../../components/Input';
 import Button from '../../components/Button';
 import BrandLogo from '../../components/BrandLogo';
 import ScreenHeader from '../../components/ScreenHeader';
-import { spacing, fontSize, fontWeight, borderRadius } from '../../theme';
+import Gradient from '../../components/Gradient';
+import { spacing, fontSize, fontWeight, borderRadius, shadows } from '../../theme';
 
 export default function LoginScreen({ navigation, route }) {
   const { width } = useWindowDimensions();
@@ -53,6 +54,7 @@ export default function LoginScreen({ navigation, route }) {
   const handleBack = () => { dismiss(); };
 
   const handleLogin = async () => {
+    if (loading) return;
     if (!validate()) return;
     setLoading(true);
     try {
@@ -81,23 +83,25 @@ export default function LoginScreen({ navigation, route }) {
     <SafeAreaView style={[styles.safe, { backgroundColor: c.background }]} edges={['top', 'bottom']}>
       <ScreenHeader title="" onBack={handleBack} />
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined} keyboardVerticalOffset={Platform.OS === 'ios' ? 18 : 0}>
-        <ScrollView contentContainerStyle={[styles.scroll, isTablet && styles.scrollTablet]} keyboardShouldPersistTaps="handled">
+        <ScrollView contentContainerStyle={[styles.scroll, isTablet && styles.scrollTablet]} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" showsVerticalScrollIndicator={false}>
           <View style={[styles.content, { maxWidth: contentWidth }]}> 
-          <View style={[styles.hero, { backgroundColor: c.secondary }]}> 
-            <View style={[styles.heroGlow, { backgroundColor: c.primary + '25' }]} />
-            <BrandLogo variant="symbol" size={88} style={styles.heroMark} />
-            <View style={styles.header}>
-              <Text style={[styles.heroTitle, { color: c.heroText }]}>Welcome back</Text>
-              <Text style={[styles.eyebrow, { color: c.heroTextMuted }]}>Secure access to your Sawdagar account</Text>
+          <Gradient colors={[c.secondary, c.primaryDark]} style={styles.hero}>
+            <View pointerEvents="none" style={[styles.heroGlow, { backgroundColor: c.heroSurface, borderColor: c.heroBorder }]} />
+            <View style={[styles.heroMark, { backgroundColor: c.heroSurface, borderColor: c.heroBorder }]}>
+              <BrandLogo variant="symbol" size={38} style={{ tintColor: c.heroText }} />
             </View>
-          </View>
+            <View style={styles.header}>
+              <Text style={[styles.eyebrow, { color: c.heroTextMuted }]}>SAWDAGAR</Text>
+              <Text accessibilityRole="header" style={[styles.heroTitle, { color: c.heroText }]}>{t.welcomeBack}</Text>
+            </View>
+          </Gradient>
           <View style={[styles.formCard, { backgroundColor: c.surface, borderColor: c.border }]}> 
             <Text style={[styles.title, { color: c.text }]}>{t.login}</Text>
             <Text style={[styles.subtitle, { color: c.textSecondary }]}>Sign in to continue shopping, track orders, and check out faster.</Text>
             <View style={styles.form}>
-              <Input label={t.email} icon="mail-outline" value={email} onChangeText={setEmail} error={errors.email} keyboardType="email-address" autoCapitalize="none" placeholder="you@example.com" />
-              <Input label={t.password} icon="lock-closed-outline" value={password} onChangeText={setPassword} error={errors.password} secureTextEntry placeholder="Enter password" />
-              <TouchableOpacity onPress={() => navigation.navigate('ForgotPassword')} style={styles.forgotRow}>
+              <Input label={t.email} icon="mail-outline" value={email} onChangeText={setEmail} error={errors.email} keyboardType="email-address" autoCapitalize="none" autoCorrect={false} autoComplete="email" textContentType="username" placeholder="you@example.com" />
+              <Input label={t.password} icon="lock-closed-outline" value={password} onChangeText={setPassword} error={errors.password} secureTextEntry autoComplete="current-password" textContentType="password" returnKeyType="go" onSubmitEditing={handleLogin} placeholder="Enter password" />
+              <TouchableOpacity accessibilityRole="button" onPress={() => navigation.navigate('ForgotPassword')} style={styles.forgotRow}>
                 <Text numberOfLines={1} maxFontSizeMultiplier={1.15} style={[styles.forgotText, { color: c.primary }]}>{t.forgotPassword}</Text>
               </TouchableOpacity>
               <Button title={t.login} onPress={handleLogin} loading={loading} style={{ marginTop: spacing.md }} />
@@ -105,7 +109,7 @@ export default function LoginScreen({ navigation, route }) {
           </View>
           <View style={styles.footer}>
             <Text style={[styles.footerText, { color: c.textSecondary }]}>{t.dontHaveAccount} </Text>
-            <TouchableOpacity onPress={() => navigation.navigate('Register')} hitSlop={8} style={styles.footerLinkButton}>
+            <TouchableOpacity accessibilityRole="button" onPress={() => navigation.navigate('Register')} hitSlop={8} style={styles.footerLinkButton}>
               <Text numberOfLines={1} maxFontSizeMultiplier={1.15} style={[styles.footerLink, { color: c.primary }]}>{t.createAccount}</Text>
             </TouchableOpacity>
           </View>
@@ -118,18 +122,18 @@ export default function LoginScreen({ navigation, route }) {
 
 const styles = StyleSheet.create({
   safe: { flex: 1 },
-    scroll: { flexGrow: 1, padding: spacing.lg, paddingBottom: spacing.xxl },
-    scrollTablet: { justifyContent: 'center' },
-    content: { width: '100%', alignSelf: 'center' },
-  hero: { borderRadius: borderRadius.xxl, overflow: 'hidden', paddingHorizontal: spacing.xl, paddingTop: spacing.lg, paddingBottom: 42, minHeight: 164, justifyContent: 'center', marginTop: spacing.sm },
-  heroGlow: { position: 'absolute', width: 180, height: 180, borderRadius: 90, top: -48, right: -24 },
-  heroMark: { position: 'absolute', right: spacing.lg, top: spacing.lg, opacity: 0.16 },
-  header: { alignItems: 'flex-start', maxWidth: '75%' },
-  heroTitle: { fontSize: fontSize.xxl, fontWeight: fontWeight.heavy },
-  eyebrow: { fontSize: fontSize.sm, marginTop: spacing.sm, fontWeight: fontWeight.semibold, lineHeight: 20 },
-  formCard: { marginTop: -22, borderRadius: borderRadius.xxl, borderWidth: 1, padding: spacing.lg },
-  title: { fontSize: fontSize.xxl, fontWeight: fontWeight.bold, marginBottom: 6 },
-  subtitle: { fontSize: fontSize.base, marginBottom: spacing.lg },
+  scroll: { flexGrow: 1, padding: spacing.lg, paddingTop: spacing.sm, paddingBottom: spacing.xxl },
+  scrollTablet: { justifyContent: 'center' },
+  content: { width: '100%', alignSelf: 'center' },
+  hero: { borderRadius: borderRadius.xxl, padding: spacing.xl, minHeight: 208, justifyContent: 'space-between' },
+  heroGlow: { position: 'absolute', width: 240, height: 240, borderRadius: 120, borderWidth: 1, top: -72, right: -88 },
+  heroMark: { width: 56, height: 56, borderRadius: borderRadius.lg, alignItems: 'center', justifyContent: 'center', borderWidth: 1, marginBottom: spacing.lg },
+  header: { alignItems: 'flex-start' },
+  heroTitle: { fontSize: fontSize.xxl, fontWeight: fontWeight.heavy, marginTop: spacing.sm },
+  eyebrow: { fontSize: fontSize.xs, fontWeight: fontWeight.bold, lineHeight: 18, letterSpacing: 2 },
+  formCard: { marginTop: spacing.base, borderRadius: borderRadius.xxl, borderWidth: 1, padding: spacing.lg, ...shadows.sm },
+  title: { fontSize: fontSize.xl, fontWeight: fontWeight.bold, marginBottom: 6 },
+  subtitle: { fontSize: fontSize.sm, lineHeight: 21, marginBottom: spacing.lg },
   form: { marginBottom: spacing.sm },
   forgotRow: { minHeight: 44, alignSelf: 'flex-end', justifyContent: 'center', marginTop: -8, marginBottom: spacing.sm, paddingHorizontal: spacing.xs },
   forgotText: { fontSize: fontSize.sm, lineHeight: 18, fontWeight: fontWeight.semibold, includeFontPadding: false, textAlignVertical: 'center' },

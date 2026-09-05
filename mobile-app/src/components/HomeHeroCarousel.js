@@ -1,492 +1,195 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { View, Text, TouchableOpacity, Image, StyleSheet, Animated, useWindowDimensions } from 'react-native';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { AccessibilityInfo, AppState, I18nManager, View, Text, Pressable, Image, StyleSheet, Animated, useWindowDimensions } from 'react-native';
+import { useIsFocused } from '@react-navigation/native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useTheme } from '../contexts/ThemeContext';
 import { useLanguage } from '../contexts/LanguageContext';
-import BrandLogo from './BrandLogo';
+import Gradient from './Gradient';
+import Button from './Button';
 import { optimizedImageUri } from '../config';
-import { spacing, fontSize, fontWeight, borderRadius, shadows } from '../theme';
+import { shadows } from '../theme';
 
-const AUTO_PLAY_MS = 5200;
-const GAP = spacing.base;
+const AUTO_PLAY_MS = 6500;
+const GAP = 12;
+const COPY = {
+  en: { label: 'Featured collections', previous: 'Previous slide', next: 'Next slide', pause: 'Pause slideshow', play: 'Play slideshow' },
+  ps: { label: 'ځانګړي محصولات', previous: 'مخکینی سلایډ', next: 'راتلونکی سلایډ', pause: 'سلایډونه ودروئ', play: 'سلایډونه پیل کړئ' },
+  dr: { label: 'محصولات ویژه', previous: 'اسلاید قبلی', next: 'اسلاید بعدی', pause: 'توقف اسلایدها', play: 'پخش اسلایدها' },
+};
 
-export default function HomeHeroCarousel({
-  slides,
-  primaryLabel,
-  secondaryLabel,
-  onPrimaryPress,
-  onSecondaryPress,
-  height: propHeight,
-}) {
+export default function HomeHeroCarousel({ slides = [], primaryLabel, secondaryLabel, onPrimaryPress, onSecondaryPress, height }) {
   const { theme } = useTheme();
-  const { isRTL } = useLanguage();
-  const c = theme.colors;
+  const { isRTL, lang } = useLanguage();
+  const focused = useIsFocused();
   const { width } = useWindowDimensions();
-  const listRef = useRef(null);
+  const c = theme.colors;
+  const copy = COPY[lang] || COPY.en;
+  const items = Array.isArray(slides) ? slides.filter(Boolean) : [];
+  const count = items.length;
+  const cardWidth = Math.min(740, Math.max(0, width - 40));
+  const inset = (width - cardWidth) / 2;
+  const interval = cardWidth + GAP;
+  const nativeRTL = I18nManager.isRTL;
+  const list = useRef(null);
+  const current = useRef(0);
   const scrollX = useRef(new Animated.Value(0)).current;
-  const currentIndexRef = useRef(0);
-  const [activeIndex, setActiveIndex] = useState(0);
-
-  const cardWidth = useMemo(() => Math.min(820, Math.max(width - (spacing.base * 2) - 8, 280)), [width]);
-  const carouselInset = useMemo(() => Math.max(spacing.base, (width - cardWidth) / 2), [cardWidth, width]);
-  const snapInterval = cardWidth + GAP;
-
-  const defaultHeight = useMemo(() => {
-    // Keep enough vertical room so headline, description, and CTA row never clip.
-    const h = Math.round(cardWidth * 0.92);
-    return Math.min(460, Math.max(400, h));
-  }, [cardWidth]);
-
-  const slideHeight = propHeight || defaultHeight;
+  const [active, setActive] = useState(0);
+  const [paused, setPaused] = useState(false);
+  const [touching, setTouching] = useState(false);
+  const [foreground, setForeground] = useState(AppState.currentState === 'active');
+  const [reduceMotion, setReduceMotion] = useState(true);
+  const [screenReader, setScreenReader] = useState(true);
 
   useEffect(() => {
-    const heroUris = (slides || [])
-      .map((slide) => optimizedImageUri(slide?.image, { width: 1200 }))
-      .filter(Boolean);
+    let mounted = true;
+    AccessibilityInfo.isReduceMotionEnabled().then(value => { if (mounted) setReduceMotion(value); }).catch(() => {});
+    AccessibilityInfo.isScreenReaderEnabled().then(value => { if (mounted) setScreenReader(value); }).catch(() => {});
+    const motion = AccessibilityInfo.addEventListener('reduceMotionChanged', setReduceMotion);
+    const reader = AccessibilityInfo.addEventListener('screenReaderChanged', setScreenReader);
+    const state = AppState.addEventListener('change', value => setForeground(value === 'active'));
+    return () => { mounted = false; motion.remove(); reader.remove(); state.remove(); };
+  }, []);
 
-    heroUris.forEach((uri) => {
-      Image.prefetch(uri).catch(() => {});
+  const goTo = useCallback(index => {
+    if (!count) return;
+    const nextIndex = (index + count) % count;
+    current.current = nextIndex;
+    setActive(nextIndex);
+    list.current?.scrollToOffset({ offset: nextIndex * interval, animated: !reduceMotion });
+  }, [count, interval, reduceMotion]);
+
+  // Keep the selected slide aligned after rotation or a CMS slide-count change.
+  useEffect(() => {
+    const nextIndex = Math.min(current.current, Math.max(0, count - 1));
+    current.current = nextIndex;
+    setActive(nextIndex);
+    const frame = requestAnimationFrame(() => {
+      scrollX.setValue(nativeRTL ? (count - 1 - nextIndex) * interval : nextIndex * interval);
+      list.current?.scrollToOffset({ offset: nextIndex * interval, animated: false });
     });
-  }, [slides]);
+    return () => cancelAnimationFrame(frame);
+  }, [count, interval, isRTL, nativeRTL, scrollX]);
 
   useEffect(() => {
-    if (!slides?.length || slides.length < 2) return undefined;
+    if (count < 2 || paused || touching || !foreground || !focused || reduceMotion || screenReader) return undefined;
+    const timer = setTimeout(() => goTo(current.current + 1), AUTO_PLAY_MS);
+    return () => clearTimeout(timer);
+  }, [active, count, paused, touching, foreground, focused, reduceMotion, screenReader, goTo]);
 
-    const timer = setInterval(() => {
-      const nextIndex = (currentIndexRef.current + 1) % slides.length;
-      listRef.current?.scrollToOffset({ offset: nextIndex * snapInterval, animated: true });
-      currentIndexRef.current = nextIndex;
-      setActiveIndex(nextIndex);
-    }, AUTO_PLAY_MS);
-
-    return () => clearInterval(timer);
-  }, [slides, snapInterval]);
-
-  const handleMomentumEnd = (event) => {
-    const nextIndex = Math.round(event.nativeEvent.contentOffset.x / snapInterval);
-    currentIndexRef.current = nextIndex;
-    setActiveIndex(nextIndex);
+  const settle = event => {
+    const { contentOffset, contentSize, layoutMeasurement } = event.nativeEvent;
+    const offset = nativeRTL ? contentSize.width - layoutMeasurement.width - contentOffset.x : contentOffset.x;
+    const index = Math.min(count - 1, Math.max(0, Math.round(offset / interval)));
+    current.current = index;
+    setActive(index);
   };
+  const dotStart = Math.max(0, Math.min(active - 2, count - 5));
+  const controlStyle = pressed => [styles.control, { backgroundColor: pressed ? c.brandSurface : c.card, borderColor: c.borderLight }];
+  if (!count) return null;
 
   return (
-    <View>
+    <View style={styles.carousel}>
       <Animated.FlatList
-        ref={listRef}
-        data={slides}
-        horizontal
-        bounces={false}
-        removeClippedSubviews={false}
-        windowSize={3}
-        initialNumToRender={3}
-        maxToRenderPerBatch={3}
-        snapToInterval={snapInterval}
-        snapToAlignment="start"
-        decelerationRate="fast"
-        disableIntervalMomentum
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={[styles.contentContainer, { paddingHorizontal: carouselInset }]}
+        key={isRTL ? 'rtl' : 'ltr'} ref={list} data={items} horizontal inverted={isRTL !== nativeRTL}
+        style={styles.list} snapToInterval={interval} decelerationRate="fast"
+        disableIntervalMomentum bounces={false} showsHorizontalScrollIndicator={false}
+        contentContainerStyle={{ paddingHorizontal: inset, paddingVertical: 10 }}
         ItemSeparatorComponent={() => <View style={{ width: GAP }} />}
-        keyExtractor={(item, index) => `${item.title || 'slide'}-${index}`}
+        keyExtractor={(item, index) => String(item.id || item.title || 'collection') + '-' + index}
+        getItemLayout={(_, index) => ({ length: interval, offset: interval * index, index })}
+        onTouchStart={() => setTouching(true)} onTouchEnd={() => setTouching(false)} onTouchCancel={() => setTouching(false)}
+        onScrollBeginDrag={() => setPaused(true)} onScrollEndDrag={settle} onMomentumScrollEnd={settle}
         scrollEventThrottle={16}
-        onMomentumScrollEnd={handleMomentumEnd}
-        onScroll={Animated.event(
-          [{ nativeEvent: { contentOffset: { x: scrollX } } }],
-          { useNativeDriver: true },
-        )}
+        onScroll={Animated.event([{ nativeEvent: { contentOffset: { x: scrollX } } }], { useNativeDriver: true })}
+        initialNumToRender={2} windowSize={3}
         renderItem={({ item, index }) => (
-          <HeroSlide
-            index={index}
-            scrollX={scrollX}
-            snapInterval={snapInterval}
-            width={cardWidth}
-            height={slideHeight}
-            slide={item}
-            primaryLabel={primaryLabel}
-            secondaryLabel={secondaryLabel}
-            onPrimaryPress={onPrimaryPress}
-            onSecondaryPress={onSecondaryPress}
-            colors={c}
-            isDarkTheme={theme.dark}
-            isRTL={isRTL}
+          <HeroSlide slide={item} width={cardWidth} minHeight={height} colors={c} dark={theme.dark}
+            isRTL={isRTL} primaryLabel={primaryLabel} secondaryLabel={secondaryLabel}
+            onPrimaryPress={onPrimaryPress} onSecondaryPress={onSecondaryPress} active={index === active} copy={copy}
+            scale={reduceMotion ? 1 : scrollX.interpolate({ inputRange: [-1, 0, 1].map(delta => ((nativeRTL ? count - 1 - index : index) + delta) * interval), outputRange: [0.97, 1, 0.97], extrapolate: 'clamp' })}
           />
         )}
       />
-
-      <View style={styles.pagination}>
-        {slides.map((slide, index) => (
-          <View
-            key={`${slide.title || 'dot'}-${index}`}
-            style={[
-              styles.dot,
-              {
-                backgroundColor: index === activeIndex ? c.primary : c.border,
-                width: index === activeIndex ? 26 : 8,
-              },
-            ]}
-          />
-        ))}
-      </View>
+      {count > 1 && (
+        <View style={[styles.controls, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+          <Pressable accessibilityRole="button" accessibilityLabel={copy.previous} onPress={() => { setPaused(true); goTo(current.current - 1); }} style={({ pressed }) => controlStyle(pressed)}>
+            <MaterialCommunityIcons name={isRTL ? 'arrow-right' : 'arrow-left'} size={19} color={c.text} />
+          </Pressable>
+          <View style={styles.pagination} accessible accessibilityLabel={copy.label + ': ' + (active + 1) + ' / ' + count}>
+            <View style={[styles.dots, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+              {items.slice(dotStart, dotStart + 5).map((_, i) => (
+                <View key={dotStart + i} style={[styles.dot, { width: dotStart + i === active ? 24 : 6, backgroundColor: dotStart + i === active ? c.primary : c.border }]} />
+              ))}
+            </View>
+            <Text style={[styles.counter, { color: c.textMuted }]}>{String(active + 1).padStart(2, '0')} / {String(count).padStart(2, '0')}</Text>
+          </View>
+          {!reduceMotion && !screenReader && (
+            <Pressable accessibilityRole="button" accessibilityLabel={paused ? copy.play : copy.pause} onPress={() => setPaused(value => !value)} style={({ pressed }) => controlStyle(pressed)}>
+              <MaterialCommunityIcons name={paused ? 'play' : 'pause'} size={19} color={c.text} />
+            </Pressable>
+          )}
+          <Pressable accessibilityRole="button" accessibilityLabel={copy.next} onPress={() => { setPaused(true); goTo(current.current + 1); }} style={({ pressed }) => controlStyle(pressed)}>
+            <MaterialCommunityIcons name={isRTL ? 'arrow-left' : 'arrow-right'} size={19} color={c.text} />
+          </Pressable>
+        </View>
+      )}
     </View>
   );
 }
 
-function HeroSlide({
-  index,
-  scrollX,
-  snapInterval,
-  width,
-  height,
-  slide,
-  primaryLabel,
-  secondaryLabel,
-  onPrimaryPress,
-  onSecondaryPress,
-  colors,
-  isDarkTheme,
-  isRTL,
-}) {
-  const inputRange = [
-    (index - 1) * snapInterval,
-    index * snapInterval,
-    (index + 1) * snapInterval,
-  ];
-
-  const cardTranslateX = scrollX.interpolate({
-    inputRange,
-    outputRange: [34, 0, -34],
-    extrapolate: 'clamp',
-  });
-  const cardTranslateY = scrollX.interpolate({
-    inputRange,
-    outputRange: [10, 0, 10],
-    extrapolate: 'clamp',
-  });
-  const cardScale = scrollX.interpolate({
-    inputRange,
-    outputRange: [0.93, 1, 0.93],
-    extrapolate: 'clamp',
-  });
-  const cardOpacity = scrollX.interpolate({
-    inputRange,
-    outputRange: [0.74, 1, 0.74],
-    extrapolate: 'clamp',
-  });
-  const cardRotateY = scrollX.interpolate({
-    inputRange,
-    outputRange: ['8deg', '0deg', '-8deg'],
-    extrapolate: 'clamp',
-  });
-
-  const contentOpacity = scrollX.interpolate({
-    inputRange,
-    outputRange: [0.6, 1, 0.6],
-    extrapolate: 'clamp',
-  });
-  const contentTranslateY = scrollX.interpolate({
-    inputRange,
-    outputRange: [26, 0, -10],
-    extrapolate: 'clamp',
-  });
-  const contentTranslateX = scrollX.interpolate({
-    inputRange,
-    outputRange: [-18, 0, 18],
-    extrapolate: 'clamp',
-  });
-
-  const imageTranslateX = scrollX.interpolate({
-    inputRange,
-    outputRange: [74, 0, -74],
-    extrapolate: 'clamp',
-  });
-  const imageTranslateY = scrollX.interpolate({
-    inputRange,
-    outputRange: [12, 0, 12],
-    extrapolate: 'clamp',
-  });
-  const imageScale = scrollX.interpolate({
-    inputRange,
-    outputRange: [0.88, 1.02, 0.88],
-    extrapolate: 'clamp',
-  });
-  const imageRotate = scrollX.interpolate({
-    inputRange,
-    outputRange: ['6deg', '0deg', '-6deg'],
-    extrapolate: 'clamp',
-  });
-
-  const priceTranslateY = scrollX.interpolate({
-    inputRange,
-    outputRange: [24, 0, -24],
-    extrapolate: 'clamp',
-  });
-  const priceScale = scrollX.interpolate({
-    inputRange,
-    outputRange: [0.9, 1, 0.9],
-    extrapolate: 'clamp',
-  });
-
-  const imageUri = slide.image ? optimizedImageUri(slide.image, { width: 1200 }) : null;
-  const compactLayout = width < 420;
-  const cardBackground = isDarkTheme ? colors.secondary : colors.brandSurfaceStrong;
-  const titleColor = isDarkTheme ? colors.heroText : colors.text;
-  const descriptionColor = isDarkTheme ? colors.heroTextMuted : colors.textSecondary;
-  const badgeBackground = isDarkTheme ? 'rgba(255,255,255,0.12)' : 'rgba(33,68,200,0.14)';
-  const badgeTextColor = isDarkTheme ? colors.heroTextMuted : colors.primaryDark;
-  const secondaryBorder = isDarkTheme ? 'rgba(255,255,255,0.34)' : 'rgba(33,68,200,0.22)';
-  const secondaryBackground = isDarkTheme ? 'transparent' : 'rgba(255,255,255,0.72)';
-  const secondaryTextColor = isDarkTheme ? colors.heroText : colors.primaryDark;
-  const primaryBackground = isDarkTheme ? colors.white : colors.primary;
-  const primaryTextColor = isDarkTheme ? colors.primary : colors.white;
-  const glowSecondaryBackground = isDarkTheme ? 'rgba(255,255,255,0.06)' : 'rgba(33,68,200,0.08)';
-  const priceCardBackground = isDarkTheme ? '#FFFFFF' : 'rgba(255,255,255,0.95)';
-
+function HeroSlide({ slide, width, minHeight, colors: c, dark, isRTL, primaryLabel, secondaryLabel, onPrimaryPress, onSecondaryPress, scale, active, copy }) {
+  const uri = slide.image ? optimizedImageUri(slide.image, { width: 960 }) : null;
+  const [failed, setFailed] = useState(false);
+  useEffect(() => setFailed(false), [uri]);
+  const wide = width >= 600;
   return (
-    <Animated.View
-      style={[
-        styles.slide,
-        {
-          width,
-          height,
-          backgroundColor: cardBackground,
-          opacity: cardOpacity,
-          transform: [
-            { perspective: 1200 },
-            { translateX: cardTranslateX },
-            { translateY: cardTranslateY },
-            { scale: cardScale },
-            { rotateY: cardRotateY },
-          ],
-        },
-        shadows.lg,
-      ]}
-    >
-      <View style={[styles.glowPrimary, { backgroundColor: colors.primary + '24' }]} />
-      <View style={[styles.glowSecondary, { backgroundColor: glowSecondaryBackground }]} />
-      <BrandLogo variant="symbol" size={86} style={styles.mark} />
-
-      {imageUri ? (
-        <Animated.Image
-          source={{ uri: imageUri }}
-          resizeMode="contain"
-          style={[
-            styles.productImage,
-            {
-              transform: [
-                { translateX: imageTranslateX },
-                { translateY: imageTranslateY },
-                { scale: imageScale },
-                { rotate: imageRotate },
-              ],
-            },
-          ]}
-          onError={(e) => {
-            if (__DEV__) {
-              console.warn('Hero image failed to load', imageUri, e.nativeEvent?.error);
-            }
-          }}
-        />
-      ) : null}
-
-      <Animated.View
-        style={[
-          styles.copyWrap,
-          compactLayout ? styles.copyWrapCompact : null,
-          {
-            opacity: contentOpacity,
-            transform: [{ translateX: contentTranslateX }, { translateY: contentTranslateY }],
-          },
-        ]}
-      >
-        <View style={[styles.badge, { backgroundColor: badgeBackground }]}>
-          <Text numberOfLines={1} maxFontSizeMultiplier={1.15} style={[styles.badgeText, { color: badgeTextColor }]}>{slide.subtitle}</Text>
+    <Animated.View accessibilityElementsHidden={!active} importantForAccessibility={active ? 'auto' : 'no-hide-descendants'} style={[styles.card, shadows.md, { width, minHeight, backgroundColor: c.card, borderColor: c.borderLight, transform: [{ scale }], flexDirection: wide ? (isRTL ? 'row-reverse' : 'row') : 'column' }]}>
+      <Gradient colors={dark ? [c.secondary, '#182F60'] : ['#EAF0FF', '#DCE8FA']} style={[styles.media, { height: wide ? undefined : Math.min(240, Math.max(180, width * 0.53)), width: wide ? '46%' : '100%' }]}>
+        <View pointerEvents="none" style={styles.orbit} />
+        <View pointerEvents="none" style={styles.orbitInner} />
+        {uri && !failed ? <Image source={{ uri }} resizeMode="contain" onError={() => setFailed(true)} style={styles.image} accessible={false} /> : <MaterialCommunityIcons name="shopping-outline" size={80} color={dark ? c.heroTextMuted : c.primaryDark} />}
+        {!!slide.subtitle && <View style={[styles.badge, isRTL ? { right: 14 } : { left: 14 }]}><Text numberOfLines={1} style={styles.badgeText}>{slide.subtitle}</Text></View>}
+        {!!slide.priceValue && <View style={[styles.price, isRTL ? { left: 14 } : { right: 14 }]}>
+          {!!slide.priceLabel && <Text style={styles.priceLabel}>{slide.priceLabel}</Text>}
+          <Text style={styles.priceValue} numberOfLines={1}>{slide.priceValue}</Text>
+        </View>}
+      </Gradient>
+      <View style={[styles.copy, wide && { flex: 1 }, { alignItems: isRTL ? 'flex-end' : 'flex-start' }]}>
+        <Text style={[styles.eyebrow, { color: c.primary }]}>{copy.label}</Text>
+        <Text numberOfLines={3} style={[styles.title, { color: c.text, textAlign: isRTL ? 'right' : 'left', writingDirection: isRTL ? 'rtl' : 'ltr' }]}>{slide.title}</Text>
+        {!!slide.description && <Text numberOfLines={2} style={[styles.description, { color: c.textSecondary, textAlign: isRTL ? 'right' : 'left' }]}>{slide.description}</Text>}
+        <View style={[styles.actions, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+          {!!primaryLabel && <Button title={primaryLabel} onPress={() => onPrimaryPress?.(slide)} style={{ flex: 1 }} icon={<MaterialCommunityIcons name="shopping-outline" size={18} color="#FFFFFF" />} />}
+          {!!secondaryLabel && <Pressable accessibilityRole="button" accessibilityLabel={secondaryLabel} onPress={onSecondaryPress} style={({ pressed }) => [styles.secondary, { backgroundColor: pressed ? c.brandSurfaceStrong : c.brandSurface }]}><MaterialCommunityIcons name={isRTL ? 'arrow-left' : 'arrow-right'} size={22} color={c.primary} /></Pressable>}
         </View>
-        <Text maxFontSizeMultiplier={1.15} style={[styles.title, compactLayout ? styles.titleCompact : null, { color: titleColor }]} numberOfLines={compactLayout ? 4 : 3}>{slide.title}</Text>
-        <Text maxFontSizeMultiplier={1.15} style={[styles.description, compactLayout ? styles.descriptionCompact : null, { color: descriptionColor }]} numberOfLines={compactLayout ? 3 : 2}>{slide.description}</Text>
-
-        <View style={[styles.buttonRow, compactLayout ? styles.buttonRowCompact : null]}>
-          <TouchableOpacity activeOpacity={0.86} onPress={onPrimaryPress} accessibilityRole="button" accessibilityLabel={primaryLabel} style={[styles.primaryButton, { backgroundColor: primaryBackground }]}>
-            <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.82} maxFontSizeMultiplier={1.15} style={[styles.primaryButtonText, { color: primaryTextColor }]}>{primaryLabel}</Text>
-            <MaterialCommunityIcons name={isRTL ? 'arrow-left' : 'arrow-right'} size={16} color={primaryTextColor} />
-          </TouchableOpacity>
-          <TouchableOpacity activeOpacity={0.86} onPress={onSecondaryPress} accessibilityRole="button" accessibilityLabel={secondaryLabel} style={[styles.secondaryButton, { borderColor: secondaryBorder, backgroundColor: secondaryBackground }]}>
-            <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.82} maxFontSizeMultiplier={1.15} style={[styles.secondaryButtonText, { color: secondaryTextColor }]}>{secondaryLabel}</Text>
-            <MaterialCommunityIcons name={isRTL ? 'chevron-left' : 'chevron-right'} size={16} color={secondaryTextColor} />
-          </TouchableOpacity>
-        </View>
-      </Animated.View>
-
-      <Animated.View
-        style={[
-          styles.priceCard,
-          {
-            backgroundColor: priceCardBackground,
-            transform: [{ translateY: priceTranslateY }, { scale: priceScale }],
-          },
-          shadows.md,
-        ]}
-      >
-        <Text numberOfLines={1} maxFontSizeMultiplier={1.15} style={[styles.priceLabel, { color: colors.textMuted }]}>{slide.priceLabel}</Text>
-        <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.85} maxFontSizeMultiplier={1.15} style={[styles.priceValue, { color: colors.primary }]}>{slide.priceValue}</Text>
-      </Animated.View>
+      </View>
     </Animated.View>
   );
 }
 
 const styles = StyleSheet.create({
-  contentContainer: {},
-  slide: {
-    borderRadius: borderRadius.xxl,
-    overflow: 'hidden',
-    padding: spacing.xl,
-  },
-  glowPrimary: {
-    position: 'absolute',
-    top: -54,
-    right: -18,
-    width: 210,
-    height: 210,
-    borderRadius: 105,
-  },
-  glowSecondary: {
-    position: 'absolute',
-    bottom: -74,
-    left: -54,
-    width: 210,
-    height: 210,
-    borderRadius: 105,
-    backgroundColor: 'rgba(255,255,255,0.06)',
-  },
-  mark: {
-    position: 'absolute',
-    right: spacing.lg,
-    top: spacing.lg,
-    opacity: 0.1,
-  },
-  copyWrap: {
-    width: '62%',
-    zIndex: 2,
-  },
-  copyWrapCompact: {
-    width: '68%',
-  },
-  badge: {
-    alignSelf: 'flex-start',
-    borderRadius: borderRadius.full,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-  },
-  badgeText: {
-    fontSize: fontSize.xs,
-    fontWeight: fontWeight.bold,
-    letterSpacing: 1,
-    textTransform: 'uppercase',
-  },
-  title: {
-    fontSize: fontSize.hero,
-    fontWeight: fontWeight.heavy,
-    lineHeight: 46,
-    marginTop: spacing.base,
-  },
-  titleCompact: {
-    fontSize: 27,
-    lineHeight: 32,
-  },
-  description: {
-    fontSize: fontSize.base,
-    lineHeight: 24,
-    marginTop: spacing.base,
-  },
-  descriptionCompact: {
-    fontSize: fontSize.sm,
-    lineHeight: 19,
-    marginTop: spacing.sm,
-  },
-  buttonRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 10,
-    marginTop: spacing.lg,
-  },
-  buttonRowCompact: {
-    marginTop: spacing.md,
-    maxWidth: 250,
-  },
-  primaryButton: {
-    height: 44,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    backgroundColor: '#FFFFFF',
-    borderRadius: borderRadius.full,
-    paddingHorizontal: 15,
-    paddingVertical: 0,
-  },
-  primaryButtonText: {
-    fontSize: fontSize.sm,
-    lineHeight: 18,
-    fontWeight: fontWeight.bold,
-    includeFontPadding: false,
-    textAlign: 'center',
-    textAlignVertical: 'center',
-  },
-  secondaryButton: {
-    height: 44,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    borderWidth: 1.5,
-    borderRadius: borderRadius.full,
-    paddingHorizontal: 15,
-    paddingVertical: 0,
-  },
-  secondaryButtonText: {
-    fontSize: fontSize.sm,
-    lineHeight: 18,
-    fontWeight: fontWeight.bold,
-    includeFontPadding: false,
-    textAlign: 'center',
-    textAlignVertical: 'center',
-  },
-  productImage: {
-    position: 'absolute',
-    right: -8,
-    bottom: 8,
-    width: '54%',
-    height: '70%',
-    zIndex: 1,
-  },
-  priceCard: {
-    position: 'absolute',
-    right: spacing.lg,
-    top: spacing.xl,
-    borderRadius: borderRadius.xl,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    zIndex: 3,
-  },
-  priceLabel: {
-    fontSize: fontSize.xs,
-    fontWeight: fontWeight.bold,
-    textTransform: 'uppercase',
-    letterSpacing: 0.9,
-  },
-  priceValue: {
-    fontSize: fontSize.lg,
-    fontWeight: fontWeight.heavy,
-    marginTop: 2,
-  },
-  pagination: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    gap: 8,
-    marginTop: spacing.base,
-    marginBottom: spacing.sm,
-  },
-  dot: {
-    height: 8,
-    borderRadius: 999,
-  },
+  carousel: { paddingBottom: 4 },
+  list: {},
+  card: { borderRadius: 28, borderWidth: 1, overflow: 'hidden' },
+  media: { alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
+  orbit: { position: 'absolute', width: 260, height: 260, borderWidth: 1, borderColor: 'rgba(255,255,255,0.55)', borderRadius: 130, transform: [{ translateX: 65 }, { translateY: 12 }] },
+  orbitInner: { position: 'absolute', width: 205, height: 205, backgroundColor: 'rgba(255,255,255,0.23)', borderRadius: 104 },
+  image: { width: '88%', height: '84%' },
+  badge: { position: 'absolute', top: 14, maxWidth: '82%', backgroundColor: '#FFFFFF', borderRadius: 99, paddingHorizontal: 12, paddingVertical: 6 },
+  badgeText: { color: '#17339B', fontSize: 11, fontWeight: '700' },
+  price: { position: 'absolute', bottom: 12, maxWidth: '60%', backgroundColor: '#FFFFFF', paddingHorizontal: 14, paddingVertical: 9, borderRadius: 16 },
+  priceLabel: { color: '#44515D', fontSize: 10, fontWeight: '600' },
+  priceValue: { color: '#17339B', fontSize: 19, fontWeight: '800', marginTop: 2 },
+  copy: { padding: 20, gap: 8 },
+  eyebrow: { fontSize: 11, fontWeight: '800', letterSpacing: 0.7 },
+  title: { fontSize: 25, lineHeight: 32, fontWeight: '800', letterSpacing: -0.6 },
+  description: { fontSize: 13, lineHeight: 20 },
+  actions: { alignSelf: 'stretch', alignItems: 'center', gap: 10, marginTop: 8 },
+  secondary: { width: 52, height: 52, borderRadius: 17, alignItems: 'center', justifyContent: 'center' },
+  controls: { marginHorizontal: 24, marginTop: 2, alignItems: 'center', gap: 8 },
+  control: { width: 44, height: 44, borderWidth: 1, borderRadius: 15, alignItems: 'center', justifyContent: 'center' },
+  pagination: { flex: 1, gap: 5, alignItems: 'center' },
+  dots: { alignItems: 'center', gap: 5 },
+  dot: { height: 5, borderRadius: 4 },
+  counter: { fontSize: 10, fontWeight: '600', fontVariant: ['tabular-nums'] },
 });

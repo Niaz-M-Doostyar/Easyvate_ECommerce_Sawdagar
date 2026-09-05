@@ -1,5 +1,6 @@
 import React from 'react';
-import { View, Platform, useWindowDimensions } from 'react-native';
+import { View, Text, useWindowDimensions } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { NavigationContainer, DefaultTheme, DarkTheme, getFocusedRouteNameFromRoute } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
@@ -9,7 +10,7 @@ import { useTheme } from '../contexts/ThemeContext';
 import { useAuth } from '../contexts/AuthContext';
 import { useCart } from '../contexts/CartContext';
 import { useLanguage } from '../contexts/LanguageContext';
-import { fontSize, fontWeight } from '../theme';
+import { fontWeight } from '../theme';
 
 import LoginScreen from '../screens/auth/LoginScreen';
 import RegisterScreen from '../screens/auth/RegisterScreen';
@@ -178,15 +179,15 @@ function AuthStack() {
 
 function MainTabs() {
   const { width } = useWindowDimensions();
+  const insets = useSafeAreaInsets();
   const { theme } = useTheme();
   const { t } = useLanguage();
   const { count: cartCount } = useCart();
   const c = theme.colors;
   const isTablet = width >= 768;
-  const tabBarWidth = isTablet ? Math.min(width - 32, 720) : undefined;
-  const tabBarHeight = Platform.OS === 'ios' ? (isTablet ? 78 : 84) : (isTablet ? 72 : 68);
-  const tabBarPaddingBottom = Platform.OS === 'ios' ? (isTablet ? 14 : 20) : 10;
-  const tabBarMarginBottom = Platform.OS === 'ios' ? (isTablet ? 16 : 12) : 10;
+  const tabBarWidth = isTablet ? Math.min(width - 48, 720) : undefined;
+  const tabBarHeight = isTablet ? 76 : 72;
+  const tabBarMarginBottom = Math.max(insets.bottom, 10);
   const rootRouteByTab = {
     HomeTab: 'Home',
     ShopTab: 'Products',
@@ -194,6 +195,14 @@ function MainTabs() {
     CartTab: 'Cart',
     OrdersTab: 'Orders',
     ProfileTab: 'Profile',
+  };
+  const labelByTab = {
+    HomeTab: t.home,
+    ShopTab: t.shop,
+    CategoriesTab: t.categories || 'Categories',
+    CartTab: t.cart,
+    OrdersTab: t.orders,
+    ProfileTab: t.profile,
   };
 
   return (
@@ -204,38 +213,47 @@ function MainTabs() {
 
         return ({
         headerShown: false,
+        tabBarHideOnKeyboard: true,
+        tabBarLabelPosition: 'below-icon',
+        tabBarAccessibilityLabel: labelByTab[route.name],
         tabBarActiveTintColor: c.primary,
         tabBarInactiveTintColor: c.textSecondary,
         tabBarStyle: hideBar ? { display: 'none' } : {
-          backgroundColor: c.surfaceElevated,
-          borderColor: c.border,
+          backgroundColor: c.tabBar,
+          borderColor: c.borderLight,
           borderWidth: 1,
           borderTopWidth: 1,
           height: tabBarHeight,
-          paddingBottom: tabBarPaddingBottom,
+          paddingBottom: 8,
           paddingTop: 8,
-          marginHorizontal: isTablet ? 12 : 6,
+          marginHorizontal: isTablet ? 24 : 12,
           marginBottom: tabBarMarginBottom,
-          borderRadius: 28,
+          borderRadius: 26,
           width: tabBarWidth,
           alignSelf: isTablet ? 'center' : undefined,
           shadowColor: c.black,
-          shadowOffset: { width: 0, height: 12 },
-          shadowOpacity: theme.dark ? 0.28 : 0.08,
-          shadowRadius: 24,
-          elevation: 10,
+          shadowOffset: { width: 0, height: 4 },
+          shadowOpacity: theme.dark ? 0.24 : 0.09,
+          shadowRadius: 18,
+          elevation: 8,
         },
         tabBarItemStyle: {
-          paddingTop: 2,
+          paddingTop: 0,
           minWidth: 0,
+          minHeight: 48,
         },
-        tabBarLabelStyle: {
-          fontSize: isTablet ? 12 : 9,
-          fontWeight: fontWeight.semibold,
-          letterSpacing: isTablet ? 0 : -0.45,
-          marginTop: 1,
-        },
-        tabBarAllowFontScaling: false,
+        tabBarIconStyle: { width: isTablet ? 52 : 42, height: 32 },
+        tabBarLabel: ({ focused, color }) => (
+          <Text
+            numberOfLines={1}
+            adjustsFontSizeToFit
+            minimumFontScale={0.85}
+            maxFontSizeMultiplier={1.2}
+            style={{ fontSize: isTablet ? 12 : 10, lineHeight: isTablet ? 17 : 15, fontWeight: focused ? fontWeight.bold : fontWeight.medium, textAlign: 'center', marginTop: 3, color }}
+          >
+            {labelByTab[route.name]}
+          </Text>
+        ),
         tabBarIcon: ({ focused, color }) => {
           const icons = {
             HomeTab: focused ? 'home-variant' : 'home-variant-outline',
@@ -247,35 +265,39 @@ function MainTabs() {
           };
           return (
             <View style={{
-              width: isTablet ? 38 : 30,
-              height: isTablet ? 32 : 30,
-              borderRadius: 12,
+              width: isTablet ? 52 : 42,
+              height: 32,
+              borderRadius: 14,
               justifyContent: 'center',
               alignItems: 'center',
-              backgroundColor: focused ? c.primary + '1A' : 'transparent',
+              backgroundColor: focused ? c.brandSurfaceStrong : 'transparent',
             }}>
-              <MaterialCommunityIcons name={icons[route.name]} size={isTablet ? 22 : 20} color={color} />
+              <MaterialCommunityIcons name={icons[route.name]} size={23} color={color} />
             </View>
           );
         },
-        tabBarBadge: route.name === 'CartTab' && cartCount > 0 ? cartCount : undefined,
+        tabBarBadge: route.name === 'CartTab' && cartCount > 0 ? (cartCount > 99 ? '99+' : cartCount) : undefined,
         tabBarBadgeStyle: {
-          backgroundColor: c.error,
+          backgroundColor: theme.dark ? c.primaryDark : c.primary,
           color: c.white,
-          fontSize: fontSize.xs,
+          fontSize: 10,
           fontWeight: fontWeight.bold,
-          minWidth: 20,
-          paddingHorizontal: 5,
+          minWidth: 18,
+          height: 18,
+          lineHeight: 16,
+          borderWidth: 2,
+          borderColor: c.tabBar,
+          paddingHorizontal: 3,
         },
         });
       }}
     >
-      <Tab.Screen name="HomeTab" component={HomeStack} options={{ tabBarLabel: t.home }} />
-      <Tab.Screen name="ShopTab" component={ShopStack} options={{ tabBarLabel: t.shop }} />
-      <Tab.Screen name="CategoriesTab" component={CategoriesStack} options={{ tabBarLabel: t.categories || 'Categories' }} />
-      <Tab.Screen name="CartTab" component={CartStack} options={{ tabBarLabel: t.cart }} />
-      <Tab.Screen name="OrdersTab" component={OrdersStack} options={{ tabBarLabel: t.orders }} />
-      <Tab.Screen name="ProfileTab" component={ProfileStack} options={{ tabBarLabel: t.profile }} />
+      <Tab.Screen name="HomeTab" component={HomeStack} options={{ title: t.home }} />
+      <Tab.Screen name="ShopTab" component={ShopStack} options={{ title: t.shop }} />
+      <Tab.Screen name="CategoriesTab" component={CategoriesStack} options={{ title: t.categories || 'Categories' }} />
+      <Tab.Screen name="CartTab" component={CartStack} options={{ title: t.cart }} />
+      <Tab.Screen name="OrdersTab" component={OrdersStack} options={{ title: t.orders }} />
+      <Tab.Screen name="ProfileTab" component={ProfileStack} options={{ title: t.profile }} />
     </Tab.Navigator>
   );
 }

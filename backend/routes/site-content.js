@@ -2,11 +2,16 @@ const express = require('express');
 const router = express.Router();
 const prisma = require('../lib/prisma');
 const { getSiteContent } = require('../lib/siteContent');
+const { getProductSlides } = require('../lib/sliderPromotions');
 
 router.get('/', async (req, res) => {
   try {
-    const content = await getSiteContent();
-    res.json({ content });
+    const [content, slides] = await Promise.all([getSiteContent(), getProductSlides(prisma)]);
+    // Generate live slide data; never save stale product prices or images into CMS JSON.
+    res.set('Cache-Control', 'no-store');
+    res.json({ content: { ...content, home: { ...content.home, hero: {
+      ...content.home.hero, productDriven: true, slides,
+    } } } });
   } catch {
     res.status(500).json({ error: 'Failed to fetch site content' });
   }

@@ -47,6 +47,10 @@ jobs:
         run: npm run check:syntax
         working-directory: backend
 
+      - name: Verify product slider promotion behavior
+        run: node --test tests/sliderPromotions.test.js
+        working-directory: backend
+
       - name: Install storefront dependencies
         run: npm ci
         working-directory: website

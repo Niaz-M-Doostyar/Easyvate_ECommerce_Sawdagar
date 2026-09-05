@@ -26,8 +26,8 @@ export default function ProductDetailScreen({ navigation, route }) {
   const c = theme.colors;
   const isTablet = viewportWidth >= 768;
   const compactBottomBar = viewportWidth < 520;
-  const imageWidth = isTablet ? Math.min(viewportWidth - spacing.xl * 2, 720) : viewportWidth;
-  const imageHeight = Math.min(imageWidth * 0.92, isTablet ? 520 : imageWidth * 0.92);
+  const imageWidth = Math.min(viewportWidth - spacing.base * 2, 620);
+  const imageHeight = imageWidth;
   const contentWidth = isTablet ? Math.min(viewportWidth - spacing.xl * 2, 820) : viewportWidth;
   const [product, setProduct] = useState(route.params?.product || null);
   const [loading, setLoading] = useState(!product);
@@ -254,7 +254,7 @@ export default function ProductDetailScreen({ navigation, route }) {
     <SafeAreaView style={[styles.safe, { backgroundColor: c.background }]} edges={['top']}>
       <ScrollView showsVerticalScrollIndicator={false}>
         <View style={[styles.imgWrap, isTablet && styles.imgWrapTablet]}>
-          <View style={[styles.imageFrame, { width: imageWidth, height: imageHeight }]}>
+          <View style={[styles.imageFrame, { width: imageWidth, height: imageHeight, backgroundColor: c.card, borderColor: c.borderLight }]}>
           <ScrollView
             horizontal
             pagingEnabled
@@ -268,6 +268,7 @@ export default function ProductDetailScreen({ navigation, route }) {
                   source={img?.url || img}
                   width={Math.round(imageWidth * 2)}
                   quality={80}
+                  resizeMode="contain"
                   style={[styles.mainImg, { width: imageWidth, height: imageHeight }]}
                   fallback={(
                     <View style={[styles.mainImg, { width: imageWidth, height: imageHeight, backgroundColor: c.skeleton, justifyContent: 'center', alignItems: 'center' }]}>
@@ -480,9 +481,9 @@ function DetailRow({ label, value, c }) {
 
 const styles = StyleSheet.create({
   safe: { flex: 1 },
-  imgWrap: { position: 'relative' },
+  imgWrap: { position: 'relative', alignItems: 'center', paddingTop: spacing.base },
   imgWrapTablet: { alignItems: 'center', paddingTop: spacing.base },
-  imageFrame: { position: 'relative', overflow: 'hidden' },
+  imageFrame: { position: 'relative', overflow: 'hidden', borderRadius: 28, borderWidth: 1 },
   mainImg: {},
   topActions: { position: 'absolute', top: 12, left: 16, right: 16, flexDirection: 'row', alignItems: 'center', gap: 10, zIndex: 4, elevation: 4 },
   topActionsSpacer: { flex: 1 },
@@ -495,7 +496,7 @@ const styles = StyleSheet.create({
   discBadge: { paddingHorizontal: 12, paddingVertical: 8, borderRadius: borderRadius.full },
   discText: { fontSize: fontSize.sm, fontWeight: fontWeight.bold },
   body: { padding: spacing.base, paddingBottom: spacing.xxxl },
-  infoCard: { borderWidth: 1, borderRadius: borderRadius.xxl, padding: spacing.lg, marginTop: -28 },
+  infoCard: { borderWidth: 1, borderRadius: borderRadius.xl, padding: spacing.lg },
   headingRow: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between' },
   name: { fontSize: fontSize.xl, fontWeight: fontWeight.bold, lineHeight: 30 },
   subhead: { flexShrink: 1, fontSize: fontSize.sm, lineHeight: 18, marginTop: 8, includeFontPadding: false, textAlignVertical: 'center' },

@@ -116,7 +116,7 @@ export default function CheckoutScreen({ navigation }) {
       <ScreenHeader title={t.checkout} onBack={() => navigation.goBack()} />
 
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
+        <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" showsVerticalScrollIndicator={false}>
           <HeroCard
             eyebrow="Secure checkout"
             title="Confirm delivery details and place your order with cash on delivery."
@@ -184,7 +184,7 @@ export default function CheckoutScreen({ navigation }) {
             title={t.placeOrder}
             onPress={handleOrder}
             loading={loading}
-            style={{ flex: 1 }}
+            style={styles.placeOrderBtn}
             size="lg"
             icon={<MaterialCommunityIcons name="check-circle-outline" size={20} color={c.white} />}
           />
@@ -230,7 +230,7 @@ function SumRow({ label, value, c, bold, valueColor }) {
 
 const styles = StyleSheet.create({
   safe: { flex: 1 },
-  scroll: { padding: spacing.base, paddingBottom: 100 },
+  scroll: { width: '100%', maxWidth: 720, alignSelf: 'center', padding: spacing.base, paddingBottom: spacing.xl },
   heroSpacing: { marginBottom: spacing.lg },
   heroStats: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
   heroPill: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 12, paddingVertical: 9, borderRadius: borderRadius.full },
@@ -248,8 +248,9 @@ const styles = StyleSheet.create({
   divider: { borderTopWidth: 1, marginVertical: 8 },
   noteCard: { flexDirection: 'row', alignItems: 'center', gap: 10, borderRadius: borderRadius.xl, padding: spacing.base, marginTop: spacing.base },
   noteText: { flex: 1, fontSize: fontSize.sm, lineHeight: 21 },
-  bottomBar: { flexDirection: 'row', alignItems: 'center', gap: spacing.base, padding: spacing.base, borderTopWidth: 1 },
-  bottomSummary: { minWidth: 96 },
-  bottomLabel: { fontSize: fontSize.xs, marginBottom: 4 },
-  bottomValue: { fontSize: fontSize.lg, fontWeight: fontWeight.bold },
+  bottomBar: { gap: spacing.md, padding: spacing.base, borderTopWidth: 1, borderTopLeftRadius: borderRadius.xl, borderTopRightRadius: borderRadius.xl, ...shadows.lg },
+  bottomSummary: { width: '100%', maxWidth: 688, alignSelf: 'center', flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: spacing.sm },
+  bottomLabel: { fontSize: fontSize.sm },
+  bottomValue: { fontSize: fontSize.xl, fontWeight: fontWeight.heavy },
+  placeOrderBtn: { width: '100%', maxWidth: 688, alignSelf: 'center' },
 });

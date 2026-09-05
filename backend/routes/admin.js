@@ -28,6 +28,16 @@ const {
 } = require('../lib/email');
 const { getSiteContent, saveSiteContent } = require('../lib/siteContent');
 const { logTransaction } = require('../lib/transactionLog');
+const { setSliderPromotion } = require('../lib/sliderPromotions');
+
+router.put('/products/:id/slider-promotion', authenticate, requireRole('admin'), async (req, res) => {
+  try {
+    const product = await setSliderPromotion(prisma, Number(req.params.id), req.body.promoted);
+    res.json({ product });
+  } catch (error) {
+    res.status(error.status || 500).json({ error: error.status ? error.message : 'Unable to update slider promotion' });
+  }
+});
 
 async function notifySupplierStatusChange(previousUser, updatedUser) {
   if (!previousUser || !updatedUser) return null;

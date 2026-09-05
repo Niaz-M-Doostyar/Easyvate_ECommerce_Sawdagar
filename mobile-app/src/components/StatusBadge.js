@@ -34,12 +34,14 @@ export default function StatusBadge({ status }) {
 
   return (
     <View accessibilityRole="text" accessibilityLabel={`${t.status || 'Status'}: ${label}`} style={[styles.badge, { backgroundColor: color + '16', borderColor: color + '38' }]}>
+      <View style={[styles.dot, { backgroundColor: color }]} />
       <Text style={[styles.text, { color }]}>{label}</Text>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  badge: { minHeight: 26, justifyContent: 'center', paddingHorizontal: spacing.sm, paddingVertical: 3, borderRadius: borderRadius.full, borderWidth: 1, alignSelf: 'flex-start' },
-  text: { fontSize: fontSize.xs, fontWeight: fontWeight.bold, textTransform: 'capitalize' },
+  badge: { minHeight: 28, maxWidth: '100%', flexDirection: 'row', alignItems: 'center', gap: 5, justifyContent: 'center', paddingHorizontal: spacing.sm + 2, paddingVertical: 4, borderRadius: borderRadius.full, borderWidth: 1, alignSelf: 'flex-start' },
+  dot: { width: 5, height: 5, borderRadius: borderRadius.full },
+  text: { flexShrink: 1, fontSize: fontSize.xs, lineHeight: 16, fontWeight: fontWeight.semibold, textTransform: 'capitalize' },
 });

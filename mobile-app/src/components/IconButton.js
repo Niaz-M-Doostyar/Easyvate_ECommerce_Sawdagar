@@ -1,13 +1,14 @@
 import React from 'react';
-import { TouchableOpacity, StyleSheet } from 'react-native';
+import { StyleSheet } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useTheme } from '../contexts/ThemeContext';
 import { borderRadius } from '../theme';
+import PressableScale from './PressableScale';
 
 /**
- * Standard circular icon button used across all screens (back, search,
+ * Standard icon button used across all screens (back, search,
  * cart, share, close, etc.). Sizes preserve a comfortable touch target.
- * Always fully round with a consistent hairline border + surface fill.
+ * Rounded surface with a subtle raised edge and tactile press feedback.
  */
 export default function IconButton({
   icon,
@@ -24,25 +25,29 @@ export default function IconButton({
   const { theme } = useTheme();
   const c = theme.colors;
 
-  const dim = size === 'sm' ? 38 : size === 'lg' ? 48 : 44;
+  const dim = size === 'lg' ? 50 : 44;
   const iconSize = size === 'sm' ? 18 : size === 'lg' ? 24 : 21;
 
   return (
-    <TouchableOpacity
-      activeOpacity={0.75}
+    <PressableScale
+      scaleTo={0.94}
       onPress={onPress}
       disabled={disabled}
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel || icon}
       accessibilityState={{ disabled: Boolean(disabled) }}
       hitSlop={size === 'sm' ? 4 : 2}
-      style={[
+      style={({ pressed }) => [
         styles.btn,
         {
           width: dim,
           height: dim,
           backgroundColor: bg || c.surfaceElevated,
           borderColor: borderColor || c.borderLight,
+          borderBottomColor: borderColor || c.border,
+          shadowColor: c.black,
+          shadowOpacity: disabled ? 0 : pressed ? 0.02 : 0.06,
+          elevation: disabled || pressed ? 0 : 2,
           opacity: disabled ? 0.4 : 1,
         },
         style,
@@ -50,14 +55,17 @@ export default function IconButton({
     >
       <MaterialCommunityIcons name={icon} size={iconSize} color={color || c.text} />
       {badge}
-    </TouchableOpacity>
+    </PressableScale>
   );
 }
 
 const styles = StyleSheet.create({
   btn: {
-    borderRadius: borderRadius.full,
+    borderRadius: borderRadius.lg - 2,
     borderWidth: 1,
+    borderBottomWidth: 2,
+    shadowOffset: { width: 0, height: 3 },
+    shadowRadius: 6,
     justifyContent: 'center',
     alignItems: 'center',
   },

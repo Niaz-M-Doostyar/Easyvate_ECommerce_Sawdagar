@@ -1,5 +1,5 @@
 import React from 'react';
-import { Pressable, Animated } from 'react-native';
+import { AccessibilityInfo, Pressable, Animated, StyleSheet } from 'react-native';
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
@@ -13,33 +13,76 @@ export default function PressableScale({
   children,
   onPress,
   style,
-  scaleTo = 0.96,
+  scaleTo = 0.98,
   disabled,
   accessibilityRole = 'button',
   accessibilityLabel,
+  onPressIn,
+  onPressOut,
   ...rest
 }) {
   const scale = React.useRef(new Animated.Value(1)).current;
+  const reduceMotion = React.useRef(false);
+  const [pressed, setPressed] = React.useState(false);
+
+  React.useEffect(() => {
+    let mounted = true;
+    const updateMotion = (enabled) => {
+      if (!mounted) return;
+      reduceMotion.current = enabled;
+      if (enabled) {
+        scale.stopAnimation();
+        scale.setValue(1);
+      }
+    };
+    AccessibilityInfo.isReduceMotionEnabled().then(updateMotion).catch(() => {});
+    const subscription = AccessibilityInfo.addEventListener('reduceMotionChanged', updateMotion);
+    return () => {
+      mounted = false;
+      subscription.remove();
+      scale.stopAnimation();
+    };
+  }, [scale]);
+
+  React.useEffect(() => {
+    if (disabled) {
+      setPressed(false);
+      scale.stopAnimation();
+      scale.setValue(1);
+    }
+  }, [disabled, scale]);
 
   const animateTo = (value) => {
+    if (reduceMotion.current) return;
     Animated.spring(scale, {
       toValue: value,
       useNativeDriver: true,
-      speed: 40,
-      bounciness: 6,
+      speed: 38,
+      bounciness: 3,
     }).start();
   };
 
+  const resolvedStyle = typeof style === 'function' ? style({ pressed }) : style;
+  const originalTransforms = StyleSheet.flatten(resolvedStyle)?.transform || [];
+
   return (
     <AnimatedPressable
+      {...rest}
       onPress={onPress}
       disabled={disabled}
-      onPressIn={() => animateTo(scaleTo)}
-      onPressOut={() => animateTo(1)}
+      onPressIn={(event) => {
+        setPressed(true);
+        animateTo(scaleTo);
+        onPressIn?.(event);
+      }}
+      onPressOut={(event) => {
+        setPressed(false);
+        animateTo(1);
+        onPressOut?.(event);
+      }}
       accessibilityRole={accessibilityRole}
       accessibilityLabel={accessibilityLabel}
-      style={[style, { transform: [{ scale }] }]}
-      {...rest}
+      style={[resolvedStyle, { transform: [...originalTransforms, { scale }] }]}
     >
       {children}
     </AnimatedPressable>

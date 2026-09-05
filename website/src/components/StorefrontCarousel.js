@@ -68,6 +68,8 @@ export function StorefrontHero({ slides, hero = {} }) {
 
   if (safeSlides.length === 0) return null;
   const slide = safeSlides[active] || safeSlides[0];
+  const shopHref = slide.primaryButtonHref || hero.primaryButtonHref;
+  const shopLabel = slide.primaryButtonLabel || hero.primaryButtonLabel;
   const selectSlide = (index) => setActive((index + safeSlides.length) % safeSlides.length);
 
   return (
@@ -87,11 +89,11 @@ export function StorefrontHero({ slides, hero = {} }) {
           {slide.subtitle && <span className="storefront-hero-eyebrow">{slide.subtitle}</span>}
           {slide.title && <h1>{slide.title}</h1>}
           {(slide.description || hero.description) && <p>{slide.description || hero.description}</p>}
-          {((hero.primaryButtonLabel && hero.primaryButtonHref) || (hero.secondaryButtonLabel && hero.secondaryButtonHref)) && (
+          {((shopLabel && shopHref) || (hero.secondaryButtonLabel && hero.secondaryButtonHref)) && (
             <div className="storefront-hero-actions">
-              {hero.primaryButtonLabel && hero.primaryButtonHref && (
-                <Link href={hero.primaryButtonHref} className="sd-button sd-button-dark">
-                  {hero.primaryButtonLabel} <i className="far fa-arrow-right" aria-hidden="true" />
+              {shopLabel && shopHref && (
+                <Link href={shopHref} className="sd-button sd-button-dark">
+                  {shopLabel} <i className="far fa-arrow-right" aria-hidden="true" />
                 </Link>
               )}
               {hero.secondaryButtonLabel && hero.secondaryButtonHref && (

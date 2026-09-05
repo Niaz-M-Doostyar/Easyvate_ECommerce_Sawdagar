@@ -30,7 +30,7 @@ export default function ProductsScreen({ navigation, route }) {
   const { theme } = useTheme();
   const { t, getName } = useLanguage();
   const c = theme.colors;
-  const numColumns = 3;
+  const numColumns = width >= 1024 ? 4 : width >= 700 ? 3 : 2;
   const gridCardWidth = Math.max(0, (width - (spacing.base - 4) * 2) / numColumns - 6);
   const initCategoryId = route.params?.categoryId;
   const initSort = route.params?.sort || 'newest';
