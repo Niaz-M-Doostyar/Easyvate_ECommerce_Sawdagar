@@ -27,7 +27,7 @@ fi
 git pull --ff-only origin main
 
 npm ci --prefix backend
-(cd backend && npx prisma generate)
+(cd backend && npx prisma generate && npx prisma migrate deploy)
 
 npm ci --prefix website
 npm run build --prefix website
@@ -45,6 +45,8 @@ pm2 startOrReload ecosystem.config.cjs --update-env
 pm2 save
 
 curl --fail --silent --show-error --retry 8 --retry-delay 2 http://127.0.0.1:4000/api/ready >/dev/null
+curl --fail --silent --show-error --retry 8 --retry-delay 2 http://127.0.0.1:4000/api/categories >/dev/null
+curl --fail --silent --show-error --retry 8 --retry-delay 2 'http://127.0.0.1:4000/api/products?limit=1' >/dev/null
 curl --fail --silent --show-error --retry 8 --retry-delay 2 http://127.0.0.1:3000/ >/dev/null
 curl --fail --silent --show-error --retry 8 --retry-delay 2 http://127.0.0.1:3001/sawdagar-admin/ >/dev/null
 

@@ -2,8 +2,9 @@
 
 Pushes to `main` run builds for the API, storefront, and admin app. When the
 production GitHub secrets are configured, the workflow connects to the VPS,
-fast-forwards its clean checkout, builds all apps, reloads PM2, and verifies
-the database-backed API readiness, storefront, and admin locally.
+fast-forwards its clean checkout, applies reviewed Prisma migrations, builds
+all apps, reloads PM2, and verifies database-backed API responses, storefront,
+and admin locally.
 
 ## Existing VPS: one-time migration before enabling CI/CD
 
@@ -37,9 +38,10 @@ optional because image variants can be generated again.
    response. Set `client_max_body_size 55m` (or another deliberate limit above
    the largest supported multi-image request).
 
-The deploy script intentionally does not run `prisma db push`. Database schema
-changes must ship as reviewed Prisma migrations before `prisma migrate deploy`
-is added to production automation.
+The deploy script intentionally uses `prisma migrate deploy`, never `prisma db
+push`. Every production schema change must ship as a reviewed migration in
+`backend/prisma/migrations`. Take a database backup before introducing a
+destructive migration.
 
 ## GitHub production secrets
 
