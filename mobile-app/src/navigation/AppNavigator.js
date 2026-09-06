@@ -6,6 +6,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import BrandLogo from '../components/BrandLogo';
+import PressableScale from '../components/PressableScale';
 import { useTheme } from '../contexts/ThemeContext';
 import { useAuth } from '../contexts/AuthContext';
 import { useCart } from '../contexts/CartContext';
@@ -214,6 +215,7 @@ function MainTabs() {
         return ({
         headerShown: false,
         tabBarHideOnKeyboard: true,
+        tabBarButton: (props) => <PressableScale {...props} scaleTo={0.94} />,
         tabBarLabelPosition: 'below-icon',
         tabBarAccessibilityLabel: labelByTab[route.name],
         tabBarActiveTintColor: c.primary,

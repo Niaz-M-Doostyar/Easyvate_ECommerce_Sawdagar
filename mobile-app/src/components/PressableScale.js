@@ -13,7 +13,7 @@ export default function PressableScale({
   children,
   onPress,
   style,
-  scaleTo = 0.98,
+  scaleTo = 0.96,
   disabled,
   accessibilityRole = 'button',
   accessibilityLabel,
@@ -54,16 +54,21 @@ export default function PressableScale({
 
   const animateTo = (value) => {
     if (reduceMotion.current) return;
+    if (value !== 1) {
+      Animated.timing(scale, { toValue: value, duration: 90, useNativeDriver: true }).start();
+      return;
+    }
     Animated.spring(scale, {
       toValue: value,
       useNativeDriver: true,
-      speed: 38,
-      bounciness: 3,
+      speed: 28,
+      bounciness: 0,
     }).start();
   };
 
   const resolvedStyle = typeof style === 'function' ? style({ pressed }) : style;
   const originalTransforms = StyleSheet.flatten(resolvedStyle)?.transform || [];
+  const baseOpacity = StyleSheet.flatten(resolvedStyle)?.opacity ?? 1;
 
   return (
     <AnimatedPressable
@@ -82,7 +87,7 @@ export default function PressableScale({
       }}
       accessibilityRole={accessibilityRole}
       accessibilityLabel={accessibilityLabel}
-      style={[resolvedStyle, { transform: [...originalTransforms, { scale }, { translateY: scale.interpolate({ inputRange: [0.9, 1], outputRange: [3, 0], extrapolate: 'clamp' }) }] }]}
+      style={[resolvedStyle, { opacity: pressed ? Animated.multiply(baseOpacity, 0.82) : baseOpacity, transform: [...originalTransforms, { scale }] }]}
     >
       {children}
     </AnimatedPressable>

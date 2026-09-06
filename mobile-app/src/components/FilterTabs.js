@@ -35,8 +35,8 @@ export default function FilterTabs({ tabs, activeKey, onChange, style }) {
                 borderColor: active ? c.primaryDark : c.borderLight,
                 borderBottomColor: active ? c.primaryDark : c.border,
                 shadowColor: c.primaryDark,
-                shadowOpacity: active && !pressed ? 0.14 : 0,
-                elevation: active && !pressed ? 3 : 0,
+                shadowOpacity: 0,
+                elevation: 0,
               },
             ]}
             accessibilityRole="tab"
@@ -81,7 +81,7 @@ const styles = StyleSheet.create({
     paddingVertical: 9,
     borderRadius: borderRadius.full,
     borderWidth: 1,
-    borderBottomWidth: 2,
+    borderBottomWidth: 1,
     shadowOffset: { width: 0, height: 3 },
     shadowRadius: 5,
   },

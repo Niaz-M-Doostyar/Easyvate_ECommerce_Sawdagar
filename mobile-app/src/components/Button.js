@@ -13,7 +13,7 @@ export default function Button({ title, onPress, variant = 'primary', size = 'md
   const isGhost = variant === 'ghost';
   const inactive = Boolean(loading || disabled);
   const textColor = isPrimary ? c.white : isGhost ? c.textSecondary : theme.dark ? c.primary : c.primaryDark;
-  const height = size === 'sm' ? 46 : size === 'lg' ? 58 : 54;
+  const height = size === 'sm' ? 44 : size === 'lg' ? 54 : 50;
   const fs = size === 'sm' ? fontSize.sm : fontSize.base;
   const radius = size === 'sm' ? 12 : 16;
   const externalStyle = StyleSheet.flatten(style) || {};
@@ -38,7 +38,7 @@ export default function Button({ title, onPress, variant = 'primary', size = 'md
       {...rest}
       onPress={onPress}
       disabled={inactive}
-      scaleTo={0.985}
+      scaleTo={0.96}
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel || title}
       accessibilityState={{ disabled: inactive, busy: Boolean(loading) }}
@@ -48,14 +48,10 @@ export default function Button({ title, onPress, variant = 'primary', size = 'md
           height,
           minWidth: contentMinWidth,
           borderRadius: radius,
-          backgroundColor: isPrimary ? c.primaryDark : isOutline ? c.border : 'transparent',
-          paddingBottom: isPrimary ? 1 : 0,
+          backgroundColor: 'transparent',
           opacity: disabled ? 0.45 : loading ? 0.8 : 1,
-          shadowColor: isPrimary ? c.primaryDark : c.black,
-          shadowOpacity: inactive || isGhost ? 0 : pressed ? 0.06 : isPrimary ? 0.14 : 0.03,
-          shadowRadius: pressed ? 3 : 9,
-          shadowOffset: { width: 0, height: pressed ? 1 : 5 },
-          elevation: inactive || isGhost ? 0 : pressed ? 1 : isPrimary ? 2 : 1,
+          shadowOpacity: 0,
+          elevation: 0,
         },
         style,
       ]}
@@ -66,14 +62,13 @@ export default function Button({ title, onPress, variant = 'primary', size = 'md
           {
             borderRadius: radius,
             paddingHorizontal: flexSized ? 12 : horizontalPadding,
-            borderColor: isPrimary ? 'rgba(255,255,255,0.18)' : isOutline ? c.border : 'transparent',
-            transform: [{ translateY: pressed && !inactive ? isPrimary ? 2 : 1 : 0 }],
+            borderColor: isOutline ? c.border : 'transparent',
           },
         ];
 
         return isPrimary ? (
           <LinearGradient
-            colors={[theme.dark ? c.gradientStart : c.primary, c.gradientEnd]}
+            colors={[c.primary, c.primary]}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
             style={faceStyle}

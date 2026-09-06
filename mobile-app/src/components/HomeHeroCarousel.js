@@ -152,7 +152,7 @@ function HeroSlide({ slide, width, minHeight, colors: c, dark, isRTL, primaryLab
   const wide = width >= 600;
   return (
     <Animated.View accessibilityElementsHidden={!active} importantForAccessibility={active ? 'auto' : 'no-hide-descendants'} style={[styles.card, shadows.md, { width, minHeight, backgroundColor: c.card, borderColor: c.borderLight, transform: [{ scale }], flexDirection: wide ? (isRTL ? 'row-reverse' : 'row') : 'column' }]}>
-      <Gradient colors={dark ? [c.secondary, '#182F60'] : ['#EAF0FF', '#DCE8FA']} style={[styles.media, { height: wide ? undefined : Math.min(280, Math.max(220, width * 0.65)), minHeight: wide ? 300 : undefined, width: wide ? '46%' : '100%' }]}>
+      <Gradient colors={dark ? [c.secondary, '#182F60'] : ['#EAF0FF', '#DCE8FA']} style={[styles.media, { height: wide ? undefined : Math.min(240, Math.max(180, width * 0.53)), minHeight: wide ? 260 : undefined, width: wide ? '46%' : '100%' }]}>
         <View pointerEvents="none" style={styles.orbit} />
         <View pointerEvents="none" style={styles.orbitInner} />
         <View style={styles.imageFrame}>
@@ -165,8 +165,7 @@ function HeroSlide({ slide, width, minHeight, colors: c, dark, isRTL, primaryLab
           {!!slide.subtitle && <Text numberOfLines={1} style={[styles.category, { color: c.textSecondary }]}>{slide.subtitle}</Text>}
           {!!slide.priceValue && <Text numberOfLines={1} adjustsFontSizeToFit style={[styles.inlinePrice, { color: c.primary }]}>{slide.priceValue}</Text>}
         </View>
-        <Text style={[styles.eyebrow, { color: c.primary }]}>{copy.label}</Text>
-        <Text numberOfLines={3} style={[styles.title, { color: c.text, textAlign: isRTL ? 'right' : 'left', writingDirection: isRTL ? 'rtl' : 'ltr' }]}>{slide.title}</Text>
+        <Text numberOfLines={2} style={[styles.title, { color: c.text, textAlign: isRTL ? 'right' : 'left', writingDirection: isRTL ? 'rtl' : 'ltr' }]}>{slide.title}</Text>
         {!!slide.description && <Text numberOfLines={2} style={[styles.description, { color: c.textSecondary, textAlign: isRTL ? 'right' : 'left' }]}>{slide.description}</Text>}
         <View style={[styles.actions, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
           {!!primaryLabel && <Button title={primaryLabel} onPress={() => onPrimaryPress?.(slide)} style={{ flex: 1 }} icon={<MaterialCommunityIcons name="shopping-outline" size={18} color="#FFFFFF" />} />}
@@ -193,9 +192,9 @@ const styles = StyleSheet.create({
   price: { position: 'absolute', bottom: 12, maxWidth: '60%', backgroundColor: '#FFFFFF', paddingHorizontal: 14, paddingVertical: 9, borderRadius: 16 },
   priceLabel: { color: '#44515D', fontSize: 10, fontWeight: '600' },
   priceValue: { color: '#17339B', fontSize: 19, fontWeight: '800', marginTop: 2 },
-  copy: { padding: 20, gap: 8 },
+  copy: { padding: 16, gap: 6 },
   eyebrow: { fontSize: 11, fontWeight: '800', letterSpacing: 0.7 },
-  title: { fontSize: 25, lineHeight: 32, fontWeight: '800', letterSpacing: -0.6 },
+  title: { fontSize: 22, lineHeight: 28, fontWeight: '700', letterSpacing: -0.3 },
   description: { fontSize: 13, lineHeight: 20 },
   actions: { alignSelf: 'stretch', alignItems: 'center', gap: 10, marginTop: 8 },
   secondary: { width: 52, height: 52, borderRadius: 17, alignItems: 'center', justifyContent: 'center' },

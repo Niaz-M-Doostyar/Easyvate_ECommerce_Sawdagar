@@ -76,7 +76,7 @@ export default function QuantityInput({
         style={({ pressed }) => [
           styles.stepButton,
           compact && styles.stepButtonSmall,
-          { backgroundColor: pressed ? c.brandSurface : c.surface, borderColor: c.border, borderBottomWidth: pressed ? 1 : 2 },
+          { backgroundColor: pressed ? c.brandSurface : c.surface, borderColor: c.border },
           decreaseDisabled && { opacity: 0.45 },
         ]}
       >
@@ -114,7 +114,7 @@ export default function QuantityInput({
         style={({ pressed }) => [
           styles.stepButton,
           compact && styles.stepButtonSmall,
-          { backgroundColor: c.primaryDark, borderColor: c.primaryDark, borderTopColor: c.primary, borderBottomWidth: pressed ? 1 : 3 },
+          { backgroundColor: c.primary, borderColor: c.primary },
           increaseDisabled && { opacity: 0.45 },
         ]}
       >
