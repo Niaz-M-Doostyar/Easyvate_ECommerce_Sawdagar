@@ -82,7 +82,7 @@ export default function PressableScale({
       }}
       accessibilityRole={accessibilityRole}
       accessibilityLabel={accessibilityLabel}
-      style={[resolvedStyle, { transform: [...originalTransforms, { scale }] }]}
+      style={[resolvedStyle, { transform: [...originalTransforms, { scale }, { translateY: scale.interpolate({ inputRange: [0.9, 1], outputRange: [3, 0], extrapolate: 'clamp' }) }] }]}
     >
       {children}
     </AnimatedPressable>

@@ -22,6 +22,14 @@ responsive product grids, and contained product-detail images. The carousel
 pauses after interaction, when Home loses focus, in the background, and for
 screen readers or reduced-motion preferences.
 
+Customer product cards include a Quick View action in Home, Shop, Search,
+and other screens using the shared card. It opens a fade/slide bottom sheet
+with a contained image gallery, localized product information, stock, price,
+Add to Cart, and Full Details. Close, backdrop, and Android Back dismiss it.
+Reduced motion disables sheet movement. Only the selected card mounts a
+modal; cached thumbnails display while higher-resolution images load.
+Phone grids retain three columns with compact, 44px touch controls.
+
 Mobile changes require a new native app build and installation. A GitHub/VPS
 deployment updates the API and web apps, but does not update installed apps
 or submit a release to app stores.

@@ -9,12 +9,13 @@ import { useToast } from '../contexts/ToastContext';
 import { formatPrice } from '../config';
 import RemoteImage from './RemoteImage';
 import PressableScale from './PressableScale';
-import { spacing, fontSize, fontWeight, borderRadius, shadows } from '../theme';
+import ProductQuickView, { previewCopy } from './ProductQuickView';
+import { spacing, fontSize, fontWeight, borderRadius } from '../theme';
 
 export default function ProductCard({ product, onPress, style }) {
   const { width: viewportWidth } = useWindowDimensions();
   const { theme } = useTheme();
-  const { t, getName, isRTL } = useLanguage();
+  const { t, getName, isRTL, lang } = useLanguage();
   const { addItem } = useCart();
   const toast = useToast();
   const c = theme.colors;
@@ -26,6 +27,8 @@ export default function ProductCard({ product, onPress, style }) {
   const categoryName = product.category ? getName(product.category) : '';
   const available = product.stock == null || product.stock > 0;
   const [adding, setAdding] = useState(false);
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const copy = previewCopy[lang] || previewCopy.en;
   const [measuredWidth, setMeasuredWidth] = useState(0);
 
   const flattenedStyle = StyleSheet.flatten(style) || {};
@@ -58,9 +61,9 @@ export default function ProductCard({ product, onPress, style }) {
     setAdding(true);
     try {
       await addItem(product, 1);
-      toast.success('Added to cart');
+      toast.success(copy.added);
     } catch (error) {
-      toast.error(error.message || 'Could not add item');
+      toast.error(error.message || copy.failed);
     } finally {
       setAdding(false);
     }
@@ -68,7 +71,7 @@ export default function ProductCard({ product, onPress, style }) {
 
   return (
     <View
-      style={[styles.card, shadows.sm, { backgroundColor: c.card, borderColor: c.borderLight }, style]}
+      style={[styles.card, { backgroundColor: c.card, borderColor: c.borderLight, shadowColor: c.primaryDark }, style]}
       onLayout={(e) => {
         if (!styleWidth) setMeasuredWidth(Math.round(e.nativeEvent.layout.width));
       }}
@@ -126,6 +129,14 @@ export default function ProductCard({ product, onPress, style }) {
 
       <View style={[styles.actionWrap, compact && styles.actionWrapCompact]}>
         <PressableScale
+          onPress={() => setPreviewOpen(true)}
+          accessibilityLabel={`${copy.quick}: ${getName(product)}`}
+          style={({ pressed }) => [styles.quickView, { backgroundColor: pressed ? c.brandSurface : c.surfaceElevated }]}
+        >
+          <MaterialCommunityIcons name="eye-outline" size={16} color={c.primary} />
+          <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.9} style={[styles.quickText, { color: c.primary }]}>{copy.quick}</Text>
+        </PressableScale>
+        <PressableScale
           scaleTo={0.97}
           onPress={handleAddToCart}
           disabled={adding || !available}
@@ -145,7 +156,7 @@ export default function ProductCard({ product, onPress, style }) {
                 <ActivityIndicator size="small" color={c.white} />
               ) : (
                 <>
-                  {!compact ? <MaterialCommunityIcons name="cart-plus" size={17} color={c.white} /> : null}
+                  <MaterialCommunityIcons name={compact ? 'plus' : 'cart-plus'} size={compact ? 16 : 17} color={c.white} />
                   <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={compact ? 0.85 : 0.9} maxFontSizeMultiplier={1.15} style={[styles.addText, compact && styles.addTextCompact, { color: c.white }]}>{compact ? t.add : t.addToCart}</Text>
                 </>
               )}
@@ -158,18 +169,19 @@ export default function ProductCard({ product, onPress, style }) {
           )}
         </PressableScale>
       </View>
+      {previewOpen && <ProductQuickView product={product} onClose={() => setPreviewOpen(false)} onDetails={onPress} />}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  card: { borderRadius: borderRadius.xl, borderWidth: 1, marginBottom: spacing.md },
+  card: { borderRadius: 20, borderWidth: 1, marginBottom: spacing.md, shadowOpacity: 0.05, shadowRadius: 10, shadowOffset: { width: 0, height: 4 }, elevation: 1 },
   productLink: { minWidth: 0 },
-  imgWrap: { aspectRatio: 1, margin: 6, borderRadius: borderRadius.lg, padding: spacing.sm, overflow: 'hidden' },
+  imgWrap: { aspectRatio: 1, margin: 5, borderRadius: 16, padding: 5, overflow: 'hidden' },
   img: { width: '100%', height: '100%' },
   imageFallback: { justifyContent: 'center', alignItems: 'center' },
   badge: { position: 'absolute', top: 8, start: 8, maxWidth: '80%', paddingHorizontal: 8, paddingVertical: 4, borderRadius: borderRadius.sm },
-  discBadge: { position: 'absolute', bottom: 8, start: 8, paddingHorizontal: 8, paddingVertical: 4, borderRadius: borderRadius.sm },
+  discBadge: { position: 'absolute', bottom: 5, start: 5, paddingHorizontal: 6, paddingVertical: 3, borderRadius: 7 },
   badgeText: { color: '#FFF', fontSize: fontSize.xs, fontWeight: fontWeight.bold },
   verifiedBadge: { position: 'absolute', bottom: 8, end: 8, width: 28, height: 28, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderRadius: borderRadius.full },
   info: { paddingHorizontal: spacing.md, paddingTop: spacing.sm, paddingBottom: spacing.md },
@@ -183,9 +195,11 @@ const styles = StyleSheet.create({
   stockPill: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 5 },
   stockDot: { width: 5, height: 5, borderRadius: borderRadius.full },
   stock: { flexShrink: 1, fontSize: fontSize.xs, fontWeight: fontWeight.medium },
-  actionWrap: { paddingHorizontal: spacing.sm, paddingBottom: spacing.sm },
+  actionWrap: { paddingHorizontal: spacing.sm, paddingBottom: spacing.sm, gap: 6 },
+  quickView: { minHeight: 44, borderRadius: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 4, paddingHorizontal: 4 },
+  quickText: { flexShrink: 1, fontSize: 11, fontWeight: '600' },
   actionWrapCompact: { alignItems: 'stretch', paddingHorizontal: 6, paddingBottom: 10 },
-  addBtn: { height: 46, borderRadius: borderRadius.md, borderBottomWidth: 3, overflow: 'hidden' },
+  addBtn: { height: 44, borderRadius: 12, borderBottomWidth: 1, overflow: 'hidden' },
   addBtnCompact: { width: '100%' },
   addBtnFill: { width: '100%', flex: 1, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 6, paddingHorizontal: spacing.sm },
   addBtnFillCompact: { paddingHorizontal: 6, gap: 4 },

@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, ActivityIndicator, StyleSheet } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import { useTheme } from '../contexts/ThemeContext';
-import { fontSize, fontWeight, borderRadius } from '../theme';
+import { fontSize, fontWeight } from '../theme';
 import PressableScale from './PressableScale';
 
 export default function Button({ title, onPress, variant = 'primary', size = 'md', loading, disabled, icon, style, textStyle, accessibilityLabel, ...rest }) {
@@ -15,7 +15,7 @@ export default function Button({ title, onPress, variant = 'primary', size = 'md
   const textColor = isPrimary ? c.white : isGhost ? c.textSecondary : theme.dark ? c.primary : c.primaryDark;
   const height = size === 'sm' ? 46 : size === 'lg' ? 58 : 54;
   const fs = size === 'sm' ? fontSize.sm : fontSize.base;
-  const radius = size === 'sm' ? borderRadius.md + 2 : borderRadius.lg;
+  const radius = size === 'sm' ? 12 : 16;
   const externalStyle = StyleSheet.flatten(style) || {};
   const externallySized = externalStyle.flex != null || externalStyle.width != null || externalStyle.minWidth != null || externalStyle.alignSelf === 'stretch';
   const flexSized = externalStyle.flex != null || externalStyle.flexGrow != null;
@@ -49,13 +49,13 @@ export default function Button({ title, onPress, variant = 'primary', size = 'md
           minWidth: contentMinWidth,
           borderRadius: radius,
           backgroundColor: isPrimary ? c.primaryDark : isOutline ? c.border : 'transparent',
-          paddingBottom: isPrimary ? 3 : isOutline ? 2 : 0,
+          paddingBottom: isPrimary ? 1 : 0,
           opacity: disabled ? 0.45 : loading ? 0.8 : 1,
           shadowColor: isPrimary ? c.primaryDark : c.black,
-          shadowOpacity: inactive || isGhost ? 0 : pressed ? 0.08 : isPrimary ? 0.2 : 0.04,
+          shadowOpacity: inactive || isGhost ? 0 : pressed ? 0.06 : isPrimary ? 0.14 : 0.03,
           shadowRadius: pressed ? 3 : 9,
           shadowOffset: { width: 0, height: pressed ? 1 : 5 },
-          elevation: inactive || isGhost ? 0 : pressed ? 1 : isPrimary ? 4 : 1,
+          elevation: inactive || isGhost ? 0 : pressed ? 1 : isPrimary ? 2 : 1,
         },
         style,
       ]}
