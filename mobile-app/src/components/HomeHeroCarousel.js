@@ -6,6 +6,7 @@ import { useTheme } from '../contexts/ThemeContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import Gradient from './Gradient';
 import Button from './Button';
+import RemoteImage from './RemoteImage';
 import { optimizedImageUri } from '../config';
 import { shadows } from '../theme';
 
@@ -39,6 +40,16 @@ export default function HomeHeroCarousel({ slides = [], primaryLabel, secondaryL
   const [foreground, setForeground] = useState(AppState.currentState === 'active');
   const [reduceMotion, setReduceMotion] = useState(true);
   const [screenReader, setScreenReader] = useState(true);
+  const activeImage = items[active]?.image;
+  const nextImage = items[(active + 1) % Math.max(1, count)]?.image;
+
+  // Warm only the visible/next slide, not the entire promoted catalog.
+  useEffect(() => {
+    if (!focused || !foreground) return;
+    [...new Set([activeImage, nextImage].filter(Boolean))].forEach(source => {
+      Image.prefetch(optimizedImageUri(source, { width: 560, quality: 75 })).catch(() => {});
+    });
+  }, [activeImage, nextImage, focused, foreground]);
 
   useEffect(() => {
     let mounted = true;
@@ -138,23 +149,22 @@ export default function HomeHeroCarousel({ slides = [], primaryLabel, secondaryL
 }
 
 function HeroSlide({ slide, width, minHeight, colors: c, dark, isRTL, primaryLabel, secondaryLabel, onPrimaryPress, onSecondaryPress, scale, active, copy }) {
-  const uri = slide.image ? optimizedImageUri(slide.image, { width: 960 }) : null;
-  const [failed, setFailed] = useState(false);
-  useEffect(() => setFailed(false), [uri]);
   const wide = width >= 600;
   return (
     <Animated.View accessibilityElementsHidden={!active} importantForAccessibility={active ? 'auto' : 'no-hide-descendants'} style={[styles.card, shadows.md, { width, minHeight, backgroundColor: c.card, borderColor: c.borderLight, transform: [{ scale }], flexDirection: wide ? (isRTL ? 'row-reverse' : 'row') : 'column' }]}>
-      <Gradient colors={dark ? [c.secondary, '#182F60'] : ['#EAF0FF', '#DCE8FA']} style={[styles.media, { height: wide ? undefined : Math.min(240, Math.max(180, width * 0.53)), width: wide ? '46%' : '100%' }]}>
+      <Gradient colors={dark ? [c.secondary, '#182F60'] : ['#EAF0FF', '#DCE8FA']} style={[styles.media, { height: wide ? undefined : Math.min(280, Math.max(220, width * 0.65)), minHeight: wide ? 300 : undefined, width: wide ? '46%' : '100%' }]}>
         <View pointerEvents="none" style={styles.orbit} />
         <View pointerEvents="none" style={styles.orbitInner} />
-        {uri && !failed ? <Image source={{ uri }} resizeMode="contain" onError={() => setFailed(true)} style={styles.image} accessible={false} /> : <MaterialCommunityIcons name="shopping-outline" size={80} color={dark ? c.heroTextMuted : c.primaryDark} />}
-        {!!slide.subtitle && <View style={[styles.badge, isRTL ? { right: 14 } : { left: 14 }]}><Text numberOfLines={1} style={styles.badgeText}>{slide.subtitle}</Text></View>}
-        {!!slide.priceValue && <View style={[styles.price, isRTL ? { left: 14 } : { right: 14 }]}>
-          {!!slide.priceLabel && <Text style={styles.priceLabel}>{slide.priceLabel}</Text>}
-          <Text style={styles.priceValue} numberOfLines={1}>{slide.priceValue}</Text>
-        </View>}
+        <View style={styles.imageFrame}>
+          <RemoteImage source={slide.image} width={400} quality={72} resizeMode="contain" style={StyleSheet.absoluteFill} fallback={<MaterialCommunityIcons name="shopping-outline" size={64} color={dark ? c.heroTextMuted : c.primaryDark} />} />
+          <RemoteImage source={slide.image} width={560} quality={75} resizeMode="contain" style={StyleSheet.absoluteFill} />
+        </View>
       </Gradient>
       <View style={[styles.copy, wide && { flex: 1 }, { alignItems: isRTL ? 'flex-end' : 'flex-start' }]}>
+        <View style={[styles.productMeta, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+          {!!slide.subtitle && <Text numberOfLines={1} style={[styles.category, { color: c.textSecondary }]}>{slide.subtitle}</Text>}
+          {!!slide.priceValue && <Text numberOfLines={1} adjustsFontSizeToFit style={[styles.inlinePrice, { color: c.primary }]}>{slide.priceValue}</Text>}
+        </View>
         <Text style={[styles.eyebrow, { color: c.primary }]}>{copy.label}</Text>
         <Text numberOfLines={3} style={[styles.title, { color: c.text, textAlign: isRTL ? 'right' : 'left', writingDirection: isRTL ? 'rtl' : 'ltr' }]}>{slide.title}</Text>
         {!!slide.description && <Text numberOfLines={2} style={[styles.description, { color: c.textSecondary, textAlign: isRTL ? 'right' : 'left' }]}>{slide.description}</Text>}
@@ -174,7 +184,10 @@ const styles = StyleSheet.create({
   media: { alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
   orbit: { position: 'absolute', width: 260, height: 260, borderWidth: 1, borderColor: 'rgba(255,255,255,0.55)', borderRadius: 130, transform: [{ translateX: 65 }, { translateY: 12 }] },
   orbitInner: { position: 'absolute', width: 205, height: 205, backgroundColor: 'rgba(255,255,255,0.23)', borderRadius: 104 },
-  image: { width: '88%', height: '84%' },
+  imageFrame: { position: 'absolute', top: 12, bottom: 12, left: 16, right: 16, alignItems: 'center', justifyContent: 'center' },
+  productMeta: { alignSelf: 'stretch', alignItems: 'center', gap: 12 },
+  category: { flex: 1, fontSize: 12, fontWeight: '600' },
+  inlinePrice: { maxWidth: '60%', fontSize: 19, fontWeight: '800' },
   badge: { position: 'absolute', top: 14, maxWidth: '82%', backgroundColor: '#FFFFFF', borderRadius: 99, paddingHorizontal: 12, paddingVertical: 6 },
   badgeText: { color: '#17339B', fontSize: 11, fontWeight: '700' },
   price: { position: 'absolute', bottom: 12, maxWidth: '60%', backgroundColor: '#FFFFFF', paddingHorizontal: 14, paddingVertical: 9, borderRadius: 16 },

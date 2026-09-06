@@ -76,7 +76,15 @@ export default function HomeScreen({ navigation }) {
         categoriesApi.list(),
         productsApi.list({ limit: 50, status: 'approved' }),
         productsApi.sponsored().catch(() => []),
-        siteApi.content().catch(() => null),
+        siteApi.content().then(data => {
+          // Display promotions without waiting for the larger catalog requests.
+          const hero = (data?.content?.home || data?.home || {}).hero;
+          setHeroContent(hero || null);
+          (hero?.slides || []).slice(0, 2).forEach(slide => {
+            if (slide.image) Image.prefetch(optimizedImageUri(slide.image, { width: 400, quality: 72 })).catch(() => {});
+          });
+          return data;
+        }).catch(() => null),
       ]);
       setCategories(cats.categories || cats || []);
       const products = prod.products || prod || [];
