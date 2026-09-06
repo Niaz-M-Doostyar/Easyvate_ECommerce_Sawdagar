@@ -93,7 +93,7 @@ export default function SearchScreen({ navigation }) {
             data={results} numColumns={numColumns} keyExtractor={i => String(i.id)}
             contentContainerStyle={styles.grid}
             renderItem={({ item }) => (
-              <View style={[styles.gridItem, { width: '33.333%' }]}>
+              <View style={[styles.gridItem, { width: `${100 / numColumns}%` }]}>
                 <ProductCard product={item} onPress={() => { Keyboard.dismiss(); navigation.navigate('ProductDetail', { id: item.id, product: item }); }} style={{ width: gridCardWidth }} />
               </View>
             )}

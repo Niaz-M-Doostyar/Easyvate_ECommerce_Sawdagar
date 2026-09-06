@@ -210,7 +210,7 @@ export default function ProductsScreen({ navigation, route }) {
           contentContainerStyle={styles.grid}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={c.primary} />}
           renderItem={({ item }) => (
-            <View style={[styles.gridItem, { width: '33.333%' }]}>
+            <View style={[styles.gridItem, { width: `${100 / numColumns}%` }]}>
               <ProductCard product={item} onPress={() => navigation.navigate('ProductDetail', { id: item.id, product: item })} style={{ width: gridCardWidth }} />
             </View>
           )}
