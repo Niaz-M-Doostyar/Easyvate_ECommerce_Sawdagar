@@ -30,9 +30,9 @@ export default function ProductCard({ product, onPress, style }) {
 
   const flattenedStyle = StyleSheet.flatten(style) || {};
   const styleWidth = typeof flattenedStyle.width === 'number' ? flattenedStyle.width : 0;
-  // Match the two-column phone grid before the first layout measurement.
+  // Match the three-column phone grid before the first layout measurement.
   const inferredGridWidth = viewportWidth < 768
-    ? Math.max(0, (viewportWidth - spacing.base * 2 - spacing.md) / 2)
+    ? Math.max(0, (viewportWidth - spacing.base * 2 - spacing.md * 2) / 3)
     : 0;
   const cardWidth = styleWidth || measuredWidth || inferredGridWidth;
   const compact = cardWidth > 0 && cardWidth < 150;

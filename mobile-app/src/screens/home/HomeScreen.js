@@ -56,7 +56,7 @@ export default function HomeScreen({ navigation }) {
   const actionCardWidth = Math.min(width * (isTablet ? 0.42 : 0.72), 420);
   const sponsoredCardWidth = Math.min(width * (isTablet ? 0.34 : 0.6), 360);
   const newArrivalCardWidth = Math.min(300, width * 0.45);
-  const gridColumns = width >= 1024 ? 4 : width >= 700 ? 3 : 2;
+  const gridColumns = width >= 1024 ? 4 : 3;
   const gridCardWidth = Math.max(0, (width - spacing.base * 2) / gridColumns - 8);
 
   const [categories, setCategories] = useState([]);
