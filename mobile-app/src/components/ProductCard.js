@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, ActivityIndicator, useWindowDimensions } from 'react-native';
-import LinearGradient from 'react-native-linear-gradient';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useTheme } from '../contexts/ThemeContext';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -71,7 +70,7 @@ export default function ProductCard({ product, onPress, style }) {
 
   return (
     <View
-      style={[styles.card, { backgroundColor: c.card, borderColor: c.borderLight, shadowColor: c.primaryDark }, style]}
+      style={[styles.card, { backgroundColor: c.card, borderColor: c.borderLight }, style]}
       onLayout={(e) => {
         if (!styleWidth) setMeasuredWidth(Math.round(e.nativeEvent.layout.width));
       }}
@@ -143,13 +142,10 @@ export default function ProductCard({ product, onPress, style }) {
           accessibilityRole="button"
           accessibilityLabel={available ? `${t.addToCart}: ${getName(product)}` : `${getName(product)}: ${t.outOfStock}`}
           accessibilityState={{ disabled: adding || !available, busy: adding }}
-          style={[styles.addBtn, { backgroundColor: available ? c.primaryDark : c.surfaceElevated, borderBottomColor: available ? c.primaryDark : c.borderLight }, compact && styles.addBtnCompact]}
+          style={[styles.addBtn, { backgroundColor: available ? c.primary : c.surfaceElevated }, compact && styles.addBtnCompact]}
         >
           {available ? (
-            <LinearGradient
-              colors={[c.gradientStart, c.gradientEnd]}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
+            <View
               style={[styles.addBtnFill, compact && styles.addBtnFillCompact]}
             >
               {adding ? (
@@ -160,7 +156,7 @@ export default function ProductCard({ product, onPress, style }) {
                   <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={compact ? 0.85 : 0.9} maxFontSizeMultiplier={1.15} style={[styles.addText, compact && styles.addTextCompact, { color: c.white }]}>{compact ? t.add : t.addToCart}</Text>
                 </>
               )}
-            </LinearGradient>
+            </View>
           ) : (
             <View style={[styles.addBtnFill, compact && styles.addBtnFillCompact]}>
               {!compact ? <MaterialCommunityIcons name="cart-off" size={17} color={c.textSecondary} /> : null}
@@ -175,7 +171,7 @@ export default function ProductCard({ product, onPress, style }) {
 }
 
 const styles = StyleSheet.create({
-  card: { borderRadius: 20, borderWidth: 1, marginBottom: spacing.md, shadowOpacity: 0.05, shadowRadius: 10, shadowOffset: { width: 0, height: 4 }, elevation: 1 },
+  card: { borderRadius: 20, borderWidth: 1, marginBottom: spacing.md },
   productLink: { minWidth: 0 },
   imgWrap: { aspectRatio: 1, margin: 5, borderRadius: 16, padding: 5, overflow: 'hidden' },
   img: { width: '100%', height: '100%' },
@@ -199,7 +195,7 @@ const styles = StyleSheet.create({
   quickView: { minHeight: 44, borderRadius: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 4, paddingHorizontal: 4 },
   quickText: { flexShrink: 1, fontSize: 11, fontWeight: '600' },
   actionWrapCompact: { alignItems: 'stretch', paddingHorizontal: 6, paddingBottom: 10 },
-  addBtn: { height: 44, borderRadius: 12, borderBottomWidth: 1, overflow: 'hidden' },
+  addBtn: { height: 44, borderRadius: 12, overflow: 'hidden' },
   addBtnCompact: { width: '100%' },
   addBtnFill: { width: '100%', flex: 1, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 6, paddingHorizontal: spacing.sm },
   addBtnFillCompact: { paddingHorizontal: 6, gap: 4 },

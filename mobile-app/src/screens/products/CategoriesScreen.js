@@ -20,7 +20,7 @@ import { useTheme } from '../../contexts/ThemeContext';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { categoriesApi } from '../../services/api';
 import { optimizedImageUri } from '../../config';
-import { borderRadius, fontSize, fontWeight, shadows, spacing } from '../../theme';
+import { borderRadius, fontSize, fontWeight, spacing } from '../../theme';
 
 const QUICK_LINKS = [
   { key: 'all', title: 'All products', subtitle: 'Browse the complete marketplace', icon: 'view-grid-outline', params: { title: 'All Products' } },
@@ -70,7 +70,7 @@ export default function CategoriesScreen({ navigation }) {
             key={item.key}
             activeOpacity={0.86}
             onPress={() => openProducts(item.params)}
-            style={[styles.quickCard, shadows.sm, { backgroundColor: c.card, borderColor: c.border }]}
+            style={[styles.quickCard, { backgroundColor: c.card, borderColor: c.border }]}
           >
             <View style={[styles.quickIcon, { backgroundColor: c.brandSurface }]}>
               <MaterialCommunityIcons name={item.icon} size={22} color={c.primary} />
@@ -152,7 +152,7 @@ export default function CategoriesScreen({ navigation }) {
               <TouchableOpacity
                 activeOpacity={0.86}
                 onPress={() => openProducts({ categoryId: item.id, title: getName(item) })}
-                style={[styles.categoryCard, shadows.sm, { backgroundColor: c.card, borderColor: c.border }]}
+                style={[styles.categoryCard, { backgroundColor: c.card, borderColor: c.border }]}
               >
                 {item.image ? (
                   <Image source={{ uri: optimizedImageUri(item.image, { width: 360 }) }} style={[styles.categoryImage, { backgroundColor: c.skeleton }]} resizeMode="cover" />

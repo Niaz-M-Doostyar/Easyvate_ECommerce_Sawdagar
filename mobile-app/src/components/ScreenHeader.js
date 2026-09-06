@@ -4,7 +4,7 @@ import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityI
 import { useTheme } from '../contexts/ThemeContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import PressableScale from './PressableScale';
-import { spacing, fontSize, fontWeight, borderRadius, shadows } from '../theme';
+import { spacing, fontSize, fontWeight, borderRadius } from '../theme';
 
 export default function ScreenHeader({ title, subtitle, onBack, right, showBack = true, style }) {
   const { theme } = useTheme();
@@ -23,7 +23,7 @@ export default function ScreenHeader({ title, subtitle, onBack, right, showBack 
           <PressableScale
             onPress={onBack}
             disabled={!onBack}
-            style={[styles.iconBtn, shadows.sm, { backgroundColor: c.surface, borderColor: c.borderLight }]}
+            style={[styles.iconBtn, { backgroundColor: c.surface, borderColor: c.borderLight }]}
             hitSlop={{ top: 8, left: 8, right: 8, bottom: 8 }}
             accessibilityRole="button"
             accessibilityLabel={lang === 'ps' ? 'شاته' : lang === 'dr' ? 'بازگشت' : 'Back'}

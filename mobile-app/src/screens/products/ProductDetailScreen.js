@@ -14,7 +14,7 @@ import QuantityInput from '../../components/QuantityInput';
 import RemoteImage from '../../components/RemoteImage';
 import { productsApi } from '../../services/api';
 import { formatPrice, WEBSITE_URL } from '../../config';
-import { spacing, fontSize, fontWeight, borderRadius, shadows } from '../../theme';
+import { spacing, fontSize, fontWeight, borderRadius } from '../../theme';
 
 export default function ProductDetailScreen({ navigation, route }) {
   const { width: viewportWidth, height: viewportHeight } = useWindowDimensions();
@@ -487,7 +487,7 @@ const styles = StyleSheet.create({
   mainImg: {},
   topActions: { position: 'absolute', top: 12, left: 16, right: 16, flexDirection: 'row', alignItems: 'center', gap: 10, zIndex: 4, elevation: 4 },
   topActionsSpacer: { flex: 1 },
-  floatBtn: { width: 44, height: 44, borderRadius: borderRadius.full, justifyContent: 'center', alignItems: 'center', ...shadows.md },
+  floatBtn: { width: 44, height: 44, borderRadius: borderRadius.full, justifyContent: 'center', alignItems: 'center' },
   overlayBadges: { position: 'absolute', left: 16, right: 16, bottom: 44, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   overlayPill: { paddingHorizontal: 12, paddingVertical: 8, borderRadius: borderRadius.full },
   overlayPillText: { fontSize: fontSize.xs, fontWeight: fontWeight.bold },
@@ -522,7 +522,7 @@ const styles = StyleSheet.create({
   tabText: { fontSize: fontSize.base, lineHeight: 20, fontWeight: fontWeight.semibold, includeFontPadding: false, textAlign: 'center', textAlignVertical: 'center' },
   tabContent: { minHeight: 80 },
   descText: { fontSize: fontSize.base, lineHeight: 24 },
-  bottomBar: { flexDirection: 'row', alignItems: 'center', gap: spacing.base, padding: spacing.base, borderTopWidth: 1, ...shadows.lg },
+  bottomBar: { flexDirection: 'row', alignItems: 'center', gap: spacing.base, padding: spacing.base, borderTopWidth: 1 },
   bottomBarCompact: { flexDirection: 'column', alignItems: 'stretch', gap: spacing.sm },
   bottomSummary: { minWidth: 92 },
   bottomSummaryCompact: { width: '100%', minWidth: 0, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
@@ -532,6 +532,6 @@ const styles = StyleSheet.create({
   bottomActionsWide: { width: 'auto', flex: 1 },
   bottomBtn: { flex: 1 },
   viewerTopActions: { position: 'absolute', left: 12, right: 12, zIndex: 100, elevation: 100, flexDirection: 'row', justifyContent: 'flex-end', gap: spacing.sm },
-  viewerReset: { width: 48, height: 48, borderRadius: borderRadius.full, justifyContent: 'center', alignItems: 'center', elevation: 20 },
-  viewerClose: { width: 56, height: 56, borderRadius: borderRadius.full, justifyContent: 'center', alignItems: 'center', elevation: 20 },
+  viewerReset: { width: 48, height: 48, borderRadius: borderRadius.full, justifyContent: 'center', alignItems: 'center' },
+  viewerClose: { width: 56, height: 56, borderRadius: borderRadius.full, justifyContent: 'center', alignItems: 'center' },
 });
