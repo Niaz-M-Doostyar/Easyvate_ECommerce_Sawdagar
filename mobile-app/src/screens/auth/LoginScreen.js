@@ -28,6 +28,11 @@ export default function LoginScreen({ navigation, route }) {
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
 
+  const handleIdentifierChange = (value) => {
+    setEmail(useEmail ? value : internationalPhone(value));
+    setErrors(current => ({ ...current, email: undefined }));
+  };
+
   const dismiss = () => {
     // Reset the root navigator to Main — this completely replaces the
     // navigation state, removing the Auth modal entirely without any
@@ -73,7 +78,11 @@ export default function LoginScreen({ navigation, route }) {
   const validate = () => {
     const e = {};
     if (!email.trim()) e.email = useEmail ? 'Email is required' : 'Phone number is required';
-    else if (!useEmail && !/^7\d{8}$/.test(nationalPhone(email))) e.email = 'Enter a valid Afghan mobile number: 7 followed by 8 digits';
+    else if (!useEmail) {
+      const digits = nationalPhone(email);
+      if (!digits.startsWith('7')) e.email = 'After +93, the mobile number must start with 7';
+      else if (digits.length !== 9) e.email = `Enter 9 digits after +93 (${digits.length} entered)`;
+    }
     if (!password) e.password = 'Password is required';
     setErrors(e);
     return Object.keys(e).length === 0;
@@ -89,7 +98,7 @@ export default function LoginScreen({ navigation, route }) {
             <Text style={[styles.title, { color: c.text }]}>{t.login}</Text>
             <Text style={[styles.subtitle, { color: c.textSecondary }]}>Sign in to continue shopping, track orders, and check out faster.</Text>
             <View style={styles.form}>
-              <Input label={useEmail ? 'Email' : 'Phone number'} icon={useEmail ? 'mail-outline' : 'call-outline'} prefix={useEmail ? undefined : '🇦🇫 +93'} value={useEmail ? email : nationalPhone(email)} onChangeText={v => setEmail(useEmail ? v : internationalPhone(v))} error={errors.email} keyboardType={useEmail ? 'email-address' : 'phone-pad'} autoCapitalize="none" autoCorrect={false} autoComplete={useEmail ? 'username' : 'tel'} textContentType={useEmail ? 'username' : 'telephoneNumber'} placeholder={useEmail ? 'you@example.com' : '7XX XXX XXX'} hint={useEmail ? undefined : 'Enter 9 digits starting with 7. Pasting 07… or +93… works too.'} editable={!loading} />
+              <Input label={useEmail ? 'Email' : 'Phone number'} icon={useEmail ? 'mail-outline' : 'call-outline'} prefix={useEmail ? undefined : '🇦🇫 +93'} value={useEmail ? email : nationalPhone(email)} onChangeText={handleIdentifierChange} error={errors.email} keyboardType={useEmail ? 'email-address' : 'phone-pad'} autoCapitalize="none" autoCorrect={false} autoComplete={useEmail ? 'username' : 'tel'} textContentType={useEmail ? 'username' : 'telephoneNumber'} placeholder={useEmail ? 'you@example.com' : '7XX XXX XXX'} hint={useEmail ? undefined : 'Enter 9 digits after +93 (for example, 7XX XXX XXX).'} editable={!loading} />
               <TouchableOpacity onPress={() => { setUseEmail(!useEmail); setEmail(''); setErrors({}); }} disabled={loading} accessibilityRole="button" style={{paddingVertical:10,marginBottom:12}}><Text style={{color:c.primary,fontWeight:'600'}}>{useEmail ? 'Use phone number instead' : 'Use email instead'}</Text></TouchableOpacity>
               <Input label={t.password} icon="lock-closed-outline" value={password} onChangeText={setPassword} error={errors.password} secureTextEntry autoComplete="current-password" textContentType="password" returnKeyType="go" onSubmitEditing={handleLogin} placeholder="Enter password" />
               <TouchableOpacity accessibilityRole="button" onPress={() => navigation.navigate('ForgotPassword')} style={styles.forgotRow}>
