@@ -65,7 +65,9 @@ export default function HomeScreen({ navigation }) {
   const [sponsored, setSponsored] = useState([]);
   const [adVisible, setAdVisible] = useState(false);
   const adShown = useRef(false);
-  useEffect(() => { if (!sponsored.length || adShown.current) return; adShown.current = true; setAdVisible(true); const timer = setTimeout(() => setAdVisible(false), 4000); return () => clearTimeout(timer); }, [sponsored]);
+  const adProduct = sponsored.find(product => product.images?.[0]?.url || product.image || product.thumbnail);
+  const adImage = adProduct?.images?.[0]?.url || adProduct?.image || adProduct?.thumbnail;
+  useEffect(() => { if (!adProduct || adShown.current) return; adShown.current = true; setAdVisible(true); const timer = setTimeout(() => setAdVisible(false), 4000); return () => clearTimeout(timer); }, [adProduct]);
   const [newArrivals, setNewArrivals] = useState([]);
   const [heroContent, setHeroContent] = useState(null);
   const [promoBanners, setPromoBanners] = useState([]);
@@ -230,7 +232,18 @@ export default function HomeScreen({ navigation }) {
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: c.background }]} edges={['top']}>
-      <Modal visible={adVisible && sponsored.length > 0} transparent animationType="fade" onRequestClose={() => setAdVisible(false)}><View style={{ flex: 1, justifyContent: 'center', backgroundColor: '#06122ab8', padding: 24 }}><View style={{ backgroundColor: c.card, borderRadius: 24, padding: 18 }}><TouchableOpacity accessibilityRole="button" accessibilityLabel="Close ad" onPress={() => setAdVisible(false)} style={{ alignSelf: 'flex-end', padding: 8 }}><MaterialCommunityIcons name="close" size={24} color={c.text} /></TouchableOpacity><Text style={{ color: c.primary, fontWeight: '700', marginBottom: 8 }}>Sponsored</Text><ProductCard product={sponsored[0]} onPress={() => { setAdVisible(false); goProduct(sponsored[0]); }} style={{ width: '100%' }} /></View></View></Modal>
+      <Modal visible={adVisible && !!adProduct} transparent animationType="fade" onRequestClose={() => setAdVisible(false)}>
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#06122ab8', padding: 24 }}>
+          <View style={{ width: Math.min(width - 48, 480), height: Math.min(width - 48, 480), position: 'relative' }}>
+            <TouchableOpacity accessibilityRole="button" accessibilityLabel={`View ${adProduct ? getName(adProduct) : 'sponsored product'}`} onPress={() => { setAdVisible(false); goProduct(adProduct); }} style={{ flex: 1 }}>
+              <RemoteImage source={adImage} width={800} quality={80} resizeMode="contain" style={{ width: '100%', height: '100%', borderRadius: 20, backgroundColor: c.card }} />
+            </TouchableOpacity>
+            <TouchableOpacity accessibilityRole="button" accessibilityLabel="Close ad" onPress={() => setAdVisible(false)} style={{ position: 'absolute', top: 10, right: 10, width: 38, height: 38, borderRadius: 19, alignItems: 'center', justifyContent: 'center', backgroundColor: '#0009' }}>
+              <MaterialCommunityIcons name="close" size={24} color="#fff" />
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
       <View style={[styles.header, { borderBottomColor: c.border }]}>
         <View style={styles.brandBlock}>
           <BrandLogo width={172} />

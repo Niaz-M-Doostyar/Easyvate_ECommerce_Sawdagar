@@ -12,7 +12,6 @@ import { AuthProvider } from '@/contexts/AuthContext';
 import { CartProvider } from '@/contexts/CartContext';
 import { SiteDataProvider } from '@/contexts/SiteDataContext';
 import Header from '@/components/Header';
-import SponsoredAd from '@/components/SponsoredAd';
 import Footer from '@/components/Footer';
 import ScrollToTop from '@/components/ScrollToTop';
 import PageLoader from '@/components/PageLoader';
@@ -70,7 +69,6 @@ export default async function RootLayout({ children }) {
             <SiteDataProvider initialCategories={initialCategories} initialSiteContent={initialSiteContent}>
               <AuthProvider>
                 <CartProvider>
-                  <SponsoredAd />
                   <Header />
                   <main className="main">{children}</main>
                   <Footer />
