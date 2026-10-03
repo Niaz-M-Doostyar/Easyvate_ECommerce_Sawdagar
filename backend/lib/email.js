@@ -75,16 +75,16 @@ function getFrontendUrl() {
 
 const emailIdentities = {
   info: {
-    from: process.env.SMTP_FROM_INFO || process.env.SMTP_FROM || 'Sawdagar <info@sawdagaraf.com>',
-    replyTo: process.env.SMTP_REPLY_TO_INFO || process.env.ADMIN_EMAIL || 'info@sawdagaraf.com',
+    from: process.env.SMTP_FROM_INFO || process.env.SMTP_FROM || 'Sawdagar <info@sawdagar.com>',
+    replyTo: process.env.SMTP_REPLY_TO_INFO || process.env.ADMIN_EMAIL || 'info@sawdagar.com',
   },
   sales: {
-    from: process.env.SMTP_FROM_SALES || 'Sawdagar Sales <sales@sawdagaraf.com>',
-    replyTo: process.env.SMTP_REPLY_TO_SALES || 'sales@sawdagaraf.com',
+    from: process.env.SMTP_FROM_SALES || 'Sawdagar Sales <sales@sawdagar.com>',
+    replyTo: process.env.SMTP_REPLY_TO_SALES || 'sales@sawdagar.com',
   },
   support: {
-    from: process.env.SMTP_FROM_SUPPORT || 'Sawdagar Support <supports@sawdagaraf.com>',
-    replyTo: process.env.SMTP_REPLY_TO_SUPPORT || process.env.SMTP_REPLY_TO || 'supports@sawdagaraf.com',
+    from: process.env.SMTP_FROM_SUPPORT || 'Sawdagar Support <supports@sawdagar.com>',
+    replyTo: process.env.SMTP_REPLY_TO_SUPPORT || process.env.SMTP_REPLY_TO || 'supports@sawdagar.com',
   },
 };
 
@@ -94,7 +94,7 @@ function getEmailIdentity(type = 'info') {
 
 const sendEmail = async (to, subject, html, options = {}) => {
   const identity = getEmailIdentity(options.fromType);
-  const fromAddress = options.from || identity.from || (smtpUser ? `Sawdagar <${smtpUser}>` : 'Sawdagar <info@sawdagaraf.com>');
+  const fromAddress = options.from || identity.from || (smtpUser ? `Sawdagar <${smtpUser}>` : 'Sawdagar <info@sawdagar.com>');
   const replyToAddress = options.replyTo || identity.replyTo || fromAddress;
 
   if (!transporter) {
@@ -156,22 +156,23 @@ const sendPasswordResetEmail = async (email, token) => {
 
 const sendOrderConfirmation = async (email, order) => {
   const body = `
-    <h2 style="color:#1a1a1a;margin:0 0 16px;">Order Confirmed! ✅</h2>
-    <p style="color:#555;font-size:15px;">Your order has been placed successfully.</p>
+    <h2 style="color:#1a1a1a;margin:0 0 16px;">Order received</h2>
+    <p style="color:#555;font-size:15px;">You can cancel within two hours, or confirm your order immediately in the app or website.</p>
     <table style="width:100%;margin:20px 0;border-collapse:collapse;">
       <tr><td style="padding:8px 0;color:#888;">Order Number</td><td style="padding:8px 0;font-weight:bold;">${order.orderNumber}</td></tr>
+      <tr><td style="padding:8px 0;color:#888;">Delivery</td><td style="padding:8px 0;">${order.deliveryFee || 0} AFN</td></tr>
       <tr><td style="padding:8px 0;color:#888;">Total</td><td style="padding:8px 0;font-weight:bold;color:#059669;">${order.totalAmount} AFN</td></tr>
       <tr><td style="padding:8px 0;color:#888;">Status</td><td style="padding:8px 0;">${order.status}</td></tr>
     </table>
     <p style="color:#555;font-size:14px;">We'll notify you when your order ships.</p>
   `;
-  return sendEmail(email, `Order Confirmed - ${order.orderNumber}`, emailWrapper('Order Confirmed', body), { fromType: 'sales' });
+  return sendEmail(email, `Order received - ${order.orderNumber}`, emailWrapper('Order received', body), { fromType: 'sales' });
 };
 
 const sendNewOrderNotification = async (order, user) => {
   const orderEmail = process.env.ORDER_NOTIFICATION_EMAIL
     || process.env.SMTP_REPLY_TO_SALES
-    || 'sales@sawdagaraf.com';
+    || 'sales@sawdagar.com';
   const customerLabel = user ? `${user.fullName || 'Customer'} (${user.email})` : 'Customer';
   const body = `
     <h2 style="color:#1a1a1a;margin:0 0 16px;">New Customer Order</h2>
@@ -199,7 +200,7 @@ const sendOrderStatusUpdate = async (email, order) => {
 const sendOrderStatusRecord = async (order, user, previousStatus) => {
   const orderEmail = process.env.ORDER_NOTIFICATION_EMAIL
     || process.env.SMTP_REPLY_TO_SALES
-    || 'sales@sawdagaraf.com';
+    || 'sales@sawdagar.com';
   const customerLabel = user ? `${user.fullName || 'Customer'} (${user.email})` : 'Customer';
   const body = `
     <h2 style="color:#1a1a1a;margin:0 0 16px;">Order Status Record</h2>

@@ -36,7 +36,7 @@ export default function PrivacyPolicyScreen({ navigation }) {
   const c = theme.colors;
 
   const handleEmailPress = () => {
-    Linking.openURL('mailto:supports@sawdagaraf.com?subject=Sawdagar%20Account%20Deletion%20Request').catch(() => {});
+    Linking.openURL('mailto:supports@sawdagar.com?subject=Sawdagar%20Account%20Deletion%20Request').catch(() => {});
   };
 
   return (
@@ -63,7 +63,7 @@ export default function PrivacyPolicyScreen({ navigation }) {
           </View>
           <View style={styles.deleteCopy}>
             <Text style={[styles.cardTitle, { color: c.text }]}>Account deletion requests</Text>
-            <Text style={[styles.cardBody, { color: c.textSecondary }]}>If someone wants to delete a Sawdagar account, they should contact supports@sawdagaraf.com. Send the request from the same email address or include the phone number linked to the account so the team can verify ownership.</Text>
+            <Text style={[styles.cardBody, { color: c.textSecondary }]}>If someone wants to delete a Sawdagar account, they should contact supports@sawdagar.com. Send the request from the same email address or include the phone number linked to the account so the team can verify ownership.</Text>
           </View>
           <Button
             variant="primary"

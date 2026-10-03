@@ -76,6 +76,9 @@ export const api = {
 // Auth
 export const authApi = {
   login: (d) => api.post('/api/auth/login', d),
+  requestCustomerOtp: (d) => api.post('/api/auth/customer-otp', d),
+  resetPhonePassword: (d) => api.post('/api/auth/reset-phone-password', d),
+  verifyCustomerOtp: (d) => api.post('/api/auth/verify-customer-otp', d),
   register: (d) => api.post('/api/auth/register', d),
   me: () => api.get('/api/auth/me'),
   logout: () => api.post('/api/auth/logout', {}),
@@ -113,6 +116,8 @@ export const ordersApi = {
   list: (params) => api.get(withQuery('/api/orders', params)),
   get: (id) => api.get(`/api/orders/${id}`),
   create: (d) => api.post('/api/orders', d),
+  cancel: (id) => api.post(`/api/orders/${id}/cancel`, {}),
+  confirm: (id) => api.post(`/api/orders/${id}/confirm`, {}),
   tracking: (id) => api.get(`/api/orders/${id}/tracking`),
 };
 

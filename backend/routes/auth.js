@@ -62,6 +62,102 @@ async function ensureDeletedSupplierUser(tx) {
   return created.id;
 }
 
+const crypto = require('node:crypto');
+const { normalizeAfghanPhone, codeHash, sendCode } = require('../lib/phoneOtp');
+
+// Persist challenges and limits so restarts and multiple workers cannot bypass them.
+router.post('/customer-otp', async (req, res) => {
+  try {
+    const { firstName, lastName, password, confirmPassword, channel = 'sms', purpose = 'registration' } = req.body;
+    if (!['registration', 'password-reset'].includes(purpose)) return res.status(400).json({ error: 'Invalid verification request' });
+    const phone = normalizeAfghanPhone(req.body.phone);
+    if (!phone) return res.status(400).json({ error: 'Enter an Afghanistan mobile number, e.g. 0700123456' });
+    if (!['sms', 'whatsapp'].includes(channel)) return res.status(400).json({ error: 'Invalid OTP method' });
+    if (purpose === 'registration' && (typeof firstName !== 'string' || typeof lastName !== 'string' || !sanitize(firstName).trim() || !sanitize(lastName).trim() || firstName.length > 80 || lastName.length > 80))
+      return res.status(400).json({ error: 'First name and last name are required (maximum 80 characters each)' });
+    if (purpose === 'registration' && (typeof password !== 'string' || password.length < 6 || password.length > 72 || password !== confirmPassword))
+      return res.status(400).json({ error: 'Passwords must match and contain 6–72 characters' });
+    const existing = await prisma.user.findFirst({ where: { OR: [{ customerPhone: phone }, { phone: { in: [phone, phone.slice(1), '0' + phone.slice(3)] } }] } });
+    if (purpose === 'password-reset' && (!existing || !existing.phoneVerified || !existing.isActive || existing.customerPhone !== phone))
+      return res.status(400).json({ error: 'Phone recovery is available for active phone-verified accounts. Existing email accounts should use email recovery.' });
+    if (purpose === 'registration' && existing)
+      return res.status(409).json({ error: 'Phone number already registered. Please sign in.' });
+    const now = new Date();
+    const rateKey = crypto.createHash('sha256').update(req.ip || 'unknown').digest('hex');
+    const rateId = `${rateKey}:${Math.floor(now.getTime() / 3600000)}`;
+    const rate = await prisma.phoneOtpRate.upsert({ where: { id: rateId }, create: { id: rateId, count: 1, expiresAt: new Date(now.getTime() + 7200000) }, update: { count: { increment: 1 } } });
+    if (rate.count > 20) return res.status(429).json({ error: 'Too many verification requests. Try again later.' });
+    await prisma.phoneOtpRate.deleteMany({ where: { expiresAt: { lt: now } } });
+    const id = crypto.randomUUID();
+    const code = String(crypto.randomInt(100000, 1000000));
+    const passwordHash = purpose === 'registration' ? await hashPassword(password) : '';
+    const previous = await prisma.phoneRegistration.findUnique({ where: { phone } });
+    if (previous && (now - previous.lastSentAt < 60000 || (now - previous.windowStart < 3600000 && previous.sendCount >= 5)))
+      return res.status(429).json({ error: 'Please wait before requesting another code. Maximum 5 sends per hour.' });
+    const data = { id, purpose, userId: purpose === 'password-reset' ? existing.id : null, fullName: purpose === 'registration' ? `${sanitize(firstName).trim()} ${sanitize(lastName).trim()}` : '', password: passwordHash,
+      codeHash: codeHash(id, code), expiresAt: new Date(now.getTime() + 300000), lastSentAt: now, attempts: 0,
+      sendCount: previous && now - previous.windowStart < 3600000 ? previous.sendCount + 1 : 1,
+      windowStart: previous && now - previous.windowStart < 3600000 ? previous.windowStart : now };
+    // Compare-and-swap reserves the send before contacting the paid provider.
+    if (previous) {
+      const reserved = await prisma.phoneRegistration.updateMany({ where: { id: previous.id, lastSentAt: previous.lastSentAt }, data });
+      if (!reserved.count) return res.status(429).json({ error: 'Another code request is in progress' });
+    } else await prisma.phoneRegistration.create({ data: { ...data, phone } });
+    try { await sendCode(phone, code, channel); }
+    catch {
+      await prisma.phoneRegistration.updateMany({ where: { id }, data: { expiresAt: now } });
+      return res.status(503).json({ error: 'Could not send the code. Wait 60 seconds and try again or choose the other method.' });
+    }
+    return res.json({ challengeId: id, expiresIn: 300, retryAfter: 60, channel, message: `Code sent by ${channel === 'sms' ? 'SMS' : 'WhatsApp'}` });
+  } catch (err) {
+    return res.status(err.code === 'P2002' ? 429 : 500).json({ error: 'Unable to request verification. Please try again later.' });
+  }
+});
+router.post('/verify-customer-otp', async (req, res) => {
+  try {
+    const { challengeId, code } = req.body;
+    if (typeof challengeId !== 'string' || typeof code !== 'string' || !/^\d{6}$/.test(code))
+      return res.status(400).json({ error: 'Enter the six-digit code' });
+    const result = await prisma.$transaction(async tx => {
+      const reserved = await tx.phoneRegistration.updateMany({ where: { id: challengeId, purpose: 'registration', expiresAt: { gt: new Date() }, attempts: { lt: 5 } }, data: { attempts: { increment: 1 } } });
+      if (!reserved.count) return false;
+      const challenge = await tx.phoneRegistration.findUnique({ where: { id: challengeId } });
+      if (codeHash(challengeId, code) !== challenge.codeHash) return false;
+      const user = await tx.user.create({ data: { email: `${challenge.phone.slice(1)}@phone.sawdagar.local`, customerPhone: challenge.phone,
+        phone: challenge.phone, phoneVerified: true, fullName: challenge.fullName, password: challenge.password,
+        role: 'customer', isActive: true, isApproved: true, emailVerified: false } });
+      await tx.phoneRegistration.delete({ where: { id: challengeId } });
+      return user.id;
+    });
+    if (!result) return res.status(400).json({ error: 'Invalid or expired code. Request a new code after 5 failed attempts.' });
+    return res.status(201).json({ message: 'Phone verified. Account created! You can now sign in with your phone number.' });
+  } catch (err) {
+    return res.status(err.code === 'P2002' ? 409 : 500).json({ error: 'Unable to create account. Please try signing in or request a new code.' });
+  }
+});
+
+router.post('/reset-phone-password', async (req, res) => {
+  try {
+    const { challengeId, code, password, confirmPassword } = req.body;
+    if (typeof challengeId !== 'string' || typeof code !== 'string' || !/^\d{6}$/.test(code)) return res.status(400).json({ error: 'Enter the six-digit code' });
+    if (typeof password !== 'string' || password.length < 6 || password.length > 72 || password !== confirmPassword)
+      return res.status(400).json({ error: 'Passwords must match and contain 6–72 characters' });
+    const hashed = await hashPassword(password);
+    const valid = await prisma.$transaction(async tx => {
+      const reserved = await tx.phoneRegistration.updateMany({ where: { id: challengeId, purpose: 'password-reset', expiresAt: { gt: new Date() }, attempts: { lt: 5 } }, data: { attempts: { increment: 1 } } });
+      if (!reserved.count) return false;
+      const challenge = await tx.phoneRegistration.findUnique({ where: { id: challengeId } });
+      if (codeHash(challengeId, code) !== challenge.codeHash) return false;
+      const updated = await tx.user.updateMany({ where: { id: challenge.userId, customerPhone: challenge.phone, phoneVerified: true, isActive: true }, data: { password: hashed, resetToken: null, resetTokenExp: null } });
+      if (!updated.count) return false;
+      await tx.phoneRegistration.delete({ where: { id: challengeId } });
+      return true;
+    });
+    if (!valid) return res.status(400).json({ error: 'Invalid or expired code. Request a new code after 5 failed attempts.' });
+    return res.json({ message: 'Password updated. Sign in with your phone number and new password.' });
+  } catch { return res.status(500).json({ error: 'Unable to reset password. Please try again later.' }); }
+});
+
 // POST /api/auth/register
 router.post('/register', async (req, res) => {
   try {
@@ -81,9 +177,12 @@ router.post('/register', async (req, res) => {
       businessLicense,
     } = req.body;
 
-    if (!email || !password || !fullName) {
+    if (role !== 'supplier') return res.status(400).json({ error: 'Customers must register using phone OTP verification' });
+    const cleanedFullName = typeof fullName === 'string' ? sanitize(fullName) : '';
+    if (!email || !password || !cleanedFullName) {
       return res.status(400).json({ error: 'Email, password, and full name are required' });
     }
+    if (typeof email !== 'string' || email.toLowerCase().endsWith('@phone.sawdagar.local')) return res.status(400).json({ error: 'Invalid email' });
     if (!validateEmail(email)) return res.status(400).json({ error: 'Invalid email' });
     if (password.length < 6) return res.status(400).json({ error: 'Password must be at least 6 characters' });
 
@@ -110,7 +209,7 @@ router.post('/register', async (req, res) => {
       data: {
         email: email.toLowerCase(),
         password: hashedPassword,
-        fullName: sanitize(fullName),
+        fullName: cleanedFullName,
         phone: phone || null,
         role: userRole,
         isActive: autoVerify,
@@ -168,12 +267,14 @@ router.post('/register', async (req, res) => {
 // POST /api/auth/login
 router.post('/login', async (req, res) => {
   try {
-    const { email, password, rememberMe } = req.body;
-    if (!email || !password) return res.status(400).json({ error: 'Email and password are required' });
+    const { password, rememberMe } = req.body;
+    const email = req.body.phone || req.body.email;
+    if (typeof email !== 'string' || typeof password !== 'string') return res.status(400).json({ error: 'Phone or email and password are required' });
 
-    const user = await prisma.user.findUnique({ where: { email: email.toLowerCase() } });
+    const phone = normalizeAfghanPhone(email);
+    const user = phone ? await prisma.user.findUnique({ where: { customerPhone: phone } }) : await prisma.user.findUnique({ where: { email: email.trim().toLowerCase() } });
     if (!user) return res.status(401).json({ error: 'Invalid credentials' });
-    if (!user.emailVerified) return res.status(403).json({ error: 'Please verify your email first' });
+    if (!user.emailVerified && !user.phoneVerified) return res.status(403).json({ error: 'Please verify your email first' });
     if (!user.isActive) return res.status(403).json({ error: 'Account is deactivated' });
     if (user.role === 'supplier' && !user.isApproved) {
       return res.status(403).json({ error: 'Supplier account is pending admin approval' });
@@ -196,7 +297,7 @@ router.post('/login', async (req, res) => {
 
     res.json({
       user: {
-        id: user.id, email: user.email, fullName: user.fullName,
+        id: user.id, email: user.phoneVerified ? '' : user.email, phoneVerified: user.phoneVerified, fullName: user.fullName,
         role: user.role, phone: user.phone, province: user.province,
         district: user.district, village: user.village, landmark: user.landmark,
         companyName: user.companyName, isApproved: user.isApproved,
@@ -227,6 +328,16 @@ router.delete('/account', authenticate, async (req, res) => {
     if (!currentUser) return res.status(404).json({ error: 'User not found' });
     if (currentUser.role === 'admin') {
       return res.status(403).json({ error: 'Admin account deletion is not allowed' });
+    }
+
+    const activeOrder = await prisma.order.findFirst({
+      where: { userId: currentUser.id, status: { in: ['pending', 'confirmed', 'shipped'] } },
+      select: { orderNumber: true },
+    });
+    if (activeOrder) {
+      return res.status(409).json({
+        error: `Your order ${activeOrder.orderNumber} is still active. Please contact support to complete or cancel it before deleting your account.`,
+      });
     }
 
     await prisma.$transaction(async (tx) => {
@@ -341,7 +452,7 @@ router.get('/verify-email', async (req, res) => verifyEmail(req.query.token, res
 router.post('/resend-verification', async (req, res) => {
   try {
     const { email } = req.body;
-    if (!email) return res.status(400).json({ error: 'Email is required' });
+    if (typeof email !== 'string' || !validateEmail(email) || email.toLowerCase().endsWith('@phone.sawdagar.local')) return res.status(400).json({ error: 'Enter a valid email. Phone accounts should use phone OTP recovery.' });
 
     const user = await prisma.user.findUnique({ where: { email: email.toLowerCase() } });
     if (!user) return res.status(404).json({ error: 'User not found' });
@@ -363,7 +474,7 @@ router.post('/resend-verification', async (req, res) => {
 router.post('/forgot-password', async (req, res) => {
   try {
     const { email } = req.body;
-    if (!email) return res.status(400).json({ error: 'Email is required' });
+    if (typeof email !== 'string' || !validateEmail(email) || email.toLowerCase().endsWith('@phone.sawdagar.local')) return res.status(400).json({ error: 'Enter a valid email. Phone accounts should use phone OTP recovery.' });
 
     const user = await prisma.user.findUnique({ where: { email: email.toLowerCase() } });
     if (user) {
@@ -413,7 +524,7 @@ router.post('/reset-password', async (req, res) => {
 
 // GET /api/auth/me
 router.get('/me', authenticate, async (req, res) => {
-  res.json({ user: req.user });
+  res.json({ user: { ...req.user, email: req.user.phoneVerified ? '' : req.user.email } });
 });
 
 const updateProfile = async (req, res) => {
@@ -445,7 +556,10 @@ const updateProfile = async (req, res) => {
 
     const updateData = {};
     if (fullName) updateData.fullName = sanitize(fullName);
-    if (phone !== undefined) updateData.phone = phone;
+    if (phone !== undefined) {
+      if (req.user.phoneVerified && normalizeAfghanPhone(phone) !== req.user.phone) return res.status(400).json({ error: 'Verified phone number cannot be changed here' });
+      updateData.phone = req.user.phoneVerified ? req.user.phone : phone;
+    }
     if (province !== undefined) updateData.province = province;
     if (district !== undefined) updateData.district = district;
     if (village !== undefined) updateData.village = village;
@@ -460,13 +574,13 @@ const updateProfile = async (req, res) => {
       where: { id: req.user.id },
       data: updateData,
       select: {
-        id: true, email: true, fullName: true, phone: true, role: true,
+        id: true, email: true, fullName: true, phone: true, phoneVerified: true, role: true,
         province: true, district: true, village: true, landmark: true,
         companyName: true, contactPerson: true, taxId: true,
       },
     });
 
-    res.json({ user: updated });
+    res.json({ user: { ...updated, email: updated.phoneVerified ? '' : updated.email } });
   } catch (err) {
     res.status(500).json({ error: 'Profile update failed' });
   }
@@ -483,7 +597,7 @@ router.put('/change-password', authenticate, async (req, res) => {
 router.post('/test-email', async (req, res) => {
   try {
     const { email } = req.body;
-    if (!email) return res.status(400).json({ error: 'Email is required' });
+    if (typeof email !== 'string' || !validateEmail(email) || email.toLowerCase().endsWith('@phone.sawdagar.local')) return res.status(400).json({ error: 'Enter a valid email. Phone accounts should use phone OTP recovery.' });
     const testToken = 'test-' + Date.now();
     const result = await sendVerificationEmail(email, testToken);
     if (result) {

@@ -1669,6 +1669,7 @@
 }
 
 .swd-field input,
+.swd-field select,
 .swd-field textarea {
   width: 100%;
   color: var(--sv-ink);
@@ -1676,6 +1677,8 @@
   border: 0;
   outline: 0;
 }
+
+.swd-field select { min-height: 48px; cursor: pointer; }
 
 .swd-field textarea {
   min-height: 112px;

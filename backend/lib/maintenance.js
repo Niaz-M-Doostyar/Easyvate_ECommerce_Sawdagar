@@ -45,6 +45,13 @@ function startMaintenanceJobs() {
   run();
   const timer = setInterval(run, 24 * 60 * 60 * 1000);
   timer.unref?.();
+  const confirmOrders = () => prisma.order.updateMany({
+    where: { status: 'pending', confirmAfter: { lte: new Date() } },
+    data: { status: 'confirmed' },
+  }).catch((error) => console.error('Order confirmation job failed:', error.message));
+  confirmOrders();
+  const confirmationTimer = setInterval(confirmOrders, 60 * 1000);
+  confirmationTimer.unref?.();
 }
 
 module.exports = { runDataMigrations, deleteExpiredUnverifiedAccounts, startMaintenanceJobs };

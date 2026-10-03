@@ -1,4 +1,5 @@
 "use client";
+import { nationalPhone, internationalPhone } from '@/lib/afghanPhone.cjs';
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -14,6 +15,7 @@ export default function LoginPage() {
   const { t } = useLanguage();
   const { siteContent } = useSiteData();
   const logoUrl = (siteContent?.header?.logo || "").trim() || "/assets/img/logo/sawdagar.png";
+  const [useEmail, setUseEmail] = useState(false);
   const [form, setForm] = useState({ email: "", password: "" });
   const [loading, setLoading] = useState(false);
 
@@ -59,16 +61,13 @@ export default function LoginPage() {
           <div className="f2-auth-card">
           <form onSubmit={handleSubmit} className="f2-content-form" aria-busy={loading}>
             <div className="f2-content-field">
-              <label htmlFor="login-email">{t('email') || 'Email'}</label>
-              <input
-                id="login-email"
-                type="email"
-                value={form.email}
-                onChange={e => setForm({ ...form, email: e.target.value })}
-                placeholder={t('email') || 'Email'}
-                autoComplete="email"
-                required
-              />
+              <label htmlFor="login-email"><i className={useEmail ? 'far fa-envelope' : 'far fa-phone'} aria-hidden="true" /> {useEmail ? 'Email' : 'Phone number'}</label>
+              <div style={{display:'flex',alignItems:'center',gap:10,border:'1px solid #d5dfeb',borderRadius:12,paddingLeft:14}}>
+                {!useEmail && <span style={{whiteSpace:'nowrap',fontWeight:600}} aria-label="Afghanistan country code">🇦🇫 +93</span>}
+                <input id="login-email" type={useEmail ? 'email' : 'tel'} inputMode={useEmail ? 'email' : 'tel'} value={useEmail ? form.email : nationalPhone(form.email)} onChange={e => setForm({...form,email:useEmail ? e.target.value : internationalPhone(e.target.value)})} placeholder={useEmail ? 'you@example.com' : '7XX XXX XXX'} autoComplete={useEmail ? 'username' : 'tel-national'} pattern={useEmail ? undefined : '7[0-9]{8}'} style={{border:0,minWidth:0}} disabled={loading} required />
+              </div>
+              {!useEmail && <small>Enter 9 digits starting with 7. Pasting 07… or +93… works too.</small>}
+              <button type="button" disabled={loading} onClick={() => {setUseEmail(!useEmail);setForm({...form,email:''});}} style={{border:0,background:'none',color:'#2545ce',padding:'10px 0',fontWeight:600,textAlign:'left'}}>{useEmail ? 'Use phone number instead' : 'Use email instead'}</button>
             </div>
 
             <div className="f2-content-field">

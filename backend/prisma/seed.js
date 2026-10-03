@@ -9,10 +9,10 @@ async function main() {
   const customerPassword = bcrypt.hashSync('customer123', 10);
 
   const admin = await prisma.user.upsert({
-    where: { email: 'admin@sawdagar.af' },
+    where: { email: 'admin@sawdagar.com' },
     update: {},
     create: {
-      email: 'admin@sawdagar.af',
+      email: 'admin@sawdagar.com',
       password: adminPassword,
       fullName: 'Sawdagar Admin',
       phone: '0700000001',
@@ -26,10 +26,10 @@ async function main() {
   });
 
   const supplier = await prisma.user.upsert({
-    where: { email: 'supplier@sawdagar.af' },
+    where: { email: 'supplier@sawdagar.com' },
     update: { supplierVerified: true },
     create: {
-      email: 'supplier@sawdagar.af',
+      email: 'supplier@sawdagar.com',
       password: supplierPassword,
       fullName: 'Ahmad Supplier',
       phone: '0700000002',
@@ -46,10 +46,10 @@ async function main() {
   });
 
   const customer = await prisma.user.upsert({
-    where: { email: 'customer@sawdagar.af' },
+    where: { email: 'customer@sawdagar.com' },
     update: {},
     create: {
-      email: 'customer@sawdagar.af',
+      email: 'customer@sawdagar.com',
       password: customerPassword,
       fullName: 'Mohammad Customer',
       phone: '0700000003',
@@ -63,10 +63,10 @@ async function main() {
   });
 
   const delivery = await prisma.user.upsert({
-    where: { email: 'delivery@sawdagar.af' },
+    where: { email: 'delivery@sawdagar.com' },
     update: {},
     create: {
-      email: 'delivery@sawdagar.af',
+      email: 'delivery@sawdagar.com',
       password: bcrypt.hashSync('delivery123', 10),
       fullName: 'Karim Delivery',
       phone: '0700000004',
@@ -218,10 +218,10 @@ async function main() {
   });
 
   console.log('Seed completed successfully');
-  console.log('Admin: admin@sawdagar.af / admin123');
-  console.log('Supplier: supplier@sawdagar.af / supplier123');
-  console.log('Customer: customer@sawdagar.af / customer123');
-  console.log('Delivery: delivery@sawdagar.af / delivery123');
+  console.log('Admin: admin@sawdagar.com / admin123');
+  console.log('Supplier: supplier@sawdagar.com / supplier123');
+  console.log('Customer: customer@sawdagar.com / customer123');
+  console.log('Delivery: delivery@sawdagar.com / delivery123');
 }
 
 main()

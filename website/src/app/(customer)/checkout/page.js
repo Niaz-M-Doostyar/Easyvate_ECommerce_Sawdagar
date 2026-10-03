@@ -9,6 +9,8 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { useToast } from "@/contexts/ToastContext";
 import { formatPrice } from "@/lib/currency";
 
+const PROVINCES = "Badakhshan,Badghis,Baghlan,Balkh,Bamyan,Daykundi,Farah,Faryab,Ghazni,Ghor,Helmand,Herat,Jowzjan,Kabul,Kandahar,Kapisa,Khost,Kunar,Kunduz,Laghman,Logar,Nangarhar,Nimroz,Nuristan,Paktia,Paktika,Panjshir,Parwan,Samangan,Sar-e Pol,Takhar,Uruzgan,Wardak,Zabul".split(",");
+
 const FALLBACK_IMAGE = "/assets/img/product/placeholder.png";
 
 function CheckoutLoading() {
@@ -50,6 +52,7 @@ export default function CheckoutPage() {
     }));
   }, [user]);
 
+  const deliveryFee = form.province && form.province !== "Kandahar" ? 150 : 0;
   const setField = (field, value) => setForm((current) => ({ ...current, [field]: value }));
 
   if (authLoading || (user && cartLoading)) return <CheckoutLoading />;
@@ -235,14 +238,10 @@ export default function CheckoutPage() {
                     <span>{t("province") || "Province"} <em>*</em></span>
                     <div className="swd-field__control">
                       <i className="far fa-map" aria-hidden="true" />
-                      <input
-                        type="text"
-                        value={form.province}
-                        onChange={(event) => setField("province", event.target.value)}
-                        placeholder={t("province_placeholder") || "e.g. Kabul"}
-                        autoComplete="address-level1"
-                        required
-                      />
+                      <select value={form.province} onChange={(event) => setField("province", event.target.value)} required aria-label="Province">
+                        <option value="">Select province</option>
+                        {PROVINCES.map((province) => <option key={province} value={province}>{province}</option>)}
+                      </select>
                     </div>
                   </label>
 
@@ -358,8 +357,8 @@ export default function CheckoutPage() {
 
               <dl className="swd-summary-lines">
                 <div><dt>{t("subtotal") || "Subtotal"}</dt><dd>{formatPrice(cartTotal)}</dd></div>
-                <div><dt>{t("delivery") || "Delivery"}</dt><dd className="is-free">{t("free") || "Free"}</dd></div>
-                <div className="swd-summary-total"><dt>{t("total") || "Total"}</dt><dd>{formatPrice(cartTotal)}</dd></div>
+                <div><dt>{t("delivery") || "Delivery"}</dt><dd>{deliveryFee ? formatPrice(deliveryFee) : (t("free") || "Free")}</dd></div>
+                <div className="swd-summary-total"><dt>{t("total") || "Total"}</dt><dd>{formatPrice(cartTotal + deliveryFee)}</dd></div>
               </dl>
 
               <button

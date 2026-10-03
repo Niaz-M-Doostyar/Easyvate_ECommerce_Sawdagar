@@ -1,4 +1,6 @@
 "use client";
+import { nationalPhone, internationalPhone } from '@/lib/afghanPhone.cjs';
+import useAutoOtpVerification from '@/hooks/useAutoOtpVerification';
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -7,6 +9,8 @@ import { useToast } from "@/contexts/ToastContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useSiteData } from "@/contexts/SiteDataContext";
 import { AFGHANISTAN_PROVINCES } from "@/data/afghanistanProvinces";
+
+import { OtpMethodPicker, OtpVerification } from '@/components/OtpControls';
 
 export default function RegisterPage() {
   const { register } = useAuth();
@@ -18,11 +22,37 @@ export default function RegisterPage() {
   const [role, setRole] = useState("customer");
   const [loading, setLoading] = useState(false);
   const [formError, setFormError] = useState("");
-  const [form, setForm] = useState({ fullName: "", email: "", phone: "", password: "", confirmPassword: "", companyName: "", companyAddress: "", province: "" });
+  const [form, setForm] = useState({ firstName: "", lastName: "", fullName: "", email: "", phone: "", password: "", confirmPassword: "", companyName: "", companyAddress: "", province: "" });
+  const [challengeId, setChallengeId] = useState("");
+  const [code, setCode] = useState("");
+  const [channel, setChannel] = useState("sms");
+  const [sentChannel, setSentChannel] = useState("sms");
+  const [expiresAt, setExpiresAt] = useState(0);
+  const [retryAt, setRetryAt] = useState(0);
+  const customerRequest = async (path, body) => {
+    const response = await fetch(`/api/auth/${path}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error || 'Request failed');
+    return data;
+  };
+  const requestCode = async () => {
+    const data = await customerRequest('customer-otp', { ...form, channel });
+    setChallengeId(data.challengeId);
+    setCode(""); setSentChannel(channel); setExpiresAt(Date.now() + (data.expiresIn || 300) * 1000);
+    setRetryAt(Date.now() + data.retryAfter * 1000);
+    toast.success(data.message);
+  };
+  const resendCode = async () => {
+    if (Date.now() < retryAt) { setFormError('Please wait 60 seconds between code requests.'); return; }
+    setLoading(true); setFormError('');
+    try { await requestCode(); } catch (err) { setFormError(err.message); }
+    finally { setLoading(false); }
+  };
   const set = (k, v) => setForm(p => ({ ...p, [k]: v }));
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (loading) return;
     setFormError("");
 
     if (form.password !== form.confirmPassword) {
@@ -39,6 +69,17 @@ export default function RegisterPage() {
     }
 
     setLoading(true);
+    if (role === 'customer') {
+      try {
+        if (!challengeId) await requestCode();
+        else {
+          const data = await customerRequest('verify-customer-otp', { challengeId, code });
+          toast.success(data.message); router.push('/login');
+        }
+      } catch (err) { setFormError(err.message); toast.error(err.message); }
+      finally { setLoading(false); }
+      return;
+    }
     const body = { fullName: form.fullName, email: form.email, phone: form.phone, password: form.password, role };
     if (role === "supplier") { body.companyName = form.companyName; body.companyAddress = form.companyAddress; body.province = form.province; }
     const result = await register(body);
@@ -53,6 +94,8 @@ export default function RegisterPage() {
       toast.error(result.error || "Registration failed");
     }
   };
+
+  useAutoOtpVerification({ challengeId, code, loading, onVerify: () => handleSubmit({ preventDefault() {} }) });
 
   return (
     <div className="f2-content-page f2-auth-page f2-auth-page--with-crumb">
@@ -77,15 +120,15 @@ export default function RegisterPage() {
             </Link>
             <span className="f2-content-eyebrow">Join Sawdagar</span>
             <h2>{t('register') || 'Create Account'}</h2>
-            <p>Create your Sawdagar account in seconds</p>
+            <p>{challengeId ? 'Enter the code to finish creating your account.' : 'A few details, then a quick phone verification.'}</p>
           </header>
 
           <div className="f2-auth-card">
-          <div className="f2-role-picker" aria-label="Account type">
+          <div className="f2-role-picker" aria-label="Account type" style={{ display: challengeId ? 'none' : undefined }}>
             <button
               type="button"
               className={`f2-role-option${role === 'customer' ? ' active' : ''}`}
-              onClick={() => setRole('customer')}
+              onClick={() => { setRole('customer'); setChallengeId(''); setCode(''); }} disabled={loading}
               aria-pressed={role === 'customer'}
             >
               <i className="far fa-user"></i> {t('register_as_customer') || 'Customer'}
@@ -93,7 +136,7 @@ export default function RegisterPage() {
             <button
               type="button"
               className={`f2-role-option${role === 'supplier' ? ' active' : ''}`}
-              onClick={() => setRole('supplier')}
+              onClick={() => { setRole('supplier'); setChallengeId(''); setCode(''); }} disabled={loading}
               aria-pressed={role === 'supplier'}
             >
               <i className="far fa-store"></i> {t('register_as_supplier') || 'Supplier'}
@@ -101,19 +144,23 @@ export default function RegisterPage() {
           </div>
 
           <form onSubmit={handleSubmit} className="f2-content-form" aria-busy={loading}>
-            <div className="f2-content-field">
+            <fieldset disabled={loading || !!challengeId} style={{ border: 0, padding: 0, margin: 0, display: challengeId ? 'none' : undefined }}>
+            {role === 'customer' ? <div className="f2-content-form-grid">
+              <div className="f2-content-field"><label htmlFor="first-name"><i className="far fa-user" aria-hidden="true" /> First name *</label><input id="first-name" autoComplete="given-name" value={form.firstName} onChange={e => set('firstName', e.target.value)} maxLength={80} required /></div>
+              <div className="f2-content-field"><label htmlFor="last-name"><i className="far fa-user" aria-hidden="true" /> Last name *</label><input id="last-name" autoComplete="family-name" value={form.lastName} onChange={e => set('lastName', e.target.value)} maxLength={80} required /></div>
+            </div> : <div className="f2-content-field">
               <label htmlFor="register-name">{t('full_name') || 'Full name'} *</label>
               <input id="register-name" type="text" placeholder={t('full_name') || 'Full name'} value={form.fullName} onChange={e => set("fullName", e.target.value)} autoComplete="name" required />
-            </div>
+            </div>}
 
             <div className="f2-content-form-grid">
-              <div className="f2-content-field">
+              {role === 'supplier' && <div className="f2-content-field">
                 <label htmlFor="register-email">{t('email') || 'Email'} *</label>
                 <input id="register-email" type="email" placeholder={t('email') || 'Email'} value={form.email} onChange={e => set("email", e.target.value)} autoComplete="email" required />
-              </div>
+              </div>}
               <div className="f2-content-field">
-                <label htmlFor="register-phone">{t('phone') || 'Phone'} *</label>
-                <input id="register-phone" type="tel" placeholder="07XXXXXXXX" value={form.phone} onChange={e => set("phone", e.target.value)} autoComplete="tel" required />
+                <label htmlFor="register-phone">{role === 'customer' ? 'Afghanistan phone (+93)' : (t('phone') || 'Phone')} *</label>
+                <div style={{display:"flex",alignItems:"center",gap:10,border:"1px solid #d5dfeb",borderRadius:12,paddingLeft:14}}><span style={{whiteSpace:"nowrap",fontWeight:600}} aria-label="Afghanistan country code">🇦🇫 +93</span><input id="register-phone" type="tel" inputMode="tel" placeholder="7XX XXX XXX" value={nationalPhone(form.phone)} onChange={e => set("phone", internationalPhone(e.target.value))} autoComplete="tel-national" pattern="7[0-9]{8}" maxLength={16} style={{border:0,minWidth:0}} aria-describedby="phone-help" required /></div><small id="phone-help">Enter 9 digits starting with 7. Pasting 07… or +93… works too.</small>
               </div>
             </div>
 
@@ -140,15 +187,20 @@ export default function RegisterPage() {
             <div className="f2-content-form-grid">
               <div className="f2-content-field">
                 <label htmlFor="register-password">{t('password') || 'Password'} *</label>
-                <input id="register-password" type="password" placeholder={t('password') || 'Password'} value={form.password} onChange={e => set("password", e.target.value)} autoComplete="new-password" required />
+                <input id="register-password" type="password" minLength={6} maxLength={72} placeholder={t('password') || 'Password'} value={form.password} onChange={e => set("password", e.target.value)} autoComplete="new-password" required />
               </div>
               <div className="f2-content-field">
                 <label htmlFor="register-confirm">{t('confirm_password') || 'Confirm password'} *</label>
-                <input id="register-confirm" type="password" placeholder={t('confirm_password') || 'Confirm password'} value={form.confirmPassword} onChange={e => set("confirmPassword", e.target.value)} autoComplete="new-password" required />
+                <input id="register-confirm" type="password" maxLength={72} placeholder={t('confirm_password') || 'Confirm password'} value={form.confirmPassword} onChange={e => set("confirmPassword", e.target.value)} autoComplete="new-password" required />
               </div>
             </div>
 
-            <div className="f2-content-check">
+            </fieldset>
+            {role === 'customer' && <>
+              {challengeId && <OtpVerification code={code} onChange={setCode} phone={form.phone} sentChannel={sentChannel} channel={channel} retryAt={retryAt} expiresAt={expiresAt} onResend={resendCode} onEdit={() => { setChallengeId(''); setCode(''); setFormError(''); }} loading={loading} />}
+              <OtpMethodPicker value={channel} onChange={setChannel} disabled={loading} verifying={!!challengeId} />
+            </>}
+            <div className="f2-content-check" style={{ display: challengeId ? 'none' : undefined }}>
               <input type="checkbox" id="terms" required />
               <label htmlFor="terms">
                 I agree to the <a href="#">Terms of Service</a> and <a href="#">Privacy Policy</a>
@@ -161,9 +213,9 @@ export default function RegisterPage() {
               </div>
             )}
 
-            <button type="submit" className="f2-content-button f2-content-button--wide" disabled={loading}>
-              {loading ? `${t('sending') || 'Creating...'} ` : `${t('register') || 'Create Account'}`}
-            </button>
+            {challengeId ? <p role="status" aria-live="polite" style={{textAlign:"center"}}>{loading ? 'Checking your code…' : formError ? 'Edit the code to try again.' : 'Your code will be checked automatically.'}</p> : <button type="submit" className="f2-content-button f2-content-button--wide" disabled={loading || (!!challengeId && code.length !== 6)}>
+              {loading ? 'Please wait...' : role === 'customer' ? (challengeId ? 'Verify & create account' : 'Send verification code') : (t('register') || 'Create Account')}
+            </button>}
 
             <p className="f2-auth-alternative">{t('already_have_account') || 'Already have an account?'} <Link href="/login">{t('login') || 'Sign In'}</Link></p>
           </form>

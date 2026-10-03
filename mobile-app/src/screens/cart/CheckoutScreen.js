@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, ScrollView, KeyboardAvoidingView, Platform, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, ScrollView, KeyboardAvoidingView, Platform, StyleSheet, TouchableOpacity, Modal } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useTheme } from '../../contexts/ThemeContext';
@@ -15,6 +15,8 @@ import ScreenHeader from '../../components/ScreenHeader';
 import { formatPrice } from '../../config';
 import { spacing, fontSize, fontWeight, borderRadius, shadows } from '../../theme';
 
+const PROVINCES = "Badakhshan,Badghis,Baghlan,Balkh,Bamyan,Daykundi,Farah,Faryab,Ghazni,Ghor,Helmand,Herat,Jowzjan,Kabul,Kandahar,Kapisa,Khost,Kunar,Kunduz,Laghman,Logar,Nangarhar,Nimroz,Nuristan,Paktia,Paktika,Panjshir,Parwan,Samangan,Sar-e Pol,Takhar,Uruzgan,Wardak,Zabul".split(",");
+
 export default function CheckoutScreen({ navigation }) {
   const { theme } = useTheme();
   const { t } = useLanguage();
@@ -24,6 +26,7 @@ export default function CheckoutScreen({ navigation }) {
   const c = theme.colors;
 
   const [form, setForm] = useState({ province: '', district: '', village: '', landmark: '', phone: '', notes: '' });
+  const [provinceOpen, setProvinceOpen] = useState(false);
   const [coupon, setCoupon] = useState('');
   const [discount, setDiscount] = useState(0);
   const [loading, setLoading] = useState(false);
@@ -92,7 +95,7 @@ export default function CheckoutScreen({ navigation }) {
     setLoading(false);
   };
 
-  const deliveryFee = 0;
+  const deliveryFee = form.province && form.province !== 'Kandahar' ? 150 : 0;
   const discountAmount = total * (discount / 100);
   const grandTotal = total - discountAmount + deliveryFee;
 
@@ -114,6 +117,7 @@ export default function CheckoutScreen({ navigation }) {
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: c.background }]} edges={['top']}>
       <ScreenHeader title={t.checkout} onBack={() => navigation.goBack()} />
+      <Modal visible={provinceOpen} transparent animationType="slide" onRequestClose={() => setProvinceOpen(false)}><View style={{ flex: 1, backgroundColor: '#0008', justifyContent: 'flex-end' }}><View style={{ backgroundColor: c.card, borderTopLeftRadius: 24, borderTopRightRadius: 24, maxHeight: '75%', padding: 20 }}><Text style={{ color: c.text, fontSize: 20, marginBottom: 12 }}>Choose province</Text><ScrollView>{PROVINCES.map(p => <TouchableOpacity key={p} onPress={() => { set('province', p); setProvinceOpen(false); }} style={{ paddingVertical: 12, borderBottomWidth: 1, borderColor: c.border }}><Text style={{ color: c.text }}>{p}{p === 'Kandahar' ? ' · Free delivery' : ' · ؋150 delivery'}</Text></TouchableOpacity>)}</ScrollView><Button title="Close" onPress={() => setProvinceOpen(false)} variant="outline" /></View></View></Modal>
 
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" showsVerticalScrollIndicator={false}>
@@ -132,7 +136,9 @@ export default function CheckoutScreen({ navigation }) {
 
           <SectionHeading c={c} icon="map-marker-radius-outline" title={t.deliveryAddress} subtitle="Use the clearest location details you can provide." />
           <View style={[styles.section, { backgroundColor: c.card, borderColor: c.border }]}>
-            <Input label={t.province} value={form.province} onChangeText={(value) => set('province', value)} error={errors.province} placeholder="e.g. Kabul" />
+            <Text style={{ color: c.text, marginBottom: 8 }}>{t.province} *</Text>
+            <TouchableOpacity accessibilityRole="button" onPress={() => setProvinceOpen(true)} style={{ borderWidth: 1, borderColor: c.border, borderRadius: 12, padding: 14, marginBottom: 12 }}><Text style={{ color: c.text }}>{form.province || 'Select province ▾'}</Text></TouchableOpacity>
+            {errors.province ? <Text style={{ color: c.error }}>{errors.province}</Text> : null}
             <Input label={t.district} value={form.district} onChangeText={(value) => set('district', value)} error={errors.district} placeholder="e.g. District 10" />
             <Input label={t.village} value={form.village} onChangeText={(value) => set('village', value)} error={errors.village} placeholder="e.g. Qala-e-Fatullah" />
             <Input label={`${t.landmark} (${t.optional})`} value={form.landmark} onChangeText={(value) => set('landmark', value)} placeholder="Near mosque..." />

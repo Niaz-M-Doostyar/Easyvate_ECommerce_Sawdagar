@@ -59,12 +59,12 @@ function localizeSiteContent(content) {
   for (const section of [next.header, next.footer]) {
     if (!section) continue;
     if (/^\+93 (700|799) 000 000$/.test(section.phone || '')) section.phone = phone;
-    if (['info@sawdagar.af', 'support@sawdagar.af'].includes(section.email)) section.email = email;
+    if (['info@sawdagar.com', 'support@sawdagar.com'].includes(section.email)) section.email = email;
   }
   if (next.footer?.aboutText?.startsWith("Afghanistan's premier")) next.footer.aboutText = 'Sawdagar connects Afghan suppliers, retailers and customers through online shopping. Browse products in Pashto, Dari and English, with prices in AFN.';
   for (const card of next.contact?.cards || []) {
     if (card.title === 'Phone' && card.lines?.some(line => /^\+93 (700|799) 000 000$/.test(line))) card.lines = [next.header?.phone || phone];
-    if (card.title === 'Email' && card.lines?.some(line => ['info@sawdagar.af', 'support@sawdagar.af'].includes(line))) card.lines = [next.header?.email || email];
+    if (card.title === 'Email' && card.lines?.some(line => ['info@sawdagar.com', 'support@sawdagar.com'].includes(line))) card.lines = [next.header?.email || email];
     if (card.title === 'Our Office' && card.lines?.includes('District 5, Main Street')) card.lines = ['Kandahar, Afghanistan'];
   }
   return next;

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, FlatList, Image, RefreshControl, StyleSheet, Animated, useWindowDimensions } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, FlatList, Image, RefreshControl, StyleSheet, Animated, useWindowDimensions, Modal } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
@@ -62,6 +62,9 @@ export default function HomeScreen({ navigation }) {
   const [categories, setCategories] = useState([]);
   const [featured, setFeatured] = useState([]);
   const [sponsored, setSponsored] = useState([]);
+  const [adVisible, setAdVisible] = useState(false);
+  const adShown = useRef(false);
+  useEffect(() => { if (!sponsored.length || adShown.current) return; adShown.current = true; setAdVisible(true); const timer = setTimeout(() => setAdVisible(false), 4000); return () => clearTimeout(timer); }, [sponsored]);
   const [newArrivals, setNewArrivals] = useState([]);
   const [heroContent, setHeroContent] = useState(null);
   const [promoBanners, setPromoBanners] = useState([]);
@@ -223,11 +226,12 @@ export default function HomeScreen({ navigation }) {
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: c.background }]} edges={['top']}>
+      <Modal visible={adVisible && sponsored.length > 0} transparent animationType="fade" onRequestClose={() => setAdVisible(false)}><View style={{ flex: 1, justifyContent: 'center', backgroundColor: '#06122ab8', padding: 24 }}><View style={{ backgroundColor: c.card, borderRadius: 24, padding: 18 }}><TouchableOpacity accessibilityRole="button" accessibilityLabel="Close ad" onPress={() => setAdVisible(false)} style={{ alignSelf: 'flex-end', padding: 8 }}><MaterialCommunityIcons name="close" size={24} color={c.text} /></TouchableOpacity><Text style={{ color: c.primary, fontWeight: '700', marginBottom: 8 }}>Sponsored</Text><ProductCard product={sponsored[0]} onPress={() => { setAdVisible(false); goProduct(sponsored[0]); }} style={{ width: '100%' }} /></View></View></Modal>
       <View style={[styles.header, { borderBottomColor: c.border }]}>
         <View style={styles.brandBlock}>
           <BrandLogo width={172} />
           <Text style={[styles.greeting, { color: c.textSecondary }]}>
-            {user ? `Welcome back, ${user.name?.split(' ')[0]}` : 'Afghanistan commerce, redesigned for mobile'}
+            {user ? `Welcome back, ${user.name?.split(' ')[0]}` : 'Afghanistan online shopping app'}
           </Text>
         </View>
         <View style={styles.headerRight}>
@@ -432,6 +436,10 @@ export default function HomeScreen({ navigation }) {
           </SectionReveal>
         ) : null}
 
+        {featured.length > 0 && <SectionReveal delay={320}>
+          <SectionHeader title="Recommended for you" actionLabel={t.seeAll} onAction={() => navigation.navigate('Products')} />
+          <FlatList horizontal showsHorizontalScrollIndicator={false} data={featured.slice(0, 8)} keyExtractor={item => String(item.id)} contentContainerStyle={{ paddingHorizontal: spacing.base }} renderItem={({ item }) => <ProductCard product={item} onPress={() => goProduct(item)} style={{ width: newArrivalCardWidth, marginRight: spacing.md }} />} />
+        </SectionReveal>}
         <SectionReveal delay={330}>
           <SectionHeader title={t.featured} actionLabel={t.seeAll} onAction={() => navigation.navigate('Products')} />
           <View style={styles.grid}>

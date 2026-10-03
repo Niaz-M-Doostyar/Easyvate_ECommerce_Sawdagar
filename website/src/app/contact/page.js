@@ -101,7 +101,7 @@ export default function ContactPage() {
                         <div className="contact-info-icon"><i className="fal fa-envelopes"></i></div>
                         <div className="contact-info-content">
                           <h5>Email Us</h5>
-                          {(contactCards[2]?.lines || ["info@sawdagar.af"]).map((line, i) => <p key={i}>{line}</p>)}
+                          {(contactCards[2]?.lines || ["info@sawdagar.com"]).map((line, i) => <p key={i}>{line}</p>)}
                         </div>
                       </div>
                     </div>

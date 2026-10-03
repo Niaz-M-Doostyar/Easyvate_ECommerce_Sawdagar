@@ -1,0 +1,11 @@
+apply plugin: 'com.android.library'
+apply plugin: 'org.jetbrains.kotlin.android'
+android {
+    namespace 'com.sawdagar.productlinks'
+    compileSdk rootProject.ext.compileSdkVersion
+    defaultConfig { minSdkVersion rootProject.ext.minSdkVersion }
+}
+dependencies {
+    implementation 'com.facebook.react:react-android'
+    implementation 'com.android.installreferrer:installreferrer:2.2'
+}

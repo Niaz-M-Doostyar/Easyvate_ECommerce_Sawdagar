@@ -88,8 +88,8 @@ export default function AdminOrders() {
                 <tr key={o.id}>
                   <td className="font-semibold text-navy">{o.orderNumber}</td>
                   <td>
-                    <div className="text-sm font-medium text-navy">{o.user?.fullName || "N/A"}</div>
-                    <div className="text-xs text-body">{o.user?.phone || ""}</div>
+                    <div className="text-sm font-medium text-navy">{o.user?.email === "deleted-user@sawdagar.local" ? "Deleted customer" : (o.user?.fullName || o.user?.email || "Customer details unavailable")}</div>
+                    <div className="text-xs text-body">{o.phone || o.user?.phone || ""}</div>
                   </td>
                   <td>
                     <div className="flex items-center gap-2">
@@ -135,8 +135,9 @@ export default function AdminOrders() {
           <div className="space-y-4">
             {/* Customer Info */}
             <div className="grid grid-cols-2 gap-3 text-sm">
-              <div><span className="text-body">{t("customer")}:</span> <strong className="text-navy">{detail.user?.fullName}</strong></div>
-              <div><span className="text-body">{t("phone")}:</span> <strong>{detail.user?.phone || detail.phone || "N/A"}</strong></div>
+              {detail.user?.email === "deleted-user@sawdagar.local" && <div className="col-span-2 rounded-lg bg-yellow-50 p-3 text-yellow-800">Customer deleted their account. Contact and shipping details were removed.</div>}
+              <div><span className="text-body">{t("customer")}:</span> <strong className="text-navy">{detail.user?.email === "deleted-user@sawdagar.local" ? "Deleted customer" : (detailData?.user?.fullName || detail.user?.fullName || detailData?.user?.email || detail.user?.email || "Customer details unavailable")}</strong></div>
+              <div><span className="text-body">{t("phone")}:</span> <strong>{detailData?.phone || detail.phone || detailData?.user?.phone || detail.user?.phone || "N/A"}</strong></div>
               <div><span className="text-body">{t("address")}:</span> <strong>{[detail.province, detail.district, detail.village].filter(Boolean).join(", ") || "N/A"}</strong></div>
               <div><span className="text-body">Landmark:</span> <strong>{detail.landmark || "N/A"}</strong></div>
               <div className="col-span-2"><span className="text-body">Order notice:</span> <strong>{detail.notes || "N/A"}</strong></div>
@@ -185,7 +186,7 @@ export default function AdminOrders() {
                   <span className="text-green font-semibold">Profit: {formatPriceDecimal(detailData.totalProfit)}</span>
                 )}
               </div>
-              <div className="text-lg font-bold text-navy">{t("total")}: {CURRENCY_SYMBOL}{detail.totalAmount}</div>
+              <div className="text-right"><div className="text-sm text-body">Delivery fee: {CURRENCY_SYMBOL}{detail.deliveryFee || 0}</div><div className="text-lg font-bold text-navy">{t("total")}: {CURRENCY_SYMBOL}{detail.totalAmount}</div></div>
             </div>
 
             {/* Actions */}

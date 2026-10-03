@@ -4,7 +4,7 @@
     "details": [
       {
         "appID": "UFSF57GHNA.com.nabat.sawdagar.online.shoping",
-        "paths": ["/products/*", "/products"]
+        "paths": ["/products/*", "/share/products/*"]
       }
     ]
   }

@@ -4,9 +4,10 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { NavigationContainer, DefaultTheme, DarkTheme, getFocusedRouteNameFromRoute } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import AnimatedTabIcon from '../components/AnimatedTabIcon';
 import BrandLogo from '../components/BrandLogo';
-import PressableScale from '../components/PressableScale';
+import { getInitialProductLink, subscribeToProductLinks } from '../services/productLinks';
+import FooterTabButton from '../components/FooterTabButton';
 import { useTheme } from '../contexts/ThemeContext';
 import { useAuth } from '../contexts/AuthContext';
 import { useCart } from '../contexts/CartContext';
@@ -44,15 +45,18 @@ import DeliveryOrdersScreen from '../screens/delivery/DeliveryOrdersScreen';
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
 
-// Deep links: https://sawdagaraf.com/products/<id> and sawdagar://products/<id>
+// Deep links: https://sawdagar.com/products/<id> and sawdagar://products/<id>
 // open the app directly on that product's detail screen.
 const linking = {
-  prefixes: ['https://sawdagaraf.com', 'https://www.sawdagaraf.com', 'sawdagar://'],
+  getInitialURL: getInitialProductLink,
+  subscribe: subscribeToProductLinks,
+  prefixes: ['https://sawdagar.com/share', 'https://www.sawdagar.com/share', 'https://sawdagar.com', 'https://www.sawdagar.com', 'sawdagar://'],
   config: {
     screens: {
       Main: {
         screens: {
           ShopTab: {
+            initialRouteName: 'Products',
             screens: {
               ProductDetail: 'products/:id',
             },
@@ -208,14 +212,14 @@ function MainTabs() {
 
   return (
     <Tab.Navigator
-      screenOptions={({ route }) => {
+      screenOptions={({ route, navigation }) => {
         const focusedRouteName = getFocusedRouteNameFromRoute(route);
         const hideBar = Boolean(focusedRouteName && focusedRouteName !== rootRouteByTab[route.name]);
 
         return ({
         headerShown: false,
         tabBarHideOnKeyboard: true,
-        tabBarButton: (props) => <PressableScale {...props} scaleTo={0.94} />,
+        tabBarButton: (props) => <FooterTabButton {...props} />,
         tabBarLabelPosition: 'below-icon',
         tabBarAccessibilityLabel: labelByTab[route.name],
         tabBarActiveTintColor: c.primary,
@@ -266,16 +270,14 @@ function MainTabs() {
             ProfileTab: focused ? 'account-circle' : 'account-circle-outline',
           };
           return (
-            <View style={{
-              width: isTablet ? 52 : 42,
-              height: 32,
-              borderRadius: 14,
-              justifyContent: 'center',
-              alignItems: 'center',
-              backgroundColor: focused ? c.brandSurfaceStrong : 'transparent',
-            }}>
-              <MaterialCommunityIcons name={icons[route.name]} size={23} color={color} />
-            </View>
+            <AnimatedTabIcon
+              focused={focused}
+              selected={navigation.isFocused()}
+              name={icons[route.name]}
+              color={color}
+              backgroundColor={c.brandSurfaceStrong}
+              width={isTablet ? 52 : 42}
+            />
           );
         },
         tabBarBadge: route.name === 'CartTab' && cartCount > 0 ? (cartCount > 99 ? '99+' : cartCount) : undefined,

@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const prisma = require('../lib/prisma');
 const { authenticate, requireRole } = require('../middleware/auth');
-const { paginate, generateToken } = require('../lib/utils');
+const { paginate, generateToken, sanitize } = require('../lib/utils');
 const { execSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
@@ -354,6 +354,9 @@ router.put('/orders/:id', authenticate, requireRole('admin'), async (req, res) =
       include: { items: { select: { productId: true, quantity: true } } },
     });
     if (!existing) return res.status(404).json({ error: 'Order not found' });
+    if (status && status !== 'pending' && status !== 'cancelled' && existing.status === 'pending' && existing.confirmAfter && new Date(existing.confirmAfter) > new Date()) {
+      return res.status(409).json({ error: 'Customer review period is still active' });
+    }
 
     const updateData = {};
     if (status) updateData.status = status;
@@ -772,7 +775,11 @@ router.put('/users/:id/profile', authenticate, requireRole('admin'), async (req,
     if (!previousUser) return res.status(404).json({ error: 'User not found' });
 
     const updateData = {};
-    if (fullName !== undefined) updateData.fullName = fullName;
+    if (fullName !== undefined) {
+      const cleanedFullName = typeof fullName === 'string' ? sanitize(fullName) : '';
+      if (!cleanedFullName) return res.status(400).json({ error: 'Full name cannot be empty' });
+      updateData.fullName = cleanedFullName;
+    }
     if (phone !== undefined) updateData.phone = phone || null;
     if (role !== undefined) updateData.role = role;
     if (isActive !== undefined) updateData.isActive = isActive;

@@ -22,11 +22,26 @@ export default function OrderDetailScreen({ navigation, route }) {
   const initialOrder = route.params?.order || null;
   const [order, setOrder] = useState(initialOrder);
   const [loading, setLoading] = useState(!initialOrder);
+  const [busy, setBusy] = useState(false);
+  const [now, setNow] = useState(Date.now());
+  useEffect(() => { const timer = setInterval(() => setNow(Date.now()), 1000); return () => clearInterval(timer); }, []);
+  const act = async (kind) => {
+    setBusy(true);
+    try { const data = await ordersApi[kind](order.id); setOrder(data.order); }
+    catch (error) { alert(error.message); }
+    finally { setBusy(false); }
+  };
 
   useEffect(() => {
     if (!route.params?.id || initialOrder) return;
     ordersApi.get(route.params?.id).then(d => { setOrder(d.order || d); setLoading(false); }).catch(() => setLoading(false));
   }, [initialOrder, route.params?.id]);
+  useEffect(() => {
+    const id = order?.id || route.params?.id;
+    if (!id || order?.status !== 'pending') return undefined;
+    const timer = setInterval(() => ordersApi.get(id).then(data => setOrder(data.order || data)).catch(() => {}), 15000);
+    return () => clearInterval(timer);
+  }, [order?.id, order?.status, route.params?.id]);
 
   if (loading) {
     return (
@@ -45,6 +60,8 @@ export default function OrderDetailScreen({ navigation, route }) {
     );
   }
 
+  const remaining = order.confirmAfter ? Math.max(0, new Date(order.confirmAfter).getTime() - now) : 0;
+  const reviewOpen = order.status === 'pending' && remaining > 0;
   const stepIdx = Math.max(STEPS.indexOf(order.status), 0);
   const orderTotal = order.totalAmount ?? order.total ?? 0;
   const deliveryAddress = [order.village, order.district, order.province].filter(Boolean).join(', ');
@@ -73,6 +90,7 @@ export default function OrderDetailScreen({ navigation, route }) {
           </View>
         </HeroCard>
 
+        {reviewOpen && <View style={[styles.card, { backgroundColor: c.card, borderColor: c.border }]}><Text style={[styles.cardTitle, { color: c.text }]}>Review your order</Text><Text style={{ color: c.textSecondary, marginBottom: 12 }}>Cancel within {Math.floor(remaining / 3600000)}:{String(Math.floor(remaining / 60000) % 60).padStart(2, '0')}:{String(Math.floor(remaining / 1000) % 60).padStart(2, '0')}, or confirm now.</Text><TouchableOpacity disabled={busy} onPress={() => act('confirm')} style={{ backgroundColor: c.primary, padding: 12, borderRadius: 10, marginBottom: 8 }}><Text style={{ color: c.white, textAlign: 'center' }}>Confirm order now</Text></TouchableOpacity><TouchableOpacity disabled={busy} onPress={() => act('cancel')} style={{ padding: 12 }}><Text style={{ color: c.error || '#c32', textAlign: 'center' }}>Cancel order</Text></TouchableOpacity></View>}
         {order.status !== 'cancelled' && (
           <View style={[styles.card, { backgroundColor: c.card, borderColor: c.border }]}>
             <Text style={[styles.cardTitle, { color: c.text }]}>Delivery progress</Text>
@@ -124,8 +142,8 @@ export default function OrderDetailScreen({ navigation, route }) {
         )}
 
         <View style={[styles.card, { backgroundColor: c.card, borderColor: c.border, marginTop: spacing.md }]}>
-          <View style={styles.cardRow}><Text style={[styles.label, { color: c.textSecondary }]}>{t.subtotal}</Text><Text style={[styles.val, { color: c.text }]}>{formatPrice(orderTotal)}</Text></View>
-          <View style={styles.cardRow}><Text style={[styles.label, { color: c.textSecondary }]}>{t.deliveryFee}</Text><Text style={[styles.val, { color: c.success }]}>Free</Text></View>
+          <View style={styles.cardRow}><Text style={[styles.label, { color: c.textSecondary }]}>{t.subtotal}</Text><Text style={[styles.val, { color: c.text }]}>{formatPrice(orderTotal - (order.deliveryFee || 0))}</Text></View>
+          <View style={styles.cardRow}><Text style={[styles.label, { color: c.textSecondary }]}>{t.deliveryFee}</Text><Text style={[styles.val, { color: c.success }]}>{order.deliveryFee ? formatPrice(order.deliveryFee) : 'Free'}</Text></View>
           <View style={[styles.divider, { borderColor: c.border }]} />
           <View style={styles.cardRow}><Text style={[styles.label, { color: c.text, fontWeight: fontWeight.bold, fontSize: fontSize.md }]}>{t.total}</Text><Text style={[styles.val, { color: c.primary, fontWeight: fontWeight.heavy, fontSize: fontSize.lg }]}>{formatPrice(orderTotal)}</Text></View>
         </View>

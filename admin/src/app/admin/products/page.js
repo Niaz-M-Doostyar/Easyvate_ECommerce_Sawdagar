@@ -42,6 +42,14 @@ export default function AdminProducts() {
     finally { setPromotionBusy(null); }
   };
 
+  const toggleSponsored = async (product) => {
+    try {
+      const { product: updated } = await adminPut(`products/${product.id}`, { isSponsored: !product.isSponsored });
+      setProducts(items => items.map(item => item.id === product.id ? { ...item, ...updated } : item));
+      toast.success(updated.isSponsored ? 'Sponsored ad enabled' : 'Sponsored ad disabled');
+    } catch (error) { toast.error(error.message || 'Unable to change sponsored ad'); }
+  };
+
   const fetchProducts = useCallback(async () => {
     const q = new URLSearchParams({ page, limit: 20 });
     if (statusFilter !== "all") q.set("status", statusFilter);
@@ -177,6 +185,7 @@ export default function AdminProducts() {
                         <button onClick={() => { setModal({ type: "reject", product: p }); setRejectReason(""); }} className="btn btn-sm btn-danger">{t("reject")}</button>
                       </>}
                       <button onClick={() => openEdit(p)} className="btn btn-sm btn-outline">{t("edit")}</button>
+                      <button onClick={() => toggleSponsored(p)} disabled={p.status !== "approved"} className={`btn btn-sm ${p.isSponsored ? "btn-primary" : "btn-outline"}`}>{p.isSponsored ? "Remove sponsored ad" : "Sponsor ad"}</button>
                       <button
                         onClick={() => togglePromotion(p)}
                         disabled={promotionBusy !== null || (!p.isSliderPromoted && (p.status !== 'approved' || p.stock <= 0 || !p.retailPrice || !p.images?.[0]?.url))}

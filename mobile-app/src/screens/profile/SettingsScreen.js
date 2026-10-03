@@ -51,7 +51,7 @@ export default function SettingsScreen({ navigation }) {
             <Ionicons name="shield-checkmark-outline" size={20} color={c.primary} style={{ marginRight: 12 }} />
             <View style={{ flex: 1 }}>
               <Text style={[styles.rowLabel, { color: c.text }]}>Privacy Policy</Text>
-              <Text style={{ color: c.textMuted, fontSize: fontSize.xs, marginTop: 4 }}>Account deletion requests: supports@sawdagaraf.com</Text>
+              <Text style={{ color: c.textMuted, fontSize: fontSize.xs, marginTop: 4 }}>Account deletion requests: supports@sawdagar.com</Text>
             </View>
             <Ionicons name="chevron-forward" size={20} color={c.textMuted} />
           </TouchableOpacity>

@@ -5,6 +5,9 @@ const { authenticate } = require('../middleware/auth');
 const { generateOrderNumber, paginate } = require('../lib/utils');
 const { sendOrderConfirmation, sendNewOrderNotification, getLastEmailError } = require('../lib/email');
 const { logTransaction } = require('../lib/transactionLog');
+const { PROVINCES, normalizeProvince, deliveryFee } = require('../lib/delivery');
+
+router.get('/delivery-provinces', (req, res) => res.json({ provinces: PROVINCES, baseProvince: 'Kandahar', otherProvinceFee: 150 }));
 
 // GET /api/orders
 router.get('/', authenticate, async (req, res) => {
@@ -49,14 +52,14 @@ router.post('/', authenticate, async (req, res) => {
       items,
     } = req.body;
 
-    const orderProvince = shippingProvince || province;
+    const orderProvince = normalizeProvince(shippingProvince || province);
     const orderDistrict = shippingDistrict || district;
     const orderVillage = shippingVillage || village;
     const orderLandmark = shippingLandmark || landmark;
     const orderPhone = shippingPhone || phone;
 
     if (!orderProvince || !orderDistrict || !orderPhone) {
-      return res.status(400).json({ error: 'Province, district, and phone are required' });
+      return res.status(400).json({ error: 'Select a valid province and enter district and phone' });
     }
 
     let sourceItems = [];
@@ -87,9 +90,11 @@ router.post('/', authenticate, async (req, res) => {
       }
     }
 
-    const totalAmount = sourceItems.reduce((sum, item) => {
+    const subtotal = sourceItems.reduce((sum, item) => {
       return sum + (item.product.retailPrice || item.product.suggestedPrice) * item.quantity;
     }, 0);
+    const fee = deliveryFee(orderProvince);
+    const totalAmount = subtotal + fee;
 
     const order = await prisma.$transaction(async (tx) => {
       const created = await tx.order.create({
@@ -97,6 +102,8 @@ router.post('/', authenticate, async (req, res) => {
           orderNumber: generateOrderNumber(),
           userId: req.user.id,
           totalAmount,
+          deliveryFee: fee,
+          confirmAfter: new Date(Date.now() + 2 * 60 * 60 * 1000),
           province: orderProvince,
           district: orderDistrict,
           village: orderVillage || null,
@@ -128,7 +135,7 @@ router.post('/', authenticate, async (req, res) => {
     });
 
     const user = await prisma.user.findUnique({ where: { id: req.user.id } });
-    const customerEmailSent = await sendOrderConfirmation(user.email, order);
+    const customerEmailSent = user.email.endsWith('@phone.sawdagar.local') ? true : await sendOrderConfirmation(user.email, order);
     if (!customerEmailSent) {
       const err = typeof getLastEmailError === 'function' ? getLastEmailError() : null;
       console.error('Order confirmation email failed:', {
@@ -154,6 +161,32 @@ router.post('/', authenticate, async (req, res) => {
     console.error('Create order error:', err);
     res.status(500).json({ error: 'Failed to create order' });
   }
+});
+
+// Customers may cancel during the review window or submit immediately.
+router.post('/:id/cancel', authenticate, async (req, res) => {
+  const id = Number(req.params.id);
+  try {
+    const order = await prisma.$transaction(async (tx) => {
+      const existing = await tx.order.findFirst({ where: { id, userId: req.user.id, status: 'pending', confirmAfter: { gt: new Date() } }, include: { items: true } });
+      if (!existing) return null;
+      const changed = await tx.order.updateMany({ where: { id, status: 'pending', confirmAfter: { gt: new Date() } }, data: { status: 'cancelled' } });
+      if (!changed.count) return null;
+      for (const item of existing.items) await tx.product.update({ where: { id: item.productId }, data: { stock: { increment: item.quantity } } });
+      return tx.order.findUnique({ where: { id } });
+    });
+    if (!order) return res.status(409).json({ error: 'The two-hour cancellation period has ended' });
+    res.json({ order });
+  } catch (error) { res.status(500).json({ error: 'Failed to cancel order' }); }
+});
+
+router.post('/:id/confirm', authenticate, async (req, res) => {
+  try {
+    const changed = await prisma.order.updateMany({ where: { id: Number(req.params.id), userId: req.user.id, status: 'pending' }, data: { status: 'confirmed' } });
+    if (!changed.count) return res.status(409).json({ error: 'Order is no longer pending' });
+    const order = await prisma.order.findUnique({ where: { id: Number(req.params.id) } });
+    res.json({ order });
+  } catch (error) { res.status(500).json({ error: 'Failed to confirm order' }); }
 });
 
 // GET /api/orders/:id

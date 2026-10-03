@@ -1,4 +1,8 @@
-import React, { useState } from 'react';
+import useAutoOtpVerification from '../../hooks/useAutoOtpVerification';
+import { nationalPhone, internationalPhone } from '../../services/afghanPhone.cjs';
+import { OtpMethodPicker, OtpVerification } from '../../components/OtpControls';
+import { authApi } from '../../services/api';
+import React, { useState, useRef } from 'react';
 import { View, Text, ScrollView, KeyboardAvoidingView, Platform, TouchableOpacity, StyleSheet, Alert, useWindowDimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Ionicons from 'react-native-vector-icons/Ionicons';
@@ -10,11 +14,13 @@ import Input from '../../components/Input';
 import Button from '../../components/Button';
 import ScreenHeader from '../../components/ScreenHeader';
 import ProvincePicker from '../../components/ProvincePicker';
-import Gradient from '../../components/Gradient';
 import PressableScale from '../../components/PressableScale';
-import { spacing, fontSize, fontWeight, borderRadius, shadows } from '../../theme';
+import { spacing, fontSize, fontWeight, borderRadius } from '../../theme';
 
 export default function RegisterScreen({ navigation }) {
+  const lastNameInput = useRef(null);
+  const phoneInput = useRef(null);
+  const confirmInput = useRef(null);
   const { width } = useWindowDimensions();
   const { theme } = useTheme();
   const { register } = useAuth();
@@ -23,9 +29,16 @@ export default function RegisterScreen({ navigation }) {
   const c = theme.colors;
   const isTablet = width >= 768;
   const contentWidth = Math.min(width - spacing.lg * 2, 620);
-  const [form, setForm] = useState({ name: '', email: '', phone: '', password: '', confirmPassword: '', role: 'customer', companyName: '', province: '', district: '', village: '', landmark: '' });
+  const [form, setForm] = useState({ lastName: '', name: '', email: '', phone: '', password: '', confirmPassword: '', role: 'customer', companyName: '', province: '', district: '', village: '', landmark: '' });
   const [loading, setLoading] = useState(false);
+  const [challengeId, setChallengeId] = useState('');
+  const [code, setCode] = useState('');
+  const [channel, setChannel] = useState('sms');
+  const [sentChannel, setSentChannel] = useState('sms');
+  const [expiresAt, setExpiresAt] = useState(0);
+  const [retryAt, setRetryAt] = useState(0);
   const [errors, setErrors] = useState({});
+  const [verificationError, setVerificationError] = useState('');
 
   const set = (k, v) => setForm(prev => ({ ...prev, [k]: v }));
 
@@ -35,9 +48,10 @@ export default function RegisterScreen({ navigation }) {
   const validate = () => {
     const e = {};
     if (!form.name.trim()) e.name = 'Name is required';
-    if (!form.email.trim()) e.email = 'Email is required';
-    else if (!/\S+@\S+\.\S+/.test(form.email)) e.email = 'Invalid email';
-    if (!form.phone.trim()) e.phone = 'Phone is required';
+    if (form.role === 'customer' && !form.lastName.trim()) e.lastName = 'Last name is required';
+    if (form.role === 'supplier' && !form.email.trim()) e.email = 'Email is required';
+    else if (form.role === 'supplier' && !/\S+@\S+\.\S+/.test(form.email)) e.email = 'Invalid email';
+    if (!/^7\d{8}$/.test(nationalPhone(form.phone))) e.phone = 'Enter a valid Afghan mobile number: 7 followed by 8 digits';
     if (!form.password) e.password = 'Password is required';
     else if (form.password.length < 6) e.password = 'At least 6 characters';
     if (form.password !== form.confirmPassword) e.confirmPassword = 'Passwords do not match';
@@ -47,11 +61,31 @@ export default function RegisterScreen({ navigation }) {
     return Object.keys(e).length === 0;
   };
 
+  const requestCode = async () => {
+    if (Date.now() < retryAt) throw new Error('Please wait 60 seconds before resending.');
+    const data = await authApi.requestCustomerOtp({ firstName: form.name.trim(), lastName: form.lastName.trim(), phone: form.phone, password: form.password, confirmPassword: form.confirmPassword, channel });
+    setChallengeId(data.challengeId); setCode(''); setSentChannel(channel); setExpiresAt(Date.now() + (data.expiresIn || 300) * 1000); setRetryAt(Date.now() + data.retryAfter * 1000); toast.success(data.message);
+  };
+  const resendCode = async () => {
+    if (loading) return;
+    setLoading(true);
+    try { await requestCode(); } catch (err) { toast.error(err.message); }
+    finally { setLoading(false); }
+  };
   const handleRegister = async () => {
     if (loading) return;
     if (!validate()) return;
     setLoading(true);
+    setVerificationError('');
     try {
+      if (form.role === 'customer') {
+        if (!challengeId) await requestCode();
+        else {
+          const data = await authApi.verifyCustomerOtp({ challengeId, code });
+          Alert.alert('Account created', data.message, [{ text: 'Sign in', onPress: goToLogin }]);
+        }
+        return;
+      }
       await register({
         fullName: form.name.trim(),
         email: form.email.trim().toLowerCase(),
@@ -77,12 +111,15 @@ export default function RegisterScreen({ navigation }) {
       );
     } catch (err) {
       const msg = err?.message || 'Registration failed';
-      Alert.alert('Registration failed', msg);
+      if (challengeId) setVerificationError(msg);
+      else Alert.alert('Registration failed', msg);
       toast.error(msg);
     } finally {
       setLoading(false);
     }
   };
+
+  useAutoOtpVerification({ challengeId, code, loading, onVerify: handleRegister });
 
   const roles = [
     { key: 'customer', label: t.customer, icon: 'person-outline' },
@@ -94,18 +131,17 @@ export default function RegisterScreen({ navigation }) {
       <ScreenHeader title={''} onBack={handleBack} />
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined} keyboardVerticalOffset={Platform.OS === 'ios' ? 18 : 0}>
         <ScrollView contentContainerStyle={[styles.scroll, isTablet && styles.scrollTablet]} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" showsVerticalScrollIndicator={false}>
-          <View style={[styles.content, { maxWidth: contentWidth }]}> 
-          <Gradient colors={[c.secondary, c.primaryDark]} style={styles.hero}>
-            <View pointerEvents="none" style={[styles.heroGlow, { backgroundColor: c.heroSurface, borderColor: c.heroBorder }]} />
-            <Text style={[styles.eyebrow, { color: c.heroTextMuted }]}>SAWDAGAR</Text>
-            <Text accessibilityRole="header" style={[styles.heroTitle, { color: c.heroText }]}>{t.createYourAccount}</Text>
-          </Gradient>
-          <View style={[styles.formCard, { backgroundColor: c.surface, borderColor: c.border }]}> 
+          <View style={[styles.content, { maxWidth: contentWidth }]}>
+          <View style={styles.formSection}>
+            <Text style={[styles.step, {color:c.primary}]}>{challengeId ? 'STEP 2 OF 2 · VERIFICATION' : 'STEP 1 OF 2 · YOUR DETAILS'}</Text>
+            <Text style={[styles.heading, {color:c.text}]}>{challengeId ? 'Verify your phone' : 'Create your account'}</Text>
+            <Text style={[styles.subtitle, {color:c.textSecondary}]}>{challengeId ? 'Enter the six-digit code to finish signing up.' : 'Shop, track orders and check out faster with Sawdagar.'}</Text>
+            {!challengeId && <>
             <Text style={[styles.sectionLabel, { color: c.textSecondary }]}>{t.role}</Text>
             <View style={styles.roleRow}>
               {roles.map(r => (
-                <PressableScale key={r.key} onPress={() => set('role', r.key)} accessibilityRole="radio" accessibilityState={{ checked: form.role === r.key }} accessibilityLabel={r.label}
-                  style={[styles.roleBtn, { borderColor: form.role === r.key ? c.primary : c.border, backgroundColor: form.role === r.key ? c.brandSurface : c.surfaceElevated }]}> 
+                <PressableScale key={r.key} disabled={loading} onPress={() => { set('role', r.key); setChallengeId(''); setCode(''); }} accessibilityRole="radio" accessibilityState={{ checked: form.role === r.key }} accessibilityLabel={r.label}
+                  style={[styles.roleBtn, { borderColor: form.role === r.key ? c.primary : c.border, backgroundColor: form.role === r.key ? c.brandSurface : c.surfaceElevated }]}>
                   <View style={styles.roleIconRow}>
                     <Ionicons name={r.icon} size={23} color={form.role === r.key ? c.primary : c.textSecondary} />
                     <Ionicons name={form.role === r.key ? 'checkmark-circle' : 'ellipse-outline'} size={18} color={form.role === r.key ? c.primary : c.textMuted} />
@@ -114,9 +150,10 @@ export default function RegisterScreen({ navigation }) {
                 </PressableScale>
               ))}
             </View>
-            <Input label={t.fullName} icon="person-outline" value={form.name} onChangeText={v => set('name', v)} error={errors.name} autoComplete="name" textContentType="name" placeholder="Your full name" />
-            <Input label={t.email} icon="mail-outline" value={form.email} onChangeText={v => set('email', v)} error={errors.email} keyboardType="email-address" autoCapitalize="none" autoCorrect={false} autoComplete="email" textContentType="emailAddress" placeholder="you@example.com" />
-            <Input label={t.phone} icon="call-outline" value={form.phone} onChangeText={v => set('phone', v)} error={errors.phone} keyboardType="phone-pad" autoComplete="tel" textContentType="telephoneNumber" placeholder="+93 7XX XXX XXX" />
+            <Input editable={!challengeId && !loading} returnKeyType="next" onSubmitEditing={() => form.role === 'customer' && lastNameInput.current?.focus()} label={form.role === 'customer' ? 'First name' : t.fullName} icon="person-outline" value={form.name} onChangeText={v => set('name', v)} error={errors.name} autoComplete={form.role === 'customer' ? "given-name" : "name"} textContentType={form.role === 'customer' ? "givenName" : "name"} autoCapitalize="words" autoCorrect={false} placeholder={form.role === 'customer' ? 'First name' : 'Full name'} />
+            {form.role === 'customer' && <Input editable={!challengeId && !loading} ref={lastNameInput} returnKeyType="next" onSubmitEditing={() => phoneInput.current?.focus()} label="Last name" icon="person-outline" textContentType="familyName" autoCapitalize="words" autoCorrect={false} value={form.lastName} onChangeText={v => set('lastName', v)} error={errors.lastName} autoComplete="family-name" placeholder="Last name" maxLength={80} />}
+            {form.role === 'supplier' && <Input label={t.email} icon="mail-outline" value={form.email} onChangeText={v => set('email', v)} error={errors.email} keyboardType="email-address" autoCapitalize="none" autoCorrect={false} autoComplete="email" textContentType="emailAddress" placeholder="you@example.com" />}
+            <Input editable={!challengeId && !loading} ref={phoneInput} label="Phone number" icon="call-outline" prefix="🇦🇫 +93" hint="Enter 9 digits starting with 7. You can also paste 07… or +93…" value={nationalPhone(form.phone)} onChangeText={v => set('phone', internationalPhone(v))} error={errors.phone} keyboardType="phone-pad" autoComplete="tel" textContentType="telephoneNumber" placeholder="7XX XXX XXX" maxLength={16} autoCorrect={false} />
             {form.role === 'supplier' && (
               <>
                 <Input label={t.companyName} icon="business-outline" value={form.companyName || ''} onChangeText={v => set('companyName', v)} error={errors.companyName} placeholder="Required for suppliers" />
@@ -126,9 +163,18 @@ export default function RegisterScreen({ navigation }) {
                 <Input label={t.landmark} icon="navigate-outline" value={form.landmark || ''} onChangeText={v => set('landmark', v)} placeholder={t.landmark} />
               </>
             )}
-            <Input label={t.password} icon="lock-closed-outline" value={form.password} onChangeText={v => set('password', v)} error={errors.password} secureTextEntry autoComplete="new-password" textContentType="newPassword" placeholder="Min 6 characters" />
-            <Input label={t.confirmPassword} icon="lock-closed-outline" value={form.confirmPassword} onChangeText={v => set('confirmPassword', v)} error={errors.confirmPassword} secureTextEntry autoComplete="new-password" textContentType="newPassword" returnKeyType="done" onSubmitEditing={handleRegister} placeholder="Repeat password" />
-            <Button title={t.createAccount} onPress={handleRegister} loading={loading} style={{ marginTop: spacing.base }} />
+            <Input editable={!challengeId && !loading} maxLength={72} returnKeyType="next" onSubmitEditing={() => confirmInput.current?.focus()} autoCapitalize="none" autoCorrect={false} label={t.password} icon="lock-closed-outline" value={form.password} onChangeText={v => set('password', v)} error={errors.password} secureTextEntry autoComplete="new-password" textContentType="newPassword" placeholder="Min 6 characters" />
+            <Input editable={!challengeId && !loading} ref={confirmInput} maxLength={72} autoCapitalize="none" autoCorrect={false} label={t.confirmPassword} icon="lock-closed-outline" value={form.confirmPassword} onChangeText={v => set('confirmPassword', v)} error={errors.confirmPassword} secureTextEntry autoComplete="new-password" textContentType="newPassword" returnKeyType="done" onSubmitEditing={handleRegister} placeholder="Repeat password" />
+            </>}
+            {form.role === 'customer' && <>
+              {challengeId && <OtpVerification code={code} onChange={setCode} phone={form.phone} sentChannel={sentChannel} channel={channel} retryAt={retryAt} expiresAt={expiresAt} onResend={resendCode} onEdit={() => { setChallengeId(''); setCode(''); setVerificationError(''); }} loading={loading} />}
+              <OtpMethodPicker value={channel} onChange={setChannel} disabled={loading} verifying={!!challengeId} />
+            </>}
+            {challengeId ? <View accessibilityLiveRegion="polite" style={{marginTop:16}}>
+              {verificationError ? <Text accessibilityRole="alert" style={{color:c.error,marginBottom:8}}>{verificationError}</Text> : null}
+              <Text style={{color:c.textSecondary,textAlign:'center'}}>{loading ? 'Checking your code…' : verificationError ? 'Edit the code to try again.' : 'Your code will be checked automatically.'}</Text>
+            </View> : <Button title={form.role === 'customer' ? (challengeId ? 'Verify & create account' : 'Send verification code') : t.createAccount} onPress={handleRegister} loading={loading} disabled={!!challengeId && code.length !== 6} style={{ marginTop: spacing.base }} /> }
+
           </View>
           <View style={styles.footer}>
             <Text style={[styles.footerText, { color: c.textSecondary }]}>{t.alreadyHaveAccount} </Text>
@@ -144,18 +190,17 @@ export default function RegisterScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
+  step: {fontSize:11,fontWeight:'700',letterSpacing:1.1,marginBottom:10},
+  heading:{fontSize:28,fontWeight:'700',letterSpacing:-0.6,marginBottom:8},
+  subtitle:{fontSize:14,lineHeight:22,marginBottom:24},
   safe: { flex: 1 },
   scroll: { flexGrow: 1, padding: spacing.lg, paddingTop: spacing.sm, paddingBottom: spacing.xxl },
   scrollTablet: { justifyContent: 'center' },
   content: { width: '100%', alignSelf: 'center' },
-  hero: { padding: spacing.xl, borderRadius: borderRadius.xxl, marginBottom: spacing.base },
-  heroGlow: { position: 'absolute', width: 220, height: 220, borderRadius: 110, borderWidth: 1, top: -80, right: -90 },
-  eyebrow: { fontSize: fontSize.xs, fontWeight: fontWeight.bold, letterSpacing: 2, marginBottom: spacing.md },
-  heroTitle: { fontSize: fontSize.xxl, fontWeight: fontWeight.heavy },
   sectionLabel: { fontSize: fontSize.sm, fontWeight: fontWeight.semibold, marginBottom: spacing.md },
-  formCard: { borderWidth: 1, borderRadius: borderRadius.xxl, padding: spacing.lg, ...shadows.sm },
+  formSection: { paddingVertical: spacing.sm },
   roleRow: { flexDirection: 'row', gap: 12, marginBottom: spacing.lg },
-  roleBtn: { flex: 1, minHeight: 94, padding: spacing.md, borderRadius: borderRadius.lg, borderWidth: 1, justifyContent: 'space-between', gap: spacing.md },
+  roleBtn: { flex: 1, minHeight: 64, padding: spacing.md, borderRadius: borderRadius.lg, borderWidth: 1, justifyContent: 'space-between', gap: spacing.md },
   roleIconRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   roleLabel: { fontSize: fontSize.sm, lineHeight: 20, fontWeight: fontWeight.semibold, includeFontPadding: false },
   footer: { minHeight: 44, flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', alignItems: 'center', paddingVertical: spacing.lg },

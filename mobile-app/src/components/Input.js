@@ -1,15 +1,17 @@
-import React, { useState } from 'react';
-import { View, TextInput, Text, StyleSheet } from 'react-native';
+import React, { useState, useId } from 'react';
+import { View, TextInput, Text, StyleSheet, InputAccessoryView, Keyboard, Platform } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useTheme } from '../contexts/ThemeContext';
 import { spacing, fontSize, fontWeight, borderRadius } from '../theme';
 import PressableScale from './PressableScale';
 
-export default function Input({
+export default React.forwardRef(function Input({
   label,
   error,
   secureTextEntry,
   icon,
+  prefix,
+  hint,
   style,
   inputStyle,
   onFocus,
@@ -18,7 +20,9 @@ export default function Input({
   accessibilityLabel,
   accessibilityHint,
   ...props
-}) {
+}, ref) {
+  const accessoryId = useId();
+  const numericKeyboard = ['phone-pad', 'number-pad', 'decimal-pad'].includes(props.keyboardType);
   const { theme } = useTheme();
   const c = theme.colors;
   const [secure, setSecure] = useState(secureTextEntry);
@@ -36,8 +40,12 @@ export default function Input({
             <Ionicons name={icon} size={18} color={error ? c.error : focused ? c.primary : c.textSecondary} />
           </View>
         )}
+        {prefix && <Text style={{ color: c.text, fontWeight: '600', marginEnd: 10 }}>{prefix}</Text>}
         <TextInput
+          ref={ref}
           {...props}
+          importantForAutofill="yes"
+          inputAccessoryViewID={Platform.OS === 'ios' && numericKeyboard ? accessoryId : undefined}
           placeholderTextColor={c.placeholder}
           selectionColor={c.primary}
           style={[styles.input, isMultiline ? styles.inputMultiline : null, { color: c.text }, inputStyle]}
@@ -70,10 +78,12 @@ export default function Input({
           </PressableScale>
         )}
       </View>
+      {Platform.OS === 'ios' && numericKeyboard && <InputAccessoryView nativeID={accessoryId}><View style={{ backgroundColor: c.card, alignItems: 'flex-end', borderTopWidth: 1, borderColor: c.border }}><PressableScale onPress={Keyboard.dismiss} accessibilityRole="button" accessibilityLabel="Done entering phone number" style={{ padding: 14 }}><Text style={{ color: c.primary, fontWeight: '600' }}>Done</Text></PressableScale></View></InputAccessoryView>}
+      {hint && !error && <Text style={[styles.error, { color: c.textSecondary }]}>{hint}</Text>}
       {error && <Text accessibilityRole="alert" accessibilityLiveRegion="polite" style={[styles.error, { color: c.error }]}>{error}</Text>}
     </View>
   );
-}
+});
 
 const styles = StyleSheet.create({
   wrap: { marginBottom: spacing.base },

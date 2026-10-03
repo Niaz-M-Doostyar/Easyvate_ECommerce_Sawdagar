@@ -1,0 +1,118 @@
+const test = require('node:test');
+const assert = require('node:assert/strict');
+const { normalizeAfghanPhone, sendCode } = require('../lib/phoneOtp');
+
+test('Afghan phone variants normalize, while foreign and malformed numbers are rejected', () => {
+  for (const phone of ['0700123456', '+93 700 123 456', '0093700123456', '93700123456', '۰۷۰۰۱۲۳۴۵۶', '٠٧٠٠١٢٣٤٥٦']) {
+    assert.equal(normalizeAfghanPhone(phone), '+93700123456');
+  }
+  for (const phone of ['+44700123456', '070012345', '07001234567', '+93600123456', 'abc0700123456', null, {}]) assert.equal(normalizeAfghanPhone(phone), null);
+});
+
+test('provider requests keep SMS to digits only and select the WhatsApp endpoint explicitly', async () => {
+  const originalFetch = global.fetch;
+  const originalKey = process.env.GHONCHA_API_KEY;
+  process.env.GHONCHA_API_KEY = 'test-key';
+  const calls = [];
+  global.fetch = async (url, options) => { calls.push({ url, ...options }); return { ok: true, json: async () => ({ status: 'pending' }) }; };
+  try {
+    await sendCode('+93700123456', '123456', 'sms');
+    await sendCode('+93700123456', '123456', 'whatsapp');
+    assert.equal(calls[0].url, 'https://sms.ghoncha.com/api/v1/send');
+    assert.deepEqual(JSON.parse(calls[0].body), { phone: '+93700123456', message: '123456' });
+    assert.equal(calls[1].url, 'https://sms.ghoncha.com/api/v1/otp/send/whatsapp');
+    assert.deepEqual(JSON.parse(calls[1].body), { phone: '+93700123456', code: '123456' });
+    assert.equal(calls[0].headers['X-API-Key'], 'test-key');
+    global.fetch = async () => ({ ok: false, json: async () => ({ error: 'insufficient balance' }) });
+    await assert.rejects(sendCode('+93700123456', '123456', 'sms'));
+  } finally {
+    global.fetch = originalFetch;
+    if (originalKey === undefined) delete process.env.GHONCHA_API_KEY; else process.env.GHONCHA_API_KEY = originalKey;
+  }
+});
+
+// Exercise actual Express handlers with isolated storage and a fake provider.
+test('signup requires verification, enforces limits, expires codes and consumes successful challenges', async () => {
+  const originalFetch = global.fetch;
+  const originalKey = process.env.GHONCHA_API_KEY;
+  process.env.GHONCHA_API_KEY = 'test-key';
+  let deliveredCode;
+  global.fetch = async (_url, options) => { const body = JSON.parse(options.body); deliveredCode = body.message || body.code; return { ok: true, json: async () => ({ status: 'pending' }) }; };
+  let pending = null; let user = null;
+  const db = {
+    phoneOtpRate: { upsert: async () => ({ count: 1 }), deleteMany: async () => ({ count: 0 }) },
+    user: {
+      findFirst: async () => user,
+      updateMany: async ({ where, data }) => { if (!user || user.id !== where.id || user.customerPhone !== where.customerPhone) return { count: 0 }; Object.assign(user, data); return { count: 1 }; },
+      create: async ({ data }) => { user = { id: 1, ...data }; return user; },
+    },
+    phoneRegistration: {
+      findUnique: async ({ where }) => pending && (where.phone === pending.phone || where.id === pending.id) ? { ...pending } : null,
+      updateMany: async ({ where, data }) => { if (!user || user.id !== where.id || user.customerPhone !== where.customerPhone) return { count: 0 }; Object.assign(user, data); return { count: 1 }; },
+      create: async ({ data }) => { pending = { ...data }; return pending; },
+      updateMany: async ({ where, data }) => {
+        if (!pending || pending.id !== where.id) return { count: 0 };
+        if (where.purpose && pending.purpose !== where.purpose) return { count: 0 };
+        if (where.expiresAt && pending.expiresAt <= where.expiresAt.gt) return { count: 0 };
+        if (where.attempts && pending.attempts >= where.attempts.lt) return { count: 0 };
+        if (data.attempts?.increment) pending.attempts += data.attempts.increment;
+        else Object.assign(pending, data);
+        return { count: 1 };
+      },
+      delete: async () => { pending = null; },
+    },
+    $transaction: async fn => fn(db),
+  };
+  const prismaPath = require.resolve('../lib/prisma');
+  const originalModule = require.cache[prismaPath];
+  require.cache[prismaPath] = { id: prismaPath, filename: prismaPath, loaded: true, exports: db };
+  const router = require('../routes/auth');
+  const call = async (path, body) => {
+    const handler = router.stack.find(layer => layer.route?.path === path).route.stack[0].handle;
+    const res = { statusCode: 200, status(code) { this.statusCode = code; return this; }, json(data) { this.body = data; return this; } };
+    await handler({ body, ip: '127.0.0.1' }, res);
+    return res;
+  };
+  const body = { firstName: 'Test', lastName: 'Customer', phone: '0700123456', password: 'secret123', confirmPassword: 'secret123' };
+  try {
+    assert.equal((await call('/customer-otp', { ...body, phone: '+44700123456' })).statusCode, 400);
+    assert.equal((await call('/customer-otp', { ...body, confirmPassword: 'wrong' })).statusCode, 400);
+    assert.equal((await call('/register', { role: 'customer' })).statusCode, 400);
+    const sent = await call('/customer-otp', body);
+    assert.equal(sent.statusCode, 200);
+    assert.equal(user, null);
+    assert.equal(pending.password === body.password, false);
+    assert.equal(pending.codeHash.includes(deliveredCode), false);
+    assert.equal((await call('/customer-otp', body)).statusCode, 429);
+    const challengeId = sent.body.challengeId;
+    assert.equal((await call('/verify-customer-otp', { challengeId, code: '000000' })).statusCode, 400);
+    pending.expiresAt = new Date(0);
+    assert.equal((await call('/verify-customer-otp', { challengeId, code: deliveredCode })).statusCode, 400);
+    pending.expiresAt = new Date(Date.now() + 300000);
+    pending.attempts = 5;
+    assert.equal((await call('/verify-customer-otp', { challengeId, code: deliveredCode })).statusCode, 400);
+    pending.attempts = 1;
+    assert.equal((await call('/verify-customer-otp', { challengeId, code: deliveredCode })).statusCode, 201);
+    assert.equal(user.phoneVerified, true);
+    assert.equal(user.customerPhone, '+93700123456');
+    assert.equal(user.isActive, true);
+    assert.equal(pending, null);
+    assert.equal((await call('/verify-customer-otp', { challengeId, code: deliveredCode })).statusCode, 400);
+    assert.equal((await call('/customer-otp', body)).statusCode, 409);
+    const oldPasswordHash = user.password;
+    const reset = await call('/customer-otp', { phone: body.phone, purpose: 'password-reset', channel: 'whatsapp' });
+    assert.equal(reset.statusCode, 200);
+    assert.equal(pending.purpose, 'password-reset');
+    assert.equal((await call('/verify-customer-otp', { challengeId: reset.body.challengeId, code: deliveredCode })).statusCode, 400);
+    assert.equal((await call('/reset-phone-password', { challengeId: reset.body.challengeId, code: '000000', password: 'changed123', confirmPassword: 'changed123' })).statusCode, 400);
+    assert.equal(user.password, oldPasswordHash);
+    assert.equal((await call('/reset-phone-password', { challengeId: reset.body.challengeId, code: deliveredCode, password: 'changed123', confirmPassword: 'changed123' })).statusCode, 200);
+    assert.notEqual(user.password, oldPasswordHash);
+    assert.equal(pending, null);
+    assert.equal((await call('/reset-phone-password', { challengeId: reset.body.challengeId, code: deliveredCode, password: 'changed123', confirmPassword: 'changed123' })).statusCode, 400);
+  } finally {
+    global.fetch = originalFetch;
+    if (originalKey === undefined) delete process.env.GHONCHA_API_KEY; else process.env.GHONCHA_API_KEY = originalKey;
+    if (originalModule) require.cache[prismaPath] = originalModule; else delete require.cache[prismaPath];
+  }
+});

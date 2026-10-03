@@ -22,13 +22,12 @@ export default function AboutScreen({ navigation }) {
           <Text style={[styles.heroBrand, { color: c.heroText }]}>Sawdagar</Text>
           <Text style={[styles.heroText, { color: c.heroTextMuted }]}>Built for Afghanistan's modern marketplace with a unified mobile, website, and admin experience.</Text>
         </HeroCard>
-        <Text style={[styles.version, { color: c.textMuted }]}>Version 1.0.0</Text>
         <Text style={[styles.desc, { color: c.textSecondary }]}>
           Sawdagar is Afghanistan's premier e-commerce marketplace connecting buyers with trusted local and international suppliers. Shop with confidence, enjoy competitive prices, and support Afghan businesses.
         </Text>
         <View style={[styles.infoCard, { backgroundColor: c.card, borderColor: c.border }]}>
-          <InfoRow icon="globe-outline" label="Website" value="sawdagar.af" c={c} />
-          <InfoRow icon="mail-outline" label="Email" value="info@sawdagar.af" c={c} />
+          <InfoRow icon="globe-outline" label="Website" value="sawdagar.com" c={c} />
+          <InfoRow icon="mail-outline" label="Email" value="info@sawdagar.com" c={c} />
           <InfoRow icon="location-outline" label="Location" value="Kabul, Afghanistan" c={c} />
         </View>
       </ScrollView>
@@ -52,7 +51,6 @@ const styles = StyleSheet.create({
   hero: { width: '100%', marginTop: spacing.xl },
   heroBrand: { fontSize: fontSize.xxl, fontWeight: fontWeight.heavy, letterSpacing: 0.2 },
   heroText: { fontSize: fontSize.base, lineHeight: 22, marginTop: spacing.base, maxWidth: '84%' },
-  version: { fontSize: fontSize.sm, marginTop: 4 },
   desc: { fontSize: fontSize.base, lineHeight: 24, textAlign: 'center', marginTop: spacing.lg, marginBottom: spacing.xl },
   infoCard: { width: '100%', borderRadius: borderRadius.lg, borderWidth: 1, padding: spacing.base },
 });

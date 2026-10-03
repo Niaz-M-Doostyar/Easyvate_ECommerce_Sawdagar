@@ -8,12 +8,13 @@ import { AuthProvider } from './src/contexts/AuthContext';
 import { CartProvider } from './src/contexts/CartContext';
 import { ToastProvider } from './src/contexts/ToastContext';
 import AppNavigator from './src/navigation/AppNavigator';
+import RequiredUpdate from './src/components/RequiredUpdate';
 
 function AppInner() {
   const { theme } = useTheme();
   return (
     <>
-      <AppNavigator />
+      <RequiredUpdate><AppNavigator /></RequiredUpdate>
       <StatusBar
         barStyle={theme.mode === 'dark' ? 'light-content' : 'dark-content'}
         translucent

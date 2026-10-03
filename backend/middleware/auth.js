@@ -32,7 +32,7 @@ const authenticate = async (req, res, next) => {
       select: {
         id: true, email: true, fullName: true, phone: true, role: true,
         province: true, district: true, village: true, landmark: true,
-        isActive: true, isApproved: true, emailVerified: true,
+        isActive: true, isApproved: true, emailVerified: true, phoneVerified: true,
         companyName: true, contactPerson: true, taxId: true,
       },
     });

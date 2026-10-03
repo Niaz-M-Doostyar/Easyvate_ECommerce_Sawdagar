@@ -47,7 +47,7 @@ export default function Footer() {
   };
 
   const phone = footer.phone || siteContent?.header?.phone || '+93 700 000 000';
-  const email = footer.email || siteContent?.header?.email || 'info@sawdagar.af';
+  const email = footer.email || siteContent?.header?.email || 'info@sawdagar.com';
   const footerSocial = footer.socialLinks || {};
   const usefulLinks = footer.quickLinks?.length ? footer.quickLinks.slice(0, 6) : [
     { label: 'About Us', href: '/about' },

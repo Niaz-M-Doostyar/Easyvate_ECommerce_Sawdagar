@@ -1,6 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator, useWindowDimensions, Modal, Animated, Share, StatusBar } from 'react-native';
-import { PanGestureHandler, PinchGestureHandler, State } from 'react-native-gesture-handler';
+import React, { useState, useEffect } from 'react';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator, useWindowDimensions, Share } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useTheme } from '../../contexts/ThemeContext';
@@ -12,12 +11,13 @@ import EmptyState from '../../components/EmptyState';
 import ScreenHeader from '../../components/ScreenHeader';
 import QuantityInput from '../../components/QuantityInput';
 import RemoteImage from '../../components/RemoteImage';
+import ProductImageViewer from '../../components/ProductImageViewer';
 import { productsApi } from '../../services/api';
 import { formatPrice, WEBSITE_URL } from '../../config';
 import { spacing, fontSize, fontWeight, borderRadius } from '../../theme';
 
 export default function ProductDetailScreen({ navigation, route }) {
-  const { width: viewportWidth, height: viewportHeight } = useWindowDimensions();
+  const { width: viewportWidth } = useWindowDimensions();
   const insets = useSafeAreaInsets();
   const { theme } = useTheme();
   const { t, getName, getDesc } = useLanguage();
@@ -37,102 +37,12 @@ export default function ProductDetailScreen({ navigation, route }) {
   const [qty, setQty] = useState(1);
   const [tab, setTab] = useState('desc');
   const [adding, setAdding] = useState(false);
-  const viewerPinchRef = useRef(null);
-  const viewerPanRef = useRef(null);
-  const viewerBaseScale = useRef(new Animated.Value(1)).current;
-  const viewerPinchScale = useRef(new Animated.Value(1)).current;
-  const viewerBaseX = useRef(new Animated.Value(0)).current;
-  const viewerBaseY = useRef(new Animated.Value(0)).current;
-  const viewerPanX = useRef(new Animated.Value(0)).current;
-  const viewerPanY = useRef(new Animated.Value(0)).current;
-  const viewerScale = useRef(Animated.multiply(viewerBaseScale, viewerPinchScale)).current;
-  const viewerTranslateX = useRef(Animated.add(viewerBaseX, viewerPanX)).current;
-  const viewerTranslateY = useRef(Animated.add(viewerBaseY, viewerPanY)).current;
-  const viewerLastScale = useRef(1);
-  const viewerLastX = useRef(0);
-  const viewerLastY = useRef(0);
-  const [viewerZoom, setViewerZoom] = useState(1);
-  const [viewerGestureActive, setViewerGestureActive] = useState(false);
-
-  useEffect(() => {
-    StatusBar.setBarStyle(viewerOpen || theme.dark ? 'light-content' : 'dark-content', true);
-    return () => StatusBar.setBarStyle(theme.dark ? 'light-content' : 'dark-content', true);
-  }, [theme.dark, viewerOpen]);
-
-  const onPinch = Animated.event([{ nativeEvent: { scale: viewerPinchScale } }], { useNativeDriver: true });
-  const onPan = Animated.event([{ nativeEvent: { translationX: viewerPanX, translationY: viewerPanY } }], { useNativeDriver: true });
-
-  const resetViewerTransform = (animated = false) => {
-    viewerLastScale.current = 1;
-    viewerLastX.current = 0;
-    viewerLastY.current = 0;
-    viewerPinchScale.setValue(1);
-    viewerPanX.setValue(0);
-    viewerPanY.setValue(0);
-    setViewerZoom(1);
-    setViewerGestureActive(false);
-
-    if (animated) {
-      Animated.parallel([
-        Animated.spring(viewerBaseScale, { toValue: 1, useNativeDriver: true }),
-        Animated.spring(viewerBaseX, { toValue: 0, useNativeDriver: true }),
-        Animated.spring(viewerBaseY, { toValue: 0, useNativeDriver: true }),
-      ]).start();
-    } else {
-      viewerBaseScale.setValue(1);
-      viewerBaseX.setValue(0);
-      viewerBaseY.setValue(0);
-    }
-  };
-
-  const finishPinch = (event) => {
-    const { oldState, state, scale = 1 } = event.nativeEvent;
-    if (state === State.BEGAN) setViewerGestureActive(true);
-    if (oldState !== State.ACTIVE) return;
-
-    const nextScale = Math.min(4, Math.max(1, viewerLastScale.current * scale));
-    viewerLastScale.current = nextScale;
-    viewerBaseScale.setValue(nextScale);
-    viewerPinchScale.setValue(1);
-    setViewerZoom(nextScale);
-    setViewerGestureActive(false);
-
-    if (nextScale === 1) {
-      viewerLastX.current = 0;
-      viewerLastY.current = 0;
-      viewerBaseX.setValue(0);
-      viewerBaseY.setValue(0);
-    }
-  };
-
-  const finishPan = (event) => {
-    const { oldState, state, translationX = 0, translationY = 0 } = event.nativeEvent;
-    if (state === State.BEGAN) setViewerGestureActive(true);
-    if (oldState !== State.ACTIVE) return;
-
-    const maxX = (viewportWidth * Math.max(viewerLastScale.current - 1, 0)) / 2;
-    const maxY = (viewportHeight * Math.max(viewerLastScale.current - 1, 0)) / 2;
-    const nextX = Math.max(-maxX, Math.min(maxX, viewerLastX.current + translationX));
-    const nextY = Math.max(-maxY, Math.min(maxY, viewerLastY.current + translationY));
-    viewerLastX.current = nextX;
-    viewerLastY.current = nextY;
-    viewerBaseX.setValue(nextX);
-    viewerBaseY.setValue(nextY);
-    viewerPanX.setValue(0);
-    viewerPanY.setValue(0);
-    setViewerGestureActive(false);
-  };
-
   const openViewer = (index) => {
-    resetViewerTransform(false);
     setViewerIdx(index);
     setViewerOpen(true);
   };
 
-  const closeViewer = () => {
-    setViewerOpen(false);
-    resetViewerTransform(false);
-  };
+  const closeViewer = () => setViewerOpen(false);
 
   const handleBack = () => {
     const parent = navigation.getParent?.();
@@ -150,11 +60,20 @@ export default function ProductDetailScreen({ navigation, route }) {
   };
 
   useEffect(() => {
-    productsApi.get(route.params?.id).then((data) => {
-      setProduct(data.product || data);
-      setLoading(false);
-    }).catch(() => setLoading(false));
-  }, [route.params?.id]);
+    let active = true;
+    const id = route.params?.id || route.params?.product?.id;
+    setProduct(null);
+    setLoading(true);
+    setImgIdx(0);
+    setViewerOpen(false);
+    setQty(1);
+    productsApi.get(id).then((data) => {
+      if (active) setProduct(data.product || data);
+    }).catch(() => {}).finally(() => {
+      if (active) setLoading(false);
+    });
+    return () => { active = false; };
+  }, [route.params?.id, route.params?.product?.id]);
 
   const openTab = (tabName) => {
     const parent = navigation.getParent();
@@ -202,7 +121,7 @@ export default function ProductDetailScreen({ navigation, route }) {
     // Share the public product URL: messaging apps (WhatsApp, Facebook, …) render
     // the rich preview from the website's Open Graph tags, and the OS opens this
     // link directly in the Sawdagar app (App Links / Universal Links) when installed.
-    const url = `${WEBSITE_URL}/products/${product.id}`;
+    const url = `${WEBSITE_URL}/share/products/${encodeURIComponent(product.id)}`;
     const price = product.retailPrice != null ? formatPrice(product.retailPrice) : null;
     const message = `${getName(product)}${price ? `\n${price}` : ''}\n${url}`;
     try {
@@ -412,49 +331,9 @@ export default function ProductDetailScreen({ navigation, route }) {
           />
         </View>
       </View>
-      <Modal visible={viewerOpen} transparent={false} animationType="slide" onRequestClose={closeViewer}>
-        <SafeAreaView style={{ flex: 1, backgroundColor: c.black }}>
-          <View style={{ flex: 1 }}>
-            <ScrollView
-              horizontal
-              pagingEnabled
-              scrollEnabled={viewerZoom <= 1.01 && !viewerGestureActive}
-              contentOffset={{ x: viewerIdx * viewportWidth }}
-              showsHorizontalScrollIndicator={false}
-              style={{ flex: 1 }}
-              onMomentumScrollEnd={(event) => {
-                setViewerIdx(Math.round(event.nativeEvent.contentOffset.x / viewportWidth));
-                resetViewerTransform(false);
-              }}
-            >
-              {images.length > 0 ? images.map((img, index) => (
-                <View key={img?.id || `${img?.url || 'product-image'}-${index}`} style={{ width: viewportWidth, height: viewportHeight, justifyContent: 'center', alignItems: 'center', backgroundColor: c.black }}>
-                  <PanGestureHandler ref={viewerPanRef} enabled={viewerZoom > 1.01} simultaneousHandlers={viewerPinchRef} onGestureEvent={onPan} onHandlerStateChange={finishPan}>
-                    <Animated.View style={{ width: viewportWidth, height: viewportHeight, justifyContent: 'center' }}>
-                      <PinchGestureHandler ref={viewerPinchRef} simultaneousHandlers={viewerPanRef} onGestureEvent={onPinch} onHandlerStateChange={finishPinch}>
-                        <Animated.View style={{ width: viewportWidth, height: viewportHeight, justifyContent: 'center', transform: [{ scale: viewerScale }, { translateX: viewerTranslateX }, { translateY: viewerTranslateY }] }}>
-                          <RemoteImage source={img?.url || img} style={{ width: viewportWidth, height: viewportHeight }} resizeMode="contain" />
-                        </Animated.View>
-                      </PinchGestureHandler>
-                    </Animated.View>
-                  </PanGestureHandler>
-                </View>
-              )) : null}
-            </ScrollView>
-
-            <View pointerEvents="box-none" style={[styles.viewerTopActions, { top: Math.max(insets.top + spacing.sm, spacing.xl) }]}>
-              {viewerZoom > 1.01 ? (
-                <TouchableOpacity activeOpacity={0.7} onPress={() => resetViewerTransform(true)} accessibilityRole="button" accessibilityLabel="Reset image zoom" style={[styles.viewerReset, { backgroundColor: c.white }]}>
-                  <MaterialCommunityIcons name="restore" size={24} color={c.black} />
-                </TouchableOpacity>
-              ) : null}
-              <TouchableOpacity activeOpacity={0.7} onPress={closeViewer} accessibilityRole="button" accessibilityLabel="Close image viewer" hitSlop={{ top: 16, left: 16, right: 16, bottom: 16 }} style={[styles.viewerClose, { backgroundColor: c.white }]}>
-                <MaterialCommunityIcons name="close" size={30} color={c.black} />
-              </TouchableOpacity>
-            </View>
-          </View>
-        </SafeAreaView>
-      </Modal>
+      {viewerOpen && images.length > 0 ? (
+        <ProductImageViewer images={images} initialIndex={viewerIdx} onClose={closeViewer} />
+      ) : null}
     </SafeAreaView>
   );
 }
@@ -531,7 +410,4 @@ const styles = StyleSheet.create({
   bottomActions: { width: '100%', minHeight: 50, flexDirection: 'row', alignItems: 'stretch', gap: 8 },
   bottomActionsWide: { width: 'auto', flex: 1 },
   bottomBtn: { flex: 1 },
-  viewerTopActions: { position: 'absolute', left: 12, right: 12, zIndex: 100, elevation: 100, flexDirection: 'row', justifyContent: 'flex-end', gap: spacing.sm },
-  viewerReset: { width: 48, height: 48, borderRadius: borderRadius.full, justifyContent: 'center', alignItems: 'center' },
-  viewerClose: { width: 56, height: 56, borderRadius: borderRadius.full, justifyContent: 'center', alignItems: 'center' },
 });

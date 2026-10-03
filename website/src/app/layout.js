@@ -12,6 +12,7 @@ import { AuthProvider } from '@/contexts/AuthContext';
 import { CartProvider } from '@/contexts/CartContext';
 import { SiteDataProvider } from '@/contexts/SiteDataContext';
 import Header from '@/components/Header';
+import SponsoredAd from '@/components/SponsoredAd';
 import Footer from '@/components/Footer';
 import ScrollToTop from '@/components/ScrollToTop';
 import PageLoader from '@/components/PageLoader';
@@ -20,8 +21,8 @@ import { fetchPublicJson } from '@/lib/serverApi';
 
 export const metadata = {
   title: "Sawdagar - سوداګر | Afghanistan's #1 Online Marketplace",
-  description: 'Shop the best products with free delivery across Afghanistan. Pay with Afghani (AFN) on delivery.',
-  metadataBase: new URL('https://sawdagar.af'),
+  description: 'Shop products across Afghanistan and pay with Afghani (AFN) on delivery.',
+  metadataBase: new URL('https://sawdagar.com'),
 };
 
 export const viewport = {
@@ -69,6 +70,7 @@ export default async function RootLayout({ children }) {
             <SiteDataProvider initialCategories={initialCategories} initialSiteContent={initialSiteContent}>
               <AuthProvider>
                 <CartProvider>
+                  <SponsoredAd />
                   <Header />
                   <main className="main">{children}</main>
                   <Footer />

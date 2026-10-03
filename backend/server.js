@@ -9,6 +9,8 @@ const prisma = require('./lib/prisma');
 const { runDataMigrations, startMaintenanceJobs } = require('./lib/maintenance');
 
 const app = express();
+// Only trust the local nginx proxy for client IPs used by OTP rate limits.
+app.set('trust proxy', 'loopback');
 const PORT = process.env.PORT || 4000;
 
 // Ensure uploads directory exists
@@ -73,6 +75,8 @@ app.use('/api/products', productRoutes);
 app.use('/api/categories', categoryRoutes);
 app.use('/api/cart', cartRoutes);
 app.use('/api/orders', orderRoutes);
+app.use('/api/mobile-version', require('./routes/mobile-version'));
+app.use('/api/admin/mobile-version', require('./routes/mobile-version'));
 app.use('/api/admin', adminRoutes);
 app.use('/api/supplier', supplierRoutes);
 app.use('/api/delivery', deliveryRoutes);

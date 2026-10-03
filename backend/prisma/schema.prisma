@@ -12,6 +12,8 @@ model User {
   email            String    @unique
   password         String
   fullName         String    @map("full_name")
+  customerPhone    String?   @unique @map("customer_phone")
+  phoneVerified    Boolean   @default(false) @map("phone_verified")
   phone            String?
   role             String    @default("customer")
   isActive         Boolean   @default(false) @map("is_active")
@@ -127,6 +129,8 @@ model Order {
   userId           Int      @map("user_id")
   status           String   @default("pending")
   totalAmount      Float    @map("total_amount")
+  deliveryFee      Float    @default(0) @map("delivery_fee")
+  confirmAfter     DateTime? @map("confirm_after")
   paymentStatus    String   @default("unpaid") @map("payment_status")
   province         String?
   district         String?
@@ -143,6 +147,7 @@ model Order {
   items          OrderItem[]
 
   @@index([status])
+  @@index([status, confirmAfter])
   @@index([userId])
   @@map("orders")
 }
@@ -299,4 +304,28 @@ model Coupon {
   createdAt DateTime  @default(now()) @map("created_at")
 
   @@map("coupons")
+}
+
+model PhoneRegistration {
+  purpose      String   @default("registration")
+  userId       Int?     @map("user_id")
+  id           String   @id
+  phone        String   @unique
+  fullName     String   @map("full_name")
+  password     String
+  codeHash     String   @map("code_hash")
+  expiresAt    DateTime @map("expires_at")
+  lastSentAt   DateTime @map("last_sent_at")
+  attempts     Int      @default(0)
+  sendCount    Int      @default(0) @map("send_count")
+  windowStart  DateTime @map("window_start")
+  @@map("phone_registrations")
+}
+
+model PhoneOtpRate {
+  id        String   @id @db.VarChar(100)
+  count     Int
+  expiresAt DateTime @map("expires_at")
+  @@index([expiresAt])
+  @@map("phone_otp_rates")
 }

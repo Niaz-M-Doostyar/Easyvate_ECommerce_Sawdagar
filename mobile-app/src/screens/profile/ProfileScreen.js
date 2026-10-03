@@ -20,6 +20,7 @@ export default function ProfileScreen({ navigation }) {
   const { count } = useCart();
   const toast = useToast();
   const [deleting, setDeleting] = React.useState(false);
+  const [heroSize, setHeroSize] = React.useState({ width: 0, height: 0 });
   const c = theme.colors;
 
   if (!user) {
@@ -106,7 +107,15 @@ export default function ProfileScreen({ navigation }) {
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: c.background }]} edges={['top']}>
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
-        <Gradient colors={[c.secondary, c.primaryDark]} style={styles.profileHero}>
+        <View
+          style={[styles.profileHero, { backgroundColor: c.secondary }]}
+          onLayout={({ nativeEvent: { layout } }) => setHeroSize((size) => (
+            size.width === layout.width && size.height === layout.height
+              ? size
+              : { width: layout.width, height: layout.height }
+          ))}
+        >
+          <Gradient pointerEvents="none" colors={[c.secondary, c.primaryDark]} style={[styles.heroGradient, heroSize]} />
           <View pointerEvents="none" style={[styles.heroGlow, { backgroundColor: c.heroSurface, borderColor: c.heroBorder }]} />
           <View style={styles.heroHeader}>
             <Text accessibilityRole="header" style={[styles.heroBrand, { color: c.heroText }]}>{t.profile}</Text>
@@ -146,7 +155,7 @@ export default function ProfileScreen({ navigation }) {
             <MaterialCommunityIcons name="shield-account-outline" size={16} color={c.heroTextMuted} />
             <Text style={[styles.roleLabel, { color: c.heroTextMuted }]}>{t[user.role] || user.role}</Text>
           </View>
-        </Gradient>
+        </View>
 
         <SectionLabel title={t.profile} c={c} />
         <MenuCard items={accountMenu} c={c} />
@@ -203,16 +212,18 @@ function SummaryPill({ icon, label, value, onPress, c }) {
 
 function MenuCard({ items, c }) {
   return (
-    <View style={[styles.menuCard, { backgroundColor: c.card, borderColor: c.border }]}>
-      {items.map((item, index) => (
-        <TouchableOpacity key={item.label} accessibilityRole="button" onPress={item.action} activeOpacity={0.65} style={[styles.menuItem, index < items.length - 1 && { borderBottomColor: c.borderLight, borderBottomWidth: hairline }]}>
-          <View style={[styles.menuIcon, { backgroundColor: c.brandSurface }]}>
-            <MaterialCommunityIcons name={item.icon} size={19} color={c.primary} />
-          </View>
-          <Text style={[styles.menuLabel, { color: c.text }]}>{item.label}</Text>
-          <MaterialCommunityIcons name="chevron-right" size={20} color={c.textMuted} style={{ marginStart: spacing.sm }} />
-        </TouchableOpacity>
-      ))}
+    <View style={[styles.menuCardShadow, { backgroundColor: c.card }]}>
+      <View style={[styles.menuCard, { backgroundColor: c.card, borderColor: c.border }]}>
+        {items.map((item, index) => (
+          <TouchableOpacity key={item.label} accessibilityRole="button" onPress={item.action} activeOpacity={0.65} style={[styles.menuItem, index < items.length - 1 && { borderBottomColor: c.borderLight, borderBottomWidth: hairline }]}>
+            <View style={[styles.menuIcon, { backgroundColor: c.brandSurface }]}>
+              <MaterialCommunityIcons name={item.icon} size={19} color={c.primary} />
+            </View>
+            <Text style={[styles.menuLabel, { color: c.text }]}>{item.label}</Text>
+            <MaterialCommunityIcons name="chevron-right" size={20} color={c.textMuted} style={{ marginStart: spacing.sm }} />
+          </TouchableOpacity>
+        ))}
+      </View>
     </View>
   );
 }
@@ -221,6 +232,7 @@ const styles = StyleSheet.create({
   safe: { flex: 1 },
   scroll: { width: '100%', maxWidth: 720, alignSelf: 'center', padding: spacing.base, paddingBottom: spacing.xxxl },
   profileHero: { padding: spacing.lg, borderRadius: borderRadius.xxl, overflow: 'hidden', marginBottom: spacing.base },
+  heroGradient: { position: 'absolute', top: 0, left: 0 },
   heroGlow: { position: 'absolute', top: -76, right: -78, width: 260, height: 260, borderRadius: 130, borderWidth: 1 },
   heroHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   heroBrand: { fontSize: fontSize.xl, fontWeight: fontWeight.heavy, letterSpacing: 0.2 },
@@ -239,7 +251,8 @@ const styles = StyleSheet.create({
   roleRow: { flexDirection: 'row', gap: spacing.sm, alignItems: 'center', marginTop: spacing.base },
   roleLabel: { flex: 1, fontSize: fontSize.xs, fontWeight: fontWeight.semibold },
   sectionLabel: { fontSize: fontSize.xs, fontWeight: fontWeight.bold, textTransform: 'uppercase', letterSpacing: 1, marginBottom: spacing.sm, marginTop: spacing.sm },
-  menuCard: { borderRadius: borderRadius.xl, borderWidth: 1, overflow: 'hidden', marginBottom: spacing.base, ...shadows.sm },
+  menuCardShadow: { borderRadius: borderRadius.xl, marginBottom: spacing.base, ...shadows.sm },
+  menuCard: { borderRadius: borderRadius.xl, borderWidth: 1, overflow: 'hidden' },
   menuItem: { minHeight: 64, flexDirection: 'row', alignItems: 'center', paddingHorizontal: spacing.base, paddingVertical: spacing.md },
   menuIcon: { width: 40, height: 40, borderRadius: 14, justifyContent: 'center', alignItems: 'center', marginEnd: 14 },
   menuLabel: { flex: 1, minWidth: 0, fontSize: fontSize.base, lineHeight: 20, fontWeight: fontWeight.medium, includeFontPadding: false, textAlignVertical: 'center' },

@@ -12,6 +12,15 @@ export default function OrderDetailPage({ params }) {
   const { t } = useLanguage();
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [now, setNow] = useState(Date.now());
+  const [busy, setBusy] = useState(false);
+  useEffect(() => { const timer = setInterval(() => setNow(Date.now()), 1000); return () => clearInterval(timer); }, []);
+  const act = async (kind) => {
+    setBusy(true);
+    try { const response = await fetch(`/api/orders/${id}/${kind}`, { method: 'POST', headers: authHeaders() }); const data = await response.json(); if (!response.ok) throw new Error(data.error); setOrder(data.order); }
+    catch (error) { window.alert(error.message); }
+    finally { setBusy(false); }
+  };
 
   const fetchOrder = () => {
     fetch(`/api/orders/${id}`, { headers: authHeaders() }).then(r => r.json()).then(d => { setOrder(d.order || d); setLoading(false); }).catch(() => setLoading(false));
@@ -48,6 +57,7 @@ export default function OrderDetailPage({ params }) {
     </section>
   );
 
+  const remaining = order.confirmAfter ? Math.max(0, new Date(order.confirmAfter).getTime() - now) : 0;
   const currentStep = steps.indexOf(order.status);
 
   return (
@@ -56,6 +66,7 @@ export default function OrderDetailPage({ params }) {
       description="Track delivery progress and review the products in this order."
       eyebrow={t('my_orders') || 'My orders'}
     >
+      {order.status === 'pending' && remaining > 0 && <section className="f2-account-card"><h2>Review your order</h2><p>Automatic confirmation in {Math.floor(remaining / 3600000)}:{String(Math.floor(remaining / 60000) % 60).padStart(2, '0')}:{String(Math.floor(remaining / 1000) % 60).padStart(2, '0')}</p><button type="button" disabled={busy} onClick={() => act('confirm')} className="f2-account-button">Confirm now</button> <button type="button" disabled={busy} onClick={() => act('cancel')} className="f2-account-button">Cancel order</button></section>}
       <section className="f2-account-card">
         <div className="f2-account-card__heading f2-account-card__heading--split">
           <div>
@@ -143,8 +154,8 @@ export default function OrderDetailPage({ params }) {
             <dl className="f2-order-summary__list">
               <div><dt>{t('order_number') || 'Order #'}</dt><dd>#{order.orderNumber || id}</dd></div>
               <div><dt>{t('date') || 'Date'}</dt><dd>{new Date(order.createdAt).toLocaleDateString()}</dd></div>
-              <div><dt>{t('subtotal') || 'Subtotal'}</dt><dd>{formatPrice(order.totalAmount)}</dd></div>
-              <div><dt>{t('shipping') || 'Delivery'}</dt><dd>{t('free') || 'Free'}</dd></div>
+              <div><dt>{t('subtotal') || 'Subtotal'}</dt><dd>{formatPrice(order.totalAmount - (order.deliveryFee || 0))}</dd></div>
+              <div><dt>{t('shipping') || 'Delivery'}</dt><dd>{order.deliveryFee ? formatPrice(order.deliveryFee) : (t('free') || 'Free')}</dd></div>
               <div><dt>{t('payment') || 'Payment'}</dt><dd>COD</dd></div>
               <div className="f2-order-summary__total"><dt>{t('total') || 'Total'}</dt><dd>{formatPrice(order.totalAmount)}</dd></div>
             </dl>

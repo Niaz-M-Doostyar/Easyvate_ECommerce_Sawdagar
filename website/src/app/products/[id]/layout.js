@@ -1,15 +1,13 @@
 import { fetchPublicJson } from '@/lib/serverApi';
+import { productImage } from '@/lib/productShare.cjs';
 
 export async function generateMetadata({ params }) {
   const data = await fetchPublicJson(`/api/products/${params.id}`, null);
   const product = data?.product;
   if (!product) return { title: 'Product | Sawdagar' };
 
-  const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || 'https://sawdagaraf.com').replace(/\/$/, '');
-  const imagePath = product.images?.[0]?.url;
-  const image = imagePath
-    ? (imagePath.startsWith('http') ? imagePath : `${siteUrl}${imagePath.startsWith('/') ? '' : '/'}${imagePath}`)
-    : `${siteUrl}/assets/img/product/placeholder.png`;
+  const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || 'https://sawdagar.com').replace(/\/$/, '');
+  const image = productImage(product);
   const title = `${product.nameEn} | Sawdagar`;
   const description = product.descEn || `Buy ${product.nameEn} from ${product.supplier?.companyName || 'Sawdagar'}.`;
 

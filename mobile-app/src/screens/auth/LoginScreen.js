@@ -1,3 +1,4 @@
+import { nationalPhone, internationalPhone } from '../../services/afghanPhone.cjs';
 import React, { useState } from 'react';
 import { View, Text, ScrollView, KeyboardAvoidingView, Platform, TouchableOpacity, StyleSheet, Alert, useWindowDimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -8,10 +9,8 @@ import { useLanguage } from '../../contexts/LanguageContext';
 import { useToast } from '../../contexts/ToastContext';
 import Input from '../../components/Input';
 import Button from '../../components/Button';
-import BrandLogo from '../../components/BrandLogo';
 import ScreenHeader from '../../components/ScreenHeader';
-import Gradient from '../../components/Gradient';
-import { spacing, fontSize, fontWeight, borderRadius, shadows } from '../../theme';
+import { spacing, fontSize, fontWeight } from '../../theme';
 
 export default function LoginScreen({ navigation, route }) {
   const { width } = useWindowDimensions();
@@ -23,6 +22,7 @@ export default function LoginScreen({ navigation, route }) {
   const isTablet = width >= 768;
   const contentWidth = Math.min(width - spacing.lg * 2, 560);
   const redirectTo = route.params?.redirectTo;
+  const [useEmail, setUseEmail] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -72,8 +72,8 @@ export default function LoginScreen({ navigation, route }) {
 
   const validate = () => {
     const e = {};
-    if (!email.trim()) e.email = 'Email is required';
-    else if (!/\S+@\S+\.\S+/.test(email)) e.email = 'Invalid email';
+    if (!email.trim()) e.email = useEmail ? 'Email is required' : 'Phone number is required';
+    else if (!useEmail && !/^7\d{8}$/.test(nationalPhone(email))) e.email = 'Enter a valid Afghan mobile number: 7 followed by 8 digits';
     if (!password) e.password = 'Password is required';
     setErrors(e);
     return Object.keys(e).length === 0;
@@ -84,22 +84,13 @@ export default function LoginScreen({ navigation, route }) {
       <ScreenHeader title="" onBack={handleBack} />
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined} keyboardVerticalOffset={Platform.OS === 'ios' ? 18 : 0}>
         <ScrollView contentContainerStyle={[styles.scroll, isTablet && styles.scrollTablet]} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" showsVerticalScrollIndicator={false}>
-          <View style={[styles.content, { maxWidth: contentWidth }]}> 
-          <Gradient colors={[c.secondary, c.primaryDark]} style={styles.hero}>
-            <View pointerEvents="none" style={[styles.heroGlow, { backgroundColor: c.heroSurface, borderColor: c.heroBorder }]} />
-            <View style={[styles.heroMark, { backgroundColor: c.heroSurface, borderColor: c.heroBorder }]}>
-              <BrandLogo variant="symbol" size={38} style={{ tintColor: c.heroText }} />
-            </View>
-            <View style={styles.header}>
-              <Text style={[styles.eyebrow, { color: c.heroTextMuted }]}>SAWDAGAR</Text>
-              <Text accessibilityRole="header" style={[styles.heroTitle, { color: c.heroText }]}>{t.welcomeBack}</Text>
-            </View>
-          </Gradient>
-          <View style={[styles.formCard, { backgroundColor: c.surface, borderColor: c.border }]}> 
+          <View style={[styles.content, { maxWidth: contentWidth }]}>
+          <View style={styles.formSection}>
             <Text style={[styles.title, { color: c.text }]}>{t.login}</Text>
             <Text style={[styles.subtitle, { color: c.textSecondary }]}>Sign in to continue shopping, track orders, and check out faster.</Text>
             <View style={styles.form}>
-              <Input label={t.email} icon="mail-outline" value={email} onChangeText={setEmail} error={errors.email} keyboardType="email-address" autoCapitalize="none" autoCorrect={false} autoComplete="email" textContentType="username" placeholder="you@example.com" />
+              <Input label={useEmail ? 'Email' : 'Phone number'} icon={useEmail ? 'mail-outline' : 'call-outline'} prefix={useEmail ? undefined : '🇦🇫 +93'} value={useEmail ? email : nationalPhone(email)} onChangeText={v => setEmail(useEmail ? v : internationalPhone(v))} error={errors.email} keyboardType={useEmail ? 'email-address' : 'phone-pad'} autoCapitalize="none" autoCorrect={false} autoComplete={useEmail ? 'username' : 'tel'} textContentType={useEmail ? 'username' : 'telephoneNumber'} placeholder={useEmail ? 'you@example.com' : '7XX XXX XXX'} hint={useEmail ? undefined : 'Enter 9 digits starting with 7. Pasting 07… or +93… works too.'} editable={!loading} />
+              <TouchableOpacity onPress={() => { setUseEmail(!useEmail); setEmail(''); setErrors({}); }} disabled={loading} accessibilityRole="button" style={{paddingVertical:10,marginBottom:12}}><Text style={{color:c.primary,fontWeight:'600'}}>{useEmail ? 'Use phone number instead' : 'Use email instead'}</Text></TouchableOpacity>
               <Input label={t.password} icon="lock-closed-outline" value={password} onChangeText={setPassword} error={errors.password} secureTextEntry autoComplete="current-password" textContentType="password" returnKeyType="go" onSubmitEditing={handleLogin} placeholder="Enter password" />
               <TouchableOpacity accessibilityRole="button" onPress={() => navigation.navigate('ForgotPassword')} style={styles.forgotRow}>
                 <Text numberOfLines={1} maxFontSizeMultiplier={1.15} style={[styles.forgotText, { color: c.primary }]}>{t.forgotPassword}</Text>
@@ -125,13 +116,7 @@ const styles = StyleSheet.create({
   scroll: { flexGrow: 1, padding: spacing.lg, paddingTop: spacing.sm, paddingBottom: spacing.xxl },
   scrollTablet: { justifyContent: 'center' },
   content: { width: '100%', alignSelf: 'center' },
-  hero: { borderRadius: borderRadius.xxl, padding: spacing.xl, minHeight: 208, justifyContent: 'space-between' },
-  heroGlow: { position: 'absolute', width: 240, height: 240, borderRadius: 120, borderWidth: 1, top: -72, right: -88 },
-  heroMark: { width: 56, height: 56, borderRadius: borderRadius.lg, alignItems: 'center', justifyContent: 'center', borderWidth: 1, marginBottom: spacing.lg },
-  header: { alignItems: 'flex-start' },
-  heroTitle: { fontSize: fontSize.xxl, fontWeight: fontWeight.heavy, marginTop: spacing.sm },
-  eyebrow: { fontSize: fontSize.xs, fontWeight: fontWeight.bold, lineHeight: 18, letterSpacing: 2 },
-  formCard: { marginTop: spacing.base, borderRadius: borderRadius.xxl, borderWidth: 1, padding: spacing.lg, ...shadows.sm },
+  formSection: { paddingVertical: spacing.sm },
   title: { fontSize: fontSize.xl, fontWeight: fontWeight.bold, marginBottom: 6 },
   subtitle: { fontSize: fontSize.sm, lineHeight: 21, marginBottom: spacing.lg },
   form: { marginBottom: spacing.sm },
