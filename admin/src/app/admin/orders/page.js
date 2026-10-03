@@ -15,6 +15,7 @@ export default function AdminOrders() {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [total, setTotal] = useState(0);
+  const [now, setNow] = useState(Date.now());
   const [statusFilter, setStatusFilter] = useState("all");
   const [detail, setDetail] = useState(null);
   const [detailData, setDetailData] = useState(null);
@@ -30,6 +31,9 @@ export default function AdminOrders() {
   }, [page, statusFilter]);
 
   useEffect(() => { fetchOrders(); }, [fetchOrders]);
+  useEffect(() => { const timer = setInterval(() => { setNow(Date.now()); fetchOrders(); }, 15000); return () => clearInterval(timer); }, [fetchOrders]);
+  const reviewRemaining = order => order.status === 'pending' && order.confirmAfter ? Math.max(0, new Date(order.confirmAfter).getTime() - now) : 0;
+  const reviewLabel = order => { const minutes = Math.ceil(reviewRemaining(order) / 60000); return minutes >= 60 ? `${Math.floor(minutes / 60)}h ${minutes % 60}m` : `${minutes}m`; };
 
   const updateStatus = async (id, status) => {
     try {
@@ -110,12 +114,12 @@ export default function AdminOrders() {
                       <button onClick={() => { setDeliveryModal(o); setSelectedDelivery(""); }} className="text-xs text-primary underline font-semibold">Assign</button>
                     )}
                   </td>
-                  <td><span className={`badge ${statusColor[o.status] || "badge-gray"}`}>{o.status}</span></td>
+                  <td><span className={`badge ${statusColor[o.status] || "badge-gray"}`}>{o.status}</span>{reviewRemaining(o) > 0 && <small className="block text-body mt-1">Auto confirms in {reviewLabel(o)}</small>}</td>
                   <td className="text-body text-sm">{new Date(o.createdAt).toLocaleDateString()}</td>
                   <td>
                     <div className="flex gap-1">
                       <button onClick={() => openDetail(o)} className="btn btn-sm btn-outline">{t("view")}</button>
-                      {nextStatus[o.status] && <button onClick={() => updateStatus(o.id, nextStatus[o.status])} className="btn btn-sm btn-primary">{nextStatus[o.status]}</button>}
+                      {nextStatus[o.status] && <button onClick={() => updateStatus(o.id, nextStatus[o.status])} disabled={reviewRemaining(o) > 0} title={reviewRemaining(o) > 0 ? "Customer review period is active" : undefined} className="btn btn-sm btn-primary">{nextStatus[o.status]}</button>}
                       {o.status !== "cancelled" && o.status !== "delivered" && (
                         <button onClick={() => updateStatus(o.id, "cancelled")} className="btn btn-sm btn-danger text-xs">Cancel</button>
                       )}
