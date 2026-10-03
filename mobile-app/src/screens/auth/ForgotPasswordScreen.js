@@ -1,5 +1,6 @@
 import useAutoOtpVerification from '../../hooks/useAutoOtpVerification';
 import { OtpMethodPicker, OtpVerification } from '../../components/OtpControls';
+import { nationalPhone, internationalPhone } from '../../services/afghanPhone.cjs';
 import React, { useState } from 'react';
 import { View, Text, ScrollView, KeyboardAvoidingView, Platform, TouchableOpacity, StyleSheet, useWindowDimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -20,8 +21,10 @@ export default function ForgotPasswordScreen({ navigation }) {
   const toast = useToast();
   const c = theme.colors;
   const isTablet = width >= 768;
-  const contentWidth = Math.min(width - spacing.lg * 2, 520);
+  const contentWidth = Math.min(width - spacing.lg * 2, 560);
+  const [useEmail, setUseEmail] = useState(false);
   const [email, setEmail] = useState('');
+  const [identifierError, setIdentifierError] = useState('');
   const [loading, setLoading] = useState(false);
   const [channel, setChannel] = useState('sms');
   const [challengeId, setChallengeId] = useState('');
@@ -31,9 +34,14 @@ export default function ForgotPasswordScreen({ navigation }) {
   const [sentChannel, setSentChannel] = useState('sms');
   const [expiresAt, setExpiresAt] = useState(0);
   const [retryAt, setRetryAt] = useState(0);
-  const isPhone = !email.includes('@');
+  const isPhone = !useEmail;
   const [verificationError, setVerificationError] = useState('');
   const [sent, setSent] = useState(false);
+
+  const handleIdentifierChange = (value) => {
+    setEmail(useEmail ? value : internationalPhone(value));
+    setIdentifierError('');
+  };
 
   const requestCode = async () => {
     if (Date.now() < retryAt) throw new Error('Please wait 60 seconds before resending.');
@@ -48,7 +56,12 @@ export default function ForgotPasswordScreen({ navigation }) {
   };
   const handleSend = async () => {
     if (loading) return;
-    if (!email.trim()) { toast.error('Enter your phone number or email'); return; }
+    if (!email.trim()) { setIdentifierError(useEmail ? 'Email is required' : 'Phone number is required'); return; }
+    if (isPhone) {
+      const digits = nationalPhone(email);
+      if (!digits.startsWith('7')) { setIdentifierError('After +93, the mobile number must start with 7'); return; }
+      if (digits.length !== 9) { setIdentifierError(`Enter 9 digits after +93 (${digits.length} entered)`); return; }
+    }
     setLoading(true); setVerificationError('');
     try {
       if (isPhone) {
@@ -81,12 +94,15 @@ export default function ForgotPasswordScreen({ navigation }) {
     <SafeAreaView style={[styles.safe, { backgroundColor: c.background }]} edges={['top', 'bottom']}>
       <ScreenHeader title="" onBack={() => navigation.goBack()} />
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined} keyboardVerticalOffset={Platform.OS === 'ios' ? 18 : 0}>
-        <ScrollView contentContainerStyle={[styles.scroll, isTablet && styles.scrollTablet]} keyboardShouldPersistTaps="handled">
+        <ScrollView contentContainerStyle={[styles.scroll, isTablet && styles.scrollTablet]} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" showsVerticalScrollIndicator={false}>
           <View style={[styles.content, { maxWidth: contentWidth }]}> 
           <Ionicons name="key-outline" size={48} color={c.primary} style={{ marginBottom: spacing.base }} />
           <Text style={[styles.title, { color: c.text }]}>{t.forgotPassword}</Text>
           <Text style={[styles.subtitle, { color: c.textSecondary }]}>Use your Afghan phone for OTP recovery, or email for a reset link.</Text>
-          {!challengeId && <Input editable={!loading && !challengeId} label="Afghanistan phone or email" icon="mail-outline" value={email} onChangeText={setEmail} keyboardType="default" autoCapitalize="none" placeholder="0700123456 or email" />}
+          {!challengeId && <>
+            <Input editable={!loading} label={useEmail ? 'Email' : 'Phone number'} icon={useEmail ? 'mail-outline' : 'call-outline'} prefix={useEmail ? undefined : '🇦🇫 +93'} value={useEmail ? email : nationalPhone(email)} onChangeText={handleIdentifierChange} error={identifierError} keyboardType={useEmail ? 'email-address' : 'phone-pad'} autoCapitalize="none" autoCorrect={false} autoComplete={useEmail ? 'username' : 'tel'} textContentType={useEmail ? 'username' : 'telephoneNumber'} placeholder={useEmail ? 'you@example.com' : '7XX XXX XXX'} hint={useEmail ? undefined : 'Enter 9 digits after +93 (for example, 7XX XXX XXX).'} />
+            <TouchableOpacity onPress={() => { setUseEmail(!useEmail); setEmail(''); setIdentifierError(''); }} disabled={loading} accessibilityRole="button" style={{ paddingVertical: 10, marginBottom: 12 }}><Text style={{ color: c.primary, fontWeight: '600' }}>{useEmail ? 'Use phone number instead' : 'Use email instead'}</Text></TouchableOpacity>
+          </>}
           {challengeId && <>
             <Input label="New password" value={password} onChangeText={setPassword} secureTextEntry autoComplete="new-password" maxLength={72} />
             <Input label="Confirm password" value={confirmPassword} onChangeText={setConfirmPassword} secureTextEntry autoComplete="new-password" />
@@ -103,11 +119,11 @@ export default function ForgotPasswordScreen({ navigation }) {
 
 const styles = StyleSheet.create({
   safe: { flex: 1 },
-  scroll: { flexGrow: 1, padding: spacing.lg, paddingTop: spacing.xxl, paddingBottom: spacing.xxl },
+  scroll: { flexGrow: 1, padding: spacing.lg, paddingTop: spacing.sm, paddingBottom: spacing.xxl },
   scrollTablet: { justifyContent: 'center' },
   content: { width: '100%', alignSelf: 'center' },
-  title: { fontSize: fontSize.xxl, fontWeight: fontWeight.bold, marginBottom: 6 },
-  subtitle: { fontSize: fontSize.base, marginBottom: spacing.xl, lineHeight: 22 },
+  title: { fontSize: fontSize.xl, fontWeight: fontWeight.bold, marginBottom: 6 },
+  subtitle: { fontSize: fontSize.sm, marginBottom: spacing.lg, lineHeight: 21 },
   center: { flex: 1, width: '100%', alignSelf: 'center', justifyContent: 'center', alignItems: 'center', padding: spacing.lg },
   sentTitle: { fontSize: fontSize.xl, fontWeight: fontWeight.bold, marginTop: spacing.lg },
   sentSub: { fontSize: fontSize.base, textAlign: 'center', marginTop: 8, lineHeight: 22 },
