@@ -61,6 +61,7 @@ export default function HomeScreen({ navigation }) {
 
   const [categories, setCategories] = useState([]);
   const [featured, setFeatured] = useState([]);
+  const [recommended, setRecommended] = useState([]);
   const [sponsored, setSponsored] = useState([]);
   const [adVisible, setAdVisible] = useState(false);
   const adShown = useRef(false);
@@ -92,7 +93,10 @@ export default function HomeScreen({ navigation }) {
       setCategories(cats.categories || cats || []);
       const products = prod.products || prod || [];
       setFeatured(products.slice(0, 30));
-      setNewArrivals(products.slice(0, 20));
+      // The catalog is newest first. Keep these shelves distinct so a product
+      // does not appear in both New Arrivals and Recommended for you.
+      setNewArrivals(products.slice(0, 8));
+      setRecommended(products.slice(8, 16));
       setSponsored(spon.products || spon || []);
       const homeContent = siteData?.content?.home || siteData?.home || {};
       setHeroContent(homeContent.hero || null);
@@ -436,9 +440,9 @@ export default function HomeScreen({ navigation }) {
           </SectionReveal>
         ) : null}
 
-        {featured.length > 0 && <SectionReveal delay={320}>
+        {recommended.length > 0 && <SectionReveal delay={320}>
           <SectionHeader title="Recommended for you" actionLabel={t.seeAll} onAction={() => navigation.navigate('Products')} />
-          <FlatList horizontal showsHorizontalScrollIndicator={false} data={featured.slice(0, 8)} keyExtractor={item => String(item.id)} contentContainerStyle={{ paddingHorizontal: spacing.base }} renderItem={({ item }) => <ProductCard product={item} onPress={() => goProduct(item)} style={{ width: newArrivalCardWidth, marginRight: spacing.md }} />} />
+          <FlatList horizontal showsHorizontalScrollIndicator={false} data={recommended} keyExtractor={item => String(item.id)} contentContainerStyle={{ paddingHorizontal: spacing.base }} renderItem={({ item }) => <ProductCard product={item} onPress={() => goProduct(item)} style={{ width: newArrivalCardWidth, marginRight: spacing.md }} />} />
         </SectionReveal>}
         <SectionReveal delay={330}>
           <SectionHeader title={t.featured} actionLabel={t.seeAll} onAction={() => navigation.navigate('Products')} />
