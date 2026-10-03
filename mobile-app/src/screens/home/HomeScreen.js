@@ -54,7 +54,6 @@ export default function HomeScreen({ navigation }) {
   const isTablet = width >= 768;
   const promoCardWidth = Math.min(width * (isTablet ? 0.52 : 0.78), 560);
   const actionCardWidth = Math.min(width * (isTablet ? 0.42 : 0.72), 420);
-  const sponsoredCardWidth = Math.min(width * (isTablet ? 0.34 : 0.6), 360);
   const newArrivalCardWidth = Math.min(300, width * 0.45);
   const gridColumns = width >= 1024 ? 4 : 3;
   const gridCardWidth = Math.max(0, (width - spacing.base * 2) / gridColumns - 8);
@@ -408,20 +407,6 @@ export default function HomeScreen({ navigation }) {
             )}
           />
         </SectionReveal>
-
-        {sponsored.length > 0 && (
-          <SectionReveal delay={250}>
-            <SectionHeader title="Popular Now" />
-            <FlatList
-              horizontal showsHorizontalScrollIndicator={false}
-              data={sponsored} keyExtractor={i => String(i.id)}
-              contentContainerStyle={{ paddingHorizontal: spacing.base }}
-              renderItem={({ item }) => (
-                <ProductCard product={item} onPress={() => goProduct(item)} style={{ width: sponsoredCardWidth, marginRight: spacing.md }} />
-              )}
-            />
-          </SectionReveal>
-        )}
 
         {bigBanner?.title ? (
           <SectionReveal delay={290}>
