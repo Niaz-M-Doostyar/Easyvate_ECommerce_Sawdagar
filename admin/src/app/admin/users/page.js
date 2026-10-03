@@ -130,7 +130,7 @@ export default function AdminUsers() {
             <thead>
               <tr>
                 <th>{t("name")}</th><th>{t("email")}</th><th>{t("phone")}</th><th>Role</th>
-                <th>Email Verified</th><th>{t("active")}</th><th>Approved</th><th>Supplier Sign</th><th>{t("date")}</th><th>{t("actions")}</th>
+                <th>Verification</th><th>{t("active")}</th><th>Approved</th><th>Supplier Sign</th><th>{t("date")}</th><th>{t("actions")}</th>
               </tr>
             </thead>
             <tbody>
@@ -148,10 +148,10 @@ export default function AdminUsers() {
                       </div>
                     </div>
                   </td>
-                  <td className="text-sm">{u.email}</td>
+                  <td className="text-sm">{u.email?.endsWith('@phone.sawdagar.local') ? '—' : u.email}</td>
                   <td className="text-sm">{u.phone || "—"}</td>
                   <td><span className={`badge ${roleColor[u.role] || "badge-gray"}`}>{u.role}</span></td>
-                  <td>{u.emailVerified ? <span className="text-green font-bold">✓</span> : <span className="text-red font-bold">✗</span>}</td>
+                  <td>{u.phoneVerified ? <span className="text-green font-bold">Phone ✓</span> : u.emailVerified ? <span className="text-green font-bold">Email ✓</span> : <span className="text-red font-bold">Pending</span>}</td>
                   <td>
                     <button onClick={() => toggleUser(u.id, "isActive", !u.isActive)} className={`badge cursor-pointer ${u.isActive ? "badge-green" : "badge-red"}`}>
                       {u.isActive ? t("active") : t("inactive")}
@@ -174,7 +174,7 @@ export default function AdminUsers() {
                     <div className="flex gap-1 flex-wrap">
                       <button onClick={() => setDetail(u)} className="btn btn-sm btn-outline">{t("view")}</button>
                       <button onClick={() => openEdit(u)} className="btn btn-sm btn-primary">{t("edit")}</button>
-                      {!u.emailVerified && (
+                      {!u.emailVerified && !u.phoneVerified && (
                         <button onClick={() => resendVerification(u.id)} className="btn btn-sm btn-secondary">
                           Resend
                         </button>
@@ -199,14 +199,14 @@ export default function AdminUsers() {
               </div>
               <div>
                 <h4 className="text-lg font-bold text-navy">{detail.fullName}</h4>
-                <p className="text-body text-sm">{detail.email}</p>
+                <p className="text-body text-sm">{detail.email?.endsWith('@phone.sawdagar.local') ? detail.phone : detail.email}</p>
                 <span className={`badge ${roleColor[detail.role] || "badge-gray"} mt-1`}>{detail.role}</span>
               </div>
             </div>
             <div className="grid grid-cols-2 gap-3 text-sm">
               <div><span className="text-body">{t("phone")}:</span> <strong>{detail.phone || "—"}</strong></div>
               <div><span className="text-body">Company:</span> <strong>{detail.companyName || "—"}</strong></div>
-              <div><span className="text-body">Email Verified:</span> <strong className={detail.emailVerified ? "text-green" : "text-red"}>{detail.emailVerified ? "Yes" : "No"}</strong></div>
+              <div><span className="text-body">Verification:</span> <strong className={detail.phoneVerified || detail.emailVerified ? "text-green" : "text-red"}>{detail.phoneVerified ? 'Phone' : detail.emailVerified ? 'Email' : 'Pending'}</strong></div>
               {detail.role === "supplier" && <div><span className="text-body">Supplier Sign:</span> <strong className={detail.supplierVerified ? "text-green" : "text-red"}>{detail.supplierVerified ? "Yes" : "No"}</strong></div>}
               <div><span className="text-body">{t("active")}:</span> <strong className={detail.isActive ? "text-green" : "text-red"}>{detail.isActive ? "Yes" : "No"}</strong></div>
               <div><span className="text-body">Province:</span> <strong>{detail.province || "—"}</strong></div>

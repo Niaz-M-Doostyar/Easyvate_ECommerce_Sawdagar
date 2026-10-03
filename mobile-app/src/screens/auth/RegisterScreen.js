@@ -7,7 +7,6 @@ import { View, Text, ScrollView, KeyboardAvoidingView, Platform, TouchableOpacit
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useTheme } from '../../contexts/ThemeContext';
-import { useAuth } from '../../contexts/AuthContext';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useToast } from '../../contexts/ToastContext';
 import Input from '../../components/Input';
@@ -23,7 +22,6 @@ export default function RegisterScreen({ navigation }) {
   const confirmInput = useRef(null);
   const { width } = useWindowDimensions();
   const { theme } = useTheme();
-  const { register } = useAuth();
   const { t } = useLanguage();
   const toast = useToast();
   const c = theme.colors;
@@ -49,8 +47,7 @@ export default function RegisterScreen({ navigation }) {
     const e = {};
     if (!form.name.trim()) e.name = 'Name is required';
     if (form.role === 'customer' && !form.lastName.trim()) e.lastName = 'Last name is required';
-    if (form.role === 'supplier' && !form.email.trim()) e.email = 'Email is required';
-    else if (form.role === 'supplier' && !/\S+@\S+\.\S+/.test(form.email)) e.email = 'Invalid email';
+    if (form.role === 'supplier' && form.email.trim() && !/\S+@\S+\.\S+/.test(form.email)) e.email = 'Invalid email';
     if (!/^7\d{8}$/.test(nationalPhone(form.phone))) e.phone = 'Enter a valid Afghan mobile number: 7 followed by 8 digits';
     if (!form.password) e.password = 'Password is required';
     else if (form.password.length < 6) e.password = 'At least 6 characters';
@@ -63,7 +60,7 @@ export default function RegisterScreen({ navigation }) {
 
   const requestCode = async () => {
     if (Date.now() < retryAt) throw new Error('Please wait 60 seconds before resending.');
-    const data = await authApi.requestCustomerOtp({ firstName: form.name.trim(), lastName: form.lastName.trim(), phone: form.phone, password: form.password, confirmPassword: form.confirmPassword, channel });
+    const data = await authApi.requestCustomerOtp({ role: form.role, firstName: form.name.trim(), lastName: form.lastName.trim(), fullName: form.name.trim(), email: form.role === 'supplier' ? form.email.trim().toLowerCase() : '', companyName: form.companyName.trim(), province: form.province, district: form.district, village: form.village, landmark: form.landmark, phone: form.phone, password: form.password, confirmPassword: form.confirmPassword, channel });
     setChallengeId(data.challengeId); setCode(''); setSentChannel(channel); setExpiresAt(Date.now() + (data.expiresIn || 300) * 1000); setRetryAt(Date.now() + data.retryAfter * 1000); toast.success(data.message);
   };
   const resendCode = async () => {
@@ -78,37 +75,11 @@ export default function RegisterScreen({ navigation }) {
     setLoading(true);
     setVerificationError('');
     try {
-      if (form.role === 'customer') {
-        if (!challengeId) await requestCode();
-        else {
-          const data = await authApi.verifyCustomerOtp({ challengeId, code });
-          Alert.alert('Account created', data.message, [{ text: 'Sign in', onPress: goToLogin }]);
-        }
-        return;
+      if (!challengeId) await requestCode();
+      else {
+        const data = await authApi.verifyCustomerOtp({ challengeId, code });
+        Alert.alert('Account created', data.message, [{ text: 'Sign in', onPress: goToLogin }]);
       }
-      await register({
-        fullName: form.name.trim(),
-        email: form.email.trim().toLowerCase(),
-        phone: form.phone.trim(),
-        password: form.password,
-        role: form.role,
-        companyName: form.role === 'supplier' ? (form.companyName || '').trim() : undefined,
-        province: form.province ? form.province.trim() : undefined,
-        district: form.district ? form.district.trim() : undefined,
-        village: form.village ? form.village.trim() : undefined,
-        landmark: form.landmark ? form.landmark.trim() : undefined,
-      });
-
-      const successMessage = form.role === 'supplier'
-        ? t.registrationVerifyMessageSupplier
-        : t.registrationVerifyMessageCustomer;
-
-      Alert.alert(
-        t.registrationSuccessTitle,
-        successMessage,
-        [{ text: 'OK', onPress: goToLogin }],
-        { cancelable: false },
-      );
     } catch (err) {
       const msg = err?.message || 'Registration failed';
       if (challengeId) setVerificationError(msg);
@@ -152,7 +123,7 @@ export default function RegisterScreen({ navigation }) {
             </View>
             <Input editable={!challengeId && !loading} returnKeyType="next" onSubmitEditing={() => form.role === 'customer' && lastNameInput.current?.focus()} label={form.role === 'customer' ? 'First name' : t.fullName} icon="person-outline" value={form.name} onChangeText={v => set('name', v)} error={errors.name} autoComplete={form.role === 'customer' ? "given-name" : "name"} textContentType={form.role === 'customer' ? "givenName" : "name"} autoCapitalize="words" autoCorrect={false} placeholder={form.role === 'customer' ? 'First name' : 'Full name'} />
             {form.role === 'customer' && <Input editable={!challengeId && !loading} ref={lastNameInput} returnKeyType="next" onSubmitEditing={() => phoneInput.current?.focus()} label="Last name" icon="person-outline" textContentType="familyName" autoCapitalize="words" autoCorrect={false} value={form.lastName} onChangeText={v => set('lastName', v)} error={errors.lastName} autoComplete="family-name" placeholder="Last name" maxLength={80} />}
-            {form.role === 'supplier' && <Input label={t.email} icon="mail-outline" value={form.email} onChangeText={v => set('email', v)} error={errors.email} keyboardType="email-address" autoCapitalize="none" autoCorrect={false} autoComplete="email" textContentType="emailAddress" placeholder="you@example.com" />}
+            {form.role === 'supplier' && <Input label={`${t.email} (${t.optional})`} icon="mail-outline" value={form.email} onChangeText={v => set('email', v)} error={errors.email} keyboardType="email-address" autoCapitalize="none" autoCorrect={false} autoComplete="email" textContentType="emailAddress" placeholder="you@example.com" />}
             <Input editable={!challengeId && !loading} ref={phoneInput} label="Phone number" icon="call-outline" prefix="🇦🇫 +93" hint="Enter 9 digits starting with 7. You can also paste 07… or +93…" value={nationalPhone(form.phone)} onChangeText={v => set('phone', internationalPhone(v))} error={errors.phone} keyboardType="phone-pad" autoComplete="tel" textContentType="telephoneNumber" placeholder="7XX XXX XXX" maxLength={16} autoCorrect={false} />
             {form.role === 'supplier' && (
               <>
@@ -166,14 +137,12 @@ export default function RegisterScreen({ navigation }) {
             <Input editable={!challengeId && !loading} maxLength={72} returnKeyType="next" onSubmitEditing={() => confirmInput.current?.focus()} autoCapitalize="none" autoCorrect={false} label={t.password} icon="lock-closed-outline" value={form.password} onChangeText={v => set('password', v)} error={errors.password} secureTextEntry autoComplete="new-password" textContentType="newPassword" placeholder="Min 6 characters" />
             <Input editable={!challengeId && !loading} ref={confirmInput} maxLength={72} autoCapitalize="none" autoCorrect={false} label={t.confirmPassword} icon="lock-closed-outline" value={form.confirmPassword} onChangeText={v => set('confirmPassword', v)} error={errors.confirmPassword} secureTextEntry autoComplete="new-password" textContentType="newPassword" returnKeyType="done" onSubmitEditing={handleRegister} placeholder="Repeat password" />
             </>}
-            {form.role === 'customer' && <>
               {challengeId && <OtpVerification code={code} onChange={setCode} phone={form.phone} sentChannel={sentChannel} channel={channel} retryAt={retryAt} expiresAt={expiresAt} onResend={resendCode} onEdit={() => { setChallengeId(''); setCode(''); setVerificationError(''); }} loading={loading} />}
               <OtpMethodPicker value={channel} onChange={setChannel} disabled={loading} verifying={!!challengeId} />
-            </>}
             {challengeId ? <View accessibilityLiveRegion="polite" style={{marginTop:16}}>
               {verificationError ? <Text accessibilityRole="alert" style={{color:c.error,marginBottom:8}}>{verificationError}</Text> : null}
               <Text style={{color:c.textSecondary,textAlign:'center'}}>{loading ? 'Checking your code…' : verificationError ? 'Edit the code to try again.' : 'Your code will be checked automatically.'}</Text>
-            </View> : <Button title={form.role === 'customer' ? (challengeId ? 'Verify & create account' : 'Send verification code') : t.createAccount} onPress={handleRegister} loading={loading} disabled={!!challengeId && code.length !== 6} style={{ marginTop: spacing.base }} /> }
+            </View> : <Button title="Send verification code" onPress={handleRegister} loading={loading} style={{ marginTop: spacing.base }} /> }
 
           </View>
           <View style={styles.footer}>

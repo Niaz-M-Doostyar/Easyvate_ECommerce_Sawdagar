@@ -309,6 +309,7 @@ model Coupon {
 model PhoneRegistration {
   purpose      String   @default("registration")
   userId       Int?     @map("user_id")
+  registrationData Json? @map("registration_data")
   id           String   @id
   phone        String   @unique
   fullName     String   @map("full_name")

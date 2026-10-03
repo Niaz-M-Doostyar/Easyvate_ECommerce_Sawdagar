@@ -43,6 +43,7 @@ async function notifySupplierStatusChange(previousUser, updatedUser) {
   if (!previousUser || !updatedUser) return null;
   if (updatedUser.role !== 'supplier') return null;
   if (previousUser.isApproved === updatedUser.isApproved) return null;
+  if (updatedUser.email.endsWith('@phone.sawdagar.local')) return null;
 
   const status = updatedUser.isApproved ? 'approved' : 'rejected';
   const sent = await sendSupplierAccountStatusEmail(updatedUser.email, status);
@@ -180,7 +181,7 @@ router.post('/products/:id/approve', authenticate, requireRole('admin'), async (
       data: { status: 'approved', retailPrice: parseFloat(retailPrice), adminNotes },
     });
 
-    if (product.supplier) {
+    if (product.supplier && !product.supplier.email.endsWith('@phone.sawdagar.local')) {
       await sendProductApprovalEmail(product.supplier.email, product.nameEn, 'approved');
     }
 
@@ -205,7 +206,7 @@ router.post('/products/:id/reject', authenticate, requireRole('admin'), async (r
       data: { status: 'rejected', adminNotes: req.body.reason || null },
     });
 
-    if (product.supplier) {
+    if (product.supplier && !product.supplier.email.endsWith('@phone.sawdagar.local')) {
       await sendProductApprovalEmail(product.supplier.email, product.nameEn, 'rejected');
     }
 
@@ -239,7 +240,7 @@ router.get('/users', authenticate, requireRole('admin'), async (req, res) => {
         where,
         select: {
           id: true, email: true, fullName: true, phone: true, role: true,
-          isActive: true, isApproved: true, emailVerified: true, supplierVerified: true, companyName: true,
+          isActive: true, isApproved: true, emailVerified: true, phoneVerified: true, supplierVerified: true, companyName: true,
           province: true, district: true, village: true, landmark: true, createdAt: true,
         },
         orderBy: { createdAt: 'desc' },
@@ -294,6 +295,7 @@ router.post('/users/:id/resend-verification', authenticate, requireRole('admin')
     const userId = parseInt(req.params.id);
     const user = await prisma.user.findUnique({ where: { id: userId } });
     if (!user) return res.status(404).json({ error: 'User not found' });
+    if (user.phoneVerified) return res.status(400).json({ error: 'This account uses phone verification' });
     if (user.emailVerified) return res.status(400).json({ error: 'User already verified' });
 
     const token = user.verifyToken || generateToken();
@@ -605,7 +607,7 @@ router.put('/sponsorships/requests/:id', authenticate, requireRole('admin'), asy
       data: updateData,
     });
 
-    await sendSponsorshipStatusEmail(sponsorReq.supplier.email, status);
+    if (!sponsorReq.supplier.email.endsWith('@phone.sawdagar.local')) await sendSponsorshipStatusEmail(sponsorReq.supplier.email, status);
 
     res.json({ request: updated });
   } catch (err) {

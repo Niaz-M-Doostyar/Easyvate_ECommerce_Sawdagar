@@ -42,7 +42,8 @@ test('signup requires verification, enforces limits, expires codes and consumes 
   const db = {
     phoneOtpRate: { upsert: async () => ({ count: 1 }), deleteMany: async () => ({ count: 0 }) },
     user: {
-      findFirst: async () => user,
+      findFirst: async ({ where }) => user && where.OR?.some(condition => condition.customerPhone === user.customerPhone || condition.phone?.in?.includes(user.phone)) ? user : null,
+      findUnique: async ({ where }) => user?.email === where.email ? user : null,
       updateMany: async ({ where, data }) => { if (!user || user.id !== where.id || user.customerPhone !== where.customerPhone) return { count: 0 }; Object.assign(user, data); return { count: 1 }; },
       create: async ({ data }) => { user = { id: 1, ...data }; return user; },
     },
@@ -66,6 +67,9 @@ test('signup requires verification, enforces limits, expires codes and consumes 
   const prismaPath = require.resolve('../lib/prisma');
   const originalModule = require.cache[prismaPath];
   require.cache[prismaPath] = { id: prismaPath, filename: prismaPath, loaded: true, exports: db };
+  const emailPath = require.resolve('../lib/email');
+  const originalEmailModule = require.cache[emailPath];
+  require.cache[emailPath] = { id: emailPath, filename: emailPath, loaded: true, exports: { ...require('../lib/email'), sendAdminNotification: async () => true } };
   const router = require('../routes/auth');
   const call = async (path, body) => {
     const handler = router.stack.find(layer => layer.route?.path === path).route.stack[0].handle;
@@ -110,9 +114,25 @@ test('signup requires verification, enforces limits, expires codes and consumes 
     assert.notEqual(user.password, oldPasswordHash);
     assert.equal(pending, null);
     assert.equal((await call('/reset-phone-password', { challengeId: reset.body.challengeId, code: deliveredCode, password: 'changed123', confirmPassword: 'changed123' })).statusCode, 400);
+    const supplierBody = { role: 'supplier', fullName: 'Test Supplier', companyName: 'Test Shop', province: 'Kabul', phone: '0700123457', password: 'secret123', confirmPassword: 'secret123' };
+    assert.equal((await call('/customer-otp', { ...supplierBody, province: '' })).statusCode, 400);
+    assert.equal((await call('/customer-otp', { ...supplierBody, email: 'invalid-email' })).statusCode, 400);
+    const supplierSent = await call('/customer-otp', supplierBody);
+    assert.equal(supplierSent.statusCode, 200);
+    assert.equal(pending.registrationData.role, 'supplier');
+    const supplierVerified = await call('/verify-customer-otp', { challengeId: supplierSent.body.challengeId, code: deliveredCode });
+    assert.equal(supplierVerified.statusCode, 201);
+    assert.equal(supplierVerified.body.pendingApproval, true);
+    assert.equal(user.role, 'supplier');
+    assert.equal(user.phoneVerified, true);
+    assert.equal(user.emailVerified, false);
+    assert.equal(user.isApproved, false);
+    assert.equal(user.email, '93700123457@phone.sawdagar.local');
+    assert.equal(user.companyName, 'Test Shop');
   } finally {
     global.fetch = originalFetch;
     if (originalKey === undefined) delete process.env.GHONCHA_API_KEY; else process.env.GHONCHA_API_KEY = originalKey;
     if (originalModule) require.cache[prismaPath] = originalModule; else delete require.cache[prismaPath];
+    if (originalEmailModule) require.cache[emailPath] = originalEmailModule; else delete require.cache[emailPath];
   }
 });

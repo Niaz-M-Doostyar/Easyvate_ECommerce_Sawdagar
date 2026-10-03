@@ -64,17 +64,31 @@ async function ensureDeletedSupplierUser(tx) {
 
 const crypto = require('node:crypto');
 const { normalizeAfghanPhone, codeHash, sendCode } = require('../lib/phoneOtp');
+const publicEmail = user => user.email?.endsWith('@phone.sawdagar.local') ? '' : user.email;
 
 // Persist challenges and limits so restarts and multiple workers cannot bypass them.
 router.post('/customer-otp', async (req, res) => {
   try {
-    const { firstName, lastName, password, confirmPassword, channel = 'sms', purpose = 'registration' } = req.body;
+    const { firstName, lastName, fullName, password, confirmPassword, channel = 'sms', purpose = 'registration', role = 'customer' } = req.body;
     if (!['registration', 'password-reset'].includes(purpose)) return res.status(400).json({ error: 'Invalid verification request' });
+    if (purpose === 'registration' && !['customer', 'supplier'].includes(role)) return res.status(400).json({ error: 'Invalid account type' });
     const phone = normalizeAfghanPhone(req.body.phone);
     if (!phone) return res.status(400).json({ error: 'Enter an Afghanistan mobile number, e.g. 0700123456' });
     if (!['sms', 'whatsapp'].includes(channel)) return res.status(400).json({ error: 'Invalid OTP method' });
-    if (purpose === 'registration' && (typeof firstName !== 'string' || typeof lastName !== 'string' || !sanitize(firstName).trim() || !sanitize(lastName).trim() || firstName.length > 80 || lastName.length > 80))
+    if (purpose === 'registration' && role === 'customer' && (typeof firstName !== 'string' || typeof lastName !== 'string' || !sanitize(firstName).trim() || !sanitize(lastName).trim() || firstName.length > 80 || lastName.length > 80))
       return res.status(400).json({ error: 'First name and last name are required (maximum 80 characters each)' });
+    const supplierName = typeof fullName === 'string' ? sanitize(fullName).trim() : '';
+    const supplierEmail = typeof req.body.email === 'string' ? req.body.email.trim().toLowerCase() : '';
+    const supplierCompany = typeof req.body.companyName === 'string' ? sanitize(req.body.companyName).trim() : '';
+    const supplierProvince = role === 'supplier' ? normalizeProvince(req.body.province) : null;
+    if (purpose === 'registration' && role === 'supplier') {
+      if (!supplierName || supplierName.length > 160 || !supplierCompany || !supplierProvince)
+        return res.status(400).json({ error: 'Full name, company name, and a valid province are required' });
+      if (supplierEmail && (!validateEmail(supplierEmail) || supplierEmail.endsWith('@phone.sawdagar.local')))
+        return res.status(400).json({ error: 'Enter a valid email or leave it blank' });
+      if (supplierEmail && await prisma.user.findUnique({ where: { email: supplierEmail } }))
+        return res.status(409).json({ error: 'Email already registered' });
+    }
     if (purpose === 'registration' && (typeof password !== 'string' || password.length < 6 || password.length > 72 || password !== confirmPassword))
       return res.status(400).json({ error: 'Passwords must match and contain 6–72 characters' });
     const existing = await prisma.user.findFirst({ where: { OR: [{ customerPhone: phone }, { phone: { in: [phone, phone.slice(1), '0' + phone.slice(3)] } }] } });
@@ -94,7 +108,8 @@ router.post('/customer-otp', async (req, res) => {
     const previous = await prisma.phoneRegistration.findUnique({ where: { phone } });
     if (previous && (now - previous.lastSentAt < 60000 || (now - previous.windowStart < 3600000 && previous.sendCount >= 5)))
       return res.status(429).json({ error: 'Please wait before requesting another code. Maximum 5 sends per hour.' });
-    const data = { id, purpose, userId: purpose === 'password-reset' ? existing.id : null, fullName: purpose === 'registration' ? `${sanitize(firstName).trim()} ${sanitize(lastName).trim()}` : '', password: passwordHash,
+    const data = { id, purpose, userId: purpose === 'password-reset' ? existing.id : null, fullName: purpose === 'registration' ? (role === 'supplier' ? supplierName : `${sanitize(firstName).trim()} ${sanitize(lastName).trim()}`) : '', password: passwordHash,
+      registrationData: purpose === 'registration' ? { role, email: role === 'supplier' ? supplierEmail : '', companyName: role === 'supplier' ? supplierCompany : '', province: role === 'supplier' ? supplierProvince : '', district: role === 'supplier' ? sanitize(String(req.body.district || '')) : '', village: role === 'supplier' ? sanitize(String(req.body.village || '')) : '', landmark: role === 'supplier' ? sanitize(String(req.body.landmark || '')) : '' } : null,
       codeHash: codeHash(id, code), expiresAt: new Date(now.getTime() + 300000), lastSentAt: now, attempts: 0,
       sendCount: previous && now - previous.windowStart < 3600000 ? previous.sendCount + 1 : 1,
       windowStart: previous && now - previous.windowStart < 3600000 ? previous.windowStart : now };
@@ -123,14 +138,23 @@ router.post('/verify-customer-otp', async (req, res) => {
       if (!reserved.count) return false;
       const challenge = await tx.phoneRegistration.findUnique({ where: { id: challengeId } });
       if (codeHash(challengeId, code) !== challenge.codeHash) return false;
-      const user = await tx.user.create({ data: { email: `${challenge.phone.slice(1)}@phone.sawdagar.local`, customerPhone: challenge.phone,
+      const registration = challenge.registrationData || { role: 'customer' };
+      const supplier = registration.role === 'supplier';
+      const user = await tx.user.create({ data: { email: registration.email || `${challenge.phone.slice(1)}@phone.sawdagar.local`, customerPhone: challenge.phone,
         phone: challenge.phone, phoneVerified: true, fullName: challenge.fullName, password: challenge.password,
-        role: 'customer', isActive: true, isApproved: true, emailVerified: false } });
+        role: supplier ? 'supplier' : 'customer', isActive: true, isApproved: !supplier, emailVerified: false,
+        companyName: supplier ? registration.companyName : null, province: supplier ? registration.province : null,
+        district: supplier ? registration.district || null : null, village: supplier ? registration.village || null : null,
+        landmark: supplier ? registration.landmark || null : null } });
       await tx.phoneRegistration.delete({ where: { id: challengeId } });
-      return user.id;
+      return { id: user.id, role: user.role, fullName: user.fullName, email: publicEmail(user), phone: user.phone };
     });
     if (!result) return res.status(400).json({ error: 'Invalid or expired code. Request a new code after 5 failed attempts.' });
-    return res.status(201).json({ message: 'Phone verified. Account created! You can now sign in with your phone number.' });
+    if (result.role === 'supplier') {
+      const notified = await sendAdminNotification('New supplier registration', `${result.fullName} (${result.phone}${result.email ? `, ${result.email}` : ''}) registered as a supplier.`);
+      if (!notified) console.warn('Supplier registration admin notification failed:', getLastEmailError()?.message || 'unknown error');
+    }
+    return res.status(201).json({ message: result.role === 'supplier' ? 'Phone verified. Supplier account created and pending admin approval.' : 'Phone verified. Account created! You can now sign in with your phone number.', pendingApproval: result.role === 'supplier' });
   } catch (err) {
     return res.status(err.code === 'P2002' ? 409 : 500).json({ error: 'Unable to create account. Please try signing in or request a new code.' });
   }
@@ -158,111 +182,10 @@ router.post('/reset-phone-password', async (req, res) => {
   } catch { return res.status(500).json({ error: 'Unable to reset password. Please try again later.' }); }
 });
 
-// POST /api/auth/register
-router.post('/register', async (req, res) => {
-  try {
-    const {
-      email,
-      password,
-      fullName,
-      phone,
-      role,
-      province,
-      district,
-      village,
-      landmark,
-      companyName,
-      contactPerson,
-      taxId,
-      businessLicense,
-    } = req.body;
-
-    if (role !== 'supplier') return res.status(400).json({ error: 'Customers must register using phone OTP verification' });
-    const cleanedFullName = typeof fullName === 'string' ? sanitize(fullName) : '';
-    if (!email || !password || !cleanedFullName) {
-      return res.status(400).json({ error: 'Email, password, and full name are required' });
-    }
-    if (typeof email !== 'string' || email.toLowerCase().endsWith('@phone.sawdagar.local')) return res.status(400).json({ error: 'Invalid email' });
-    if (!validateEmail(email)) return res.status(400).json({ error: 'Invalid email' });
-    if (password.length < 6) return res.status(400).json({ error: 'Password must be at least 6 characters' });
-
-    const existing = await prisma.user.findUnique({ where: { email: email.toLowerCase() } });
-    if (existing) return res.status(400).json({ error: 'Email already registered' });
-
-    const userRole = ['customer', 'supplier'].includes(role) ? role : 'customer';
-    if (userRole === 'supplier' && !companyName) {
-      return res.status(400).json({ error: 'Company name is required for suppliers' });
-    }
-    const supplierProvince = userRole === 'supplier' ? normalizeProvince(province) : null;
-    if (userRole === 'supplier' && !supplierProvince) {
-      return res.status(400).json({ error: 'Please select a valid Afghanistan province' });
-    }
-
-    const hashedPassword = await hashPassword(password);
-
-    // Auto-verify if explicitly enabled via env (useful for local dev).
-    // By default, users must verify their email to login.
-    const autoVerify = process.env.AUTO_VERIFY_CUSTOMER === 'true';
-    const verificationToken = autoVerify ? null : generateUUID();
-
-    const user = await prisma.user.create({
-      data: {
-        email: email.toLowerCase(),
-        password: hashedPassword,
-        fullName: cleanedFullName,
-        phone: phone || null,
-        role: userRole,
-        isActive: autoVerify,
-        emailVerified: autoVerify,
-        province: userRole === 'supplier' ? supplierProvince : (province || null),
-        district: district || null,
-        village: village || null,
-        landmark: landmark || null,
-        companyName: userRole === 'supplier' ? sanitize(companyName) : null,
-        contactPerson: contactPerson ? sanitize(contactPerson) : null,
-        businessLicense: businessLicense || null,
-        taxId: taxId || null,
-        verifyToken: verificationToken,
-        isApproved: userRole === 'customer',
-      },
-    });
-
-    if (!autoVerify) {
-      const sent = await sendVerificationEmail(user.email, verificationToken);
-      if (!sent) {
-        return res.status(500).json({
-          error: 'Registration created but verification email could not be sent. Please contact support or try again later.',
-          details: getLastEmailError()?.message || undefined,
-        });
-      }
-    }
-
-    if (userRole === 'supplier') {
-      const adminNotified = await sendAdminNotification('New supplier registration', `${user.fullName} (${user.email}) registered as a supplier.`);
-      if (!adminNotified) {
-        console.warn('Supplier registration admin notification failed:', getLastEmailError()?.message || 'unknown error');
-      }
-    }
-
-    await logTransaction(req, 'REGISTER', 'User', user.id, { email: user.email, role: userRole });
-
-    if (userRole === 'supplier') {
-      res.status(201).json({
-        message: autoVerify
-          ? 'Registration successful. Your supplier account is pending admin approval.'
-          : 'Registration successful. Please verify your email. After verification, an admin must approve your supplier account before you can log in.',
-        pendingApproval: true,
-      });
-    } else if (autoVerify) {
-      res.status(201).json({ message: 'Registration successful! You can now log in.' });
-    } else {
-      res.status(201).json({ message: 'Registration successful. Please verify your email.' });
-    }
-  } catch (err) {
-    console.error('Register error:', err);
-    res.status(500).json({ error: 'Registration failed' });
-  }
-});
+// New customer and supplier accounts are created only after phone OTP verification.
+router.post('/register', (_req, res) => res.status(400).json({
+  error: 'Use phone verification to create an account',
+}));
 
 // POST /api/auth/login
 router.post('/login', async (req, res) => {
@@ -274,7 +197,7 @@ router.post('/login', async (req, res) => {
     const phone = normalizeAfghanPhone(email);
     const user = phone ? await prisma.user.findUnique({ where: { customerPhone: phone } }) : await prisma.user.findUnique({ where: { email: email.trim().toLowerCase() } });
     if (!user) return res.status(401).json({ error: 'Invalid credentials' });
-    if (!user.emailVerified && !user.phoneVerified) return res.status(403).json({ error: 'Please verify your email first' });
+    if (!user.emailVerified && !user.phoneVerified) return res.status(403).json({ error: 'Please verify your phone or email first' });
     if (!user.isActive) return res.status(403).json({ error: 'Account is deactivated' });
     if (user.role === 'supplier' && !user.isApproved) {
       return res.status(403).json({ error: 'Supplier account is pending admin approval' });
@@ -297,7 +220,7 @@ router.post('/login', async (req, res) => {
 
     res.json({
       user: {
-        id: user.id, email: user.phoneVerified ? '' : user.email, phoneVerified: user.phoneVerified, fullName: user.fullName,
+        id: user.id, email: publicEmail(user), phoneVerified: user.phoneVerified, fullName: user.fullName,
         role: user.role, phone: user.phone, province: user.province,
         district: user.district, village: user.village, landmark: user.landmark,
         companyName: user.companyName, isApproved: user.isApproved,
@@ -456,6 +379,7 @@ router.post('/resend-verification', async (req, res) => {
 
     const user = await prisma.user.findUnique({ where: { email: email.toLowerCase() } });
     if (!user) return res.status(404).json({ error: 'User not found' });
+    if (user.phoneVerified) return res.status(400).json({ error: 'This account uses phone verification' });
     if (user.emailVerified) return res.status(400).json({ error: 'Email already verified' });
 
     const token = user.verifyToken || generateUUID();
@@ -524,7 +448,7 @@ router.post('/reset-password', async (req, res) => {
 
 // GET /api/auth/me
 router.get('/me', authenticate, async (req, res) => {
-  res.json({ user: { ...req.user, email: req.user.phoneVerified ? '' : req.user.email } });
+  res.json({ user: { ...req.user, email: publicEmail(req.user) } });
 });
 
 const updateProfile = async (req, res) => {
@@ -580,7 +504,7 @@ const updateProfile = async (req, res) => {
       },
     });
 
-    res.json({ user: { ...updated, email: updated.phoneVerified ? '' : updated.email } });
+    res.json({ user: { ...updated, email: publicEmail(updated) } });
   } catch (err) {
     res.status(500).json({ error: 'Profile update failed' });
   }

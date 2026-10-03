@@ -4,7 +4,6 @@ import useAutoOtpVerification from '@/hooks/useAutoOtpVerification';
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/contexts/ToastContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useSiteData } from "@/contexts/SiteDataContext";
@@ -13,7 +12,6 @@ import { AFGHANISTAN_PROVINCES } from "@/data/afghanistanProvinces";
 import { OtpMethodPicker, OtpVerification } from '@/components/OtpControls';
 
 export default function RegisterPage() {
-  const { register } = useAuth();
   const toast = useToast();
   const router = useRouter();
   const { t } = useLanguage();
@@ -36,7 +34,7 @@ export default function RegisterPage() {
     return data;
   };
   const requestCode = async () => {
-    const data = await customerRequest('customer-otp', { ...form, channel });
+    const data = await customerRequest('customer-otp', { ...form, role, channel });
     setChallengeId(data.challengeId);
     setCode(""); setSentChannel(channel); setExpiresAt(Date.now() + (data.expiresIn || 300) * 1000);
     setRetryAt(Date.now() + data.retryAfter * 1000);
@@ -69,30 +67,14 @@ export default function RegisterPage() {
     }
 
     setLoading(true);
-    if (role === 'customer') {
-      try {
-        if (!challengeId) await requestCode();
-        else {
-          const data = await customerRequest('verify-customer-otp', { challengeId, code });
-          toast.success(data.message); router.push('/login');
-        }
-      } catch (err) { setFormError(err.message); toast.error(err.message); }
-      finally { setLoading(false); }
-      return;
-    }
-    const body = { fullName: form.fullName, email: form.email, phone: form.phone, password: form.password, role };
-    if (role === "supplier") { body.companyName = form.companyName; body.companyAddress = form.companyAddress; body.province = form.province; }
-    const result = await register(body);
-    setLoading(false);
-
-    if (result.success) {
-      setFormError("");
-      toast.success(result.message || t('register_success'));
-      router.push("/login");
-    } else {
-      setFormError(result.error || "Registration failed");
-      toast.error(result.error || "Registration failed");
-    }
+    try {
+      if (!challengeId) await requestCode();
+      else {
+        const data = await customerRequest('verify-customer-otp', { challengeId, code });
+        toast.success(data.message); router.push('/login');
+      }
+    } catch (err) { setFormError(err.message); toast.error(err.message); }
+    finally { setLoading(false); }
   };
 
   useAutoOtpVerification({ challengeId, code, loading, onVerify: () => handleSubmit({ preventDefault() {} }) });
@@ -155,8 +137,8 @@ export default function RegisterPage() {
 
             <div className="f2-content-form-grid">
               {role === 'supplier' && <div className="f2-content-field">
-                <label htmlFor="register-email">{t('email') || 'Email'} *</label>
-                <input id="register-email" type="email" placeholder={t('email') || 'Email'} value={form.email} onChange={e => set("email", e.target.value)} autoComplete="email" required />
+                <label htmlFor="register-email">{t('email') || 'Email'} (optional)</label>
+                <input id="register-email" type="email" placeholder={t('email') || 'Email'} value={form.email} onChange={e => set("email", e.target.value)} autoComplete="email" />
               </div>}
               <div className="f2-content-field">
                 <label htmlFor="register-phone">{role === 'customer' ? 'Afghanistan phone (+93)' : (t('phone') || 'Phone')} *</label>
@@ -196,10 +178,8 @@ export default function RegisterPage() {
             </div>
 
             </fieldset>
-            {role === 'customer' && <>
               {challengeId && <OtpVerification code={code} onChange={setCode} phone={form.phone} sentChannel={sentChannel} channel={channel} retryAt={retryAt} expiresAt={expiresAt} onResend={resendCode} onEdit={() => { setChallengeId(''); setCode(''); setFormError(''); }} loading={loading} />}
               <OtpMethodPicker value={channel} onChange={setChannel} disabled={loading} verifying={!!challengeId} />
-            </>}
             <div className="f2-content-check" style={{ display: challengeId ? 'none' : undefined }}>
               <input type="checkbox" id="terms" required />
               <label htmlFor="terms">
@@ -214,7 +194,7 @@ export default function RegisterPage() {
             )}
 
             {challengeId ? <p role="status" aria-live="polite" style={{textAlign:"center"}}>{loading ? 'Checking your code…' : formError ? 'Edit the code to try again.' : 'Your code will be checked automatically.'}</p> : <button type="submit" className="f2-content-button f2-content-button--wide" disabled={loading || (!!challengeId && code.length !== 6)}>
-              {loading ? 'Please wait...' : role === 'customer' ? (challengeId ? 'Verify & create account' : 'Send verification code') : (t('register') || 'Create Account')}
+              {loading ? 'Please wait...' : 'Send verification code'}
             </button>}
 
             <p className="f2-auth-alternative">{t('already_have_account') || 'Already have an account?'} <Link href="/login">{t('login') || 'Sign In'}</Link></p>
