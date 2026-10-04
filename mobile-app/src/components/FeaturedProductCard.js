@@ -17,7 +17,7 @@ const metadataCopy = {
 };
 
 // The home collection uses a quieter card than the full catalogue: photo,
-// name, price and one cart action. Its parent adapts columns for larger text.
+// name, price, cart and preview actions. Its parent adapts columns for larger text.
 export default function FeaturedProductCard({ product, onPress, style }) {
   const { theme } = useTheme();
   const { t, getName, isRTL, lang } = useLanguage();
@@ -128,25 +128,31 @@ export default function FeaturedProductCard({ product, onPress, style }) {
         </View>
       </PressableScale>
 
-      <PressableScale
-        onPress={addToCart}
-        disabled={adding || !available}
-        accessibilityLabel={available ? `${t.addToCart}: ${name}` : `${name}: ${t.outOfStock}`}
-        accessibilityState={{ disabled: adding || !available, busy: adding }}
-        style={[styles.addButton, { minHeight: actionHeight, backgroundColor: available ? c.brandSurface : c.surfaceElevated }]}
-      >
-        {adding ? <ActivityIndicator size="small" color={c.primary} /> : (
-          <View style={[styles.addContent, rowDirection]}>
-            {available ? <MaterialCommunityIcons name="plus" size={16} color={theme.dark ? c.primary : c.primaryDark} /> : null}
+      <View style={[styles.actions, rowDirection]}>
+        <PressableScale
+          onPress={addToCart}
+          disabled={adding || !available}
+          accessibilityLabel={available ? `${t.addToCart}: ${name}` : `${name}: ${t.outOfStock}`}
+          accessibilityState={{ disabled: adding || !available, busy: adding }}
+          style={[styles.addButton, { minHeight: actionHeight, backgroundColor: available ? c.brandSurface : c.surfaceElevated }]}
+        >
+          {adding ? <ActivityIndicator size="small" color={c.primary} /> : (
             <Text
               numberOfLines={2}
               style={[styles.addText, { color: available ? (theme.dark ? c.primary : c.primaryDark) : c.textSecondary }]}
             >
               {available ? t.add : t.soldOut}
             </Text>
-          </View>
-        )}
-      </PressableScale>
+          )}
+        </PressableScale>
+        <PressableScale
+          onPress={() => setPreviewOpen(true)}
+          accessibilityLabel={`${copy.quick}: ${name}`}
+          style={[styles.previewButton, { minHeight: actionHeight, backgroundColor: c.surfaceElevated, borderColor: c.border }]}
+        >
+          <MaterialCommunityIcons name="eye-outline" size={20} color={c.textSecondary} />
+        </PressableScale>
+      </View>
       {previewOpen ? <ProductQuickView product={product} onClose={() => setPreviewOpen(false)} onDetails={onPress} /> : null}
     </View>
   );
@@ -164,7 +170,8 @@ const styles = StyleSheet.create({
   metadata: { alignItems: 'center', flexWrap: 'wrap', gap: 5, marginTop: 5 },
   discount: { fontSize: 12, lineHeight: 18, fontWeight: '600' },
   verified: { minWidth: 18, minHeight: 18, justifyContent: 'center', alignItems: 'center' },
-  addButton: { marginHorizontal: 7, marginBottom: 7, borderRadius: 10, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 5, paddingVertical: 7 },
-  addContent: { alignItems: 'center', justifyContent: 'center', gap: 4, width: '100%' },
+  actions: { marginHorizontal: 6, marginBottom: 6, alignItems: 'stretch', gap: 2 },
+  addButton: { flex: 1, minWidth: 44, borderRadius: 10, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 3, paddingVertical: 7 },
+  previewButton: { width: 44, flexShrink: 0, borderRadius: 10, borderWidth: 1, justifyContent: 'center', alignItems: 'center' },
   addText: { flexShrink: 1, fontSize: 13, lineHeight: 19, fontWeight: '600', textAlign: 'center' },
 });

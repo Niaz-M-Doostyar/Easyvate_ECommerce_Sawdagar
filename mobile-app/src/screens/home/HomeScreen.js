@@ -33,9 +33,9 @@ function normalizeBannerImage(src) {
   return src;
 }
 const homeCopy = {
-  en: { recommended: 'Recommended for you', featured: 'Featured Products' },
-  ps: { recommended: 'ستاسو لپاره وړاندیز شوي', featured: 'ځانګړي محصولات' },
-  dr: { recommended: 'پیشنهاد برای شما', featured: 'محصولات ویژه' },
+  en: { recommended: 'Recommended for you', featured: 'Featured Products', loadMore: 'Load more products' },
+  ps: { recommended: 'ستاسو لپاره وړاندیز شوي', featured: 'ځانګړي محصولات', loadMore: 'نور محصولات وګورئ' },
+  dr: { recommended: 'پیشنهاد برای شما', featured: 'محصولات ویژه', loadMore: 'نمایش محصولات بیشتر' },
 };
 export default function HomeScreen({ navigation }) {
   const scrollRef = useRef(null);
@@ -51,6 +51,7 @@ export default function HomeScreen({ navigation }) {
   const newArrivalCardWidth = Math.min(240, Math.max(144, 152 * Math.min(fontScale, 1.6)));
   const [categories, setCategories] = useState([]);
   const [featured, setFeatured] = useState([]);
+  const [featuredDisplayCount, setFeaturedDisplayCount] = useState(50);
   const [recommended, setRecommended] = useState([]);
   const [sponsored, setSponsored] = useState([]);
   const [adVisible, setAdVisible] = useState(false);
@@ -106,7 +107,7 @@ export default function HomeScreen({ navigation }) {
     try {
       const [cats, prod, spon, siteData] = await Promise.all([
         categoriesApi.list(),
-        productsApi.list({ limit: 50, status: 'approved' }),
+        productsApi.list({ limit: 75 }),
         productsApi.sponsored().catch(() => []),
         siteApi.content().then(data => {
           // Display promotions without waiting for the larger catalog requests.
@@ -120,7 +121,7 @@ export default function HomeScreen({ navigation }) {
       ]);
       setCategories(cats.categories || cats || []);
       const products = prod.products || prod || [];
-      setFeatured(products.slice(0, 30));
+      setFeatured(products);
       // The catalog is newest first. Keep these shelves distinct so a product
       // does not appear in both New Arrivals and Recommended for you.
       setNewArrivals(products.slice(0, 8));
@@ -155,6 +156,7 @@ export default function HomeScreen({ navigation }) {
   }, [loading]);
   const onRefresh = async () => {
     setRefreshing(true);
+    setFeaturedDisplayCount(50);
     await load();
     setRefreshing(false);
   };
@@ -383,13 +385,23 @@ export default function HomeScreen({ navigation }) {
         <SectionReveal delay={330}>
           <SectionHeader title={copy.featured} actionLabel={t.seeAll} onAction={() => navigation.navigate('Products')} />
           <View style={{ paddingHorizontal: layout.gutter, flexDirection: isRTL ? 'row-reverse' : 'row', flexWrap: 'wrap', gap: layout.gap }}>
-            {loading ? Array.from({ length: layout.itemLimit }, (_, index) => <View key={index} style={{ width: layout.cardWidth, padding: 8, borderRadius: 16, backgroundColor: c.card }}>
+            {loading ? Array.from({ length: layout.placeholderCount }, (_, index) => <View key={index} style={{ width: layout.cardWidth, padding: 8, borderRadius: 16, backgroundColor: c.card }}>
               <SkeletonLoader width="100%" height={layout.cardWidth - 16} radius={12} />
               <SkeletonLoader width="85%" height={14} style={{ marginTop: 12 }} />
               <SkeletonLoader width="55%" height={18} style={{ marginTop: 8 }} />
               <SkeletonLoader width="100%" height={40} style={{ marginTop: 10 }} />
-            </View>) : featured.slice(0, layout.itemLimit).map(product => <FeaturedProductCard key={product.id} product={product} onPress={() => goProduct(product)} style={{ width: layout.cardWidth }} />)}
+            </View>) : featured.slice(0, featuredDisplayCount).map(product => <FeaturedProductCard key={product.id} product={product} onPress={() => goProduct(product)} style={{ width: layout.cardWidth }} />)}
           </View>
+          {!loading && featuredDisplayCount < featured.length && (
+            <PressableScale
+              onPress={() => setFeaturedDisplayCount(count => Math.min(count + 25, featured.length, 75))}
+              accessibilityLabel={copy.loadMore}
+              style={[styles.loadMoreButton, { marginHorizontal: layout.gutter, backgroundColor: c.card, borderColor: c.border }]}
+            >
+              <Text style={[styles.loadMoreText, { color: c.primary }]}>{copy.loadMore}</Text>
+              <MaterialCommunityIcons name="chevron-down" size={20} color={c.primary} />
+            </PressableScale>
+          )}
         </SectionReveal>
         {newArrivals.length > 0 && (
           <SectionReveal delay={370}>
@@ -435,6 +447,8 @@ function SectionReveal({ children, delay = 0 }) {
   );
 }
 const styles = StyleSheet.create({
+  loadMoreButton: { minHeight: 48, marginTop: 16, borderWidth: 1, borderRadius: 14, paddingHorizontal: 16, paddingVertical: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
+  loadMoreText: { flexShrink: 1, fontSize: 14, lineHeight: 20, fontWeight: '600', textAlign: 'center' },
   offerImage: { width: '100%', height: 140 },
   offerContent: { padding: 14, gap: 6, flex: 1 },
   offerLabel: { fontSize: 12, lineHeight: 18, fontWeight: '500' },

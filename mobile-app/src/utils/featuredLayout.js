@@ -1,5 +1,6 @@
 // Use the actual window width so iPad Split View behaves like a smaller screen.
-// Featured products occupy three rows; larger text reduces columns first.
+// Reserve three rows for loading placeholders; the collection can be longer.
+// Larger text reduces columns first.
 export function featuredLayout(windowWidth, fontScale = 1) {
   const width = Math.min(1200, Math.max(0, Number.isFinite(windowWidth) ? windowWidth : 0));
   const scale = Math.max(1, Number.isFinite(fontScale) ? fontScale : 1);
@@ -14,5 +15,5 @@ export function featuredLayout(windowWidth, fontScale = 1) {
   const columns = Math.max(1, Math.min(maximumColumns, Math.floor((availableWidth + gap) / (minimumCard + gap))));
   const cardWidth = Math.max(0, (availableWidth - gap * (columns - 1)) / columns);
 
-  return { width, isTablet, columns, cardWidth, gutter, gap, itemLimit: columns * 3 };
+  return { width, isTablet, columns, cardWidth, gutter, gap, placeholderCount: columns * 3 };
 }
