@@ -98,16 +98,7 @@ export default function ProductCard({ product, onPress, style }) {
           )}
         </View>
         <View style={[styles.info, { paddingHorizontal: dynamicInfoPadding }]}>
-          {(product.supplier?.supplierVerified || discount > 0 || (product.isSponsored && !compact)) && <View style={styles.badgeRow}>
-            {product.supplier?.supplierVerified ? (
-              <View style={[styles.verifiedBadge, { backgroundColor: c.card, borderColor: c.borderLight }]}>
-                <MaterialCommunityIcons name="check-decagram" size={16} color={theme.dark ? c.success : '#087443'} />
-              </View>
-            ) : null}
-            {product.isSponsored && !compact && <View style={[styles.badge, { backgroundColor: c.primaryDark }]}><Text style={styles.badgeText}>{t.featured}</Text></View>}
-            {discount > 0 && <View style={[styles.discBadge, { backgroundColor: c.primaryDark }]}><Text style={styles.badgeText}>-{discount}%</Text></View>}
-          </View>}
-          {categoryName && !compact ? <Text numberOfLines={1} style={[styles.category, textAlignment, { color: c.textSecondary }]}>{categoryName}</Text> : null}
+          {!compact ? <Text numberOfLines={1} style={[styles.category, textAlignment, { color: c.textSecondary }]}>{categoryName}</Text> : null}
           <Text
             numberOfLines={2}
             allowFontScaling
@@ -118,6 +109,15 @@ export default function ProductCard({ product, onPress, style }) {
           <View style={styles.priceRow}>
             <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.85} style={[styles.price, compact && styles.priceCompact, { color: c.text }]}>{formatPrice(product.retailPrice)}</Text>
             {hasDiscount && !compact && <Text numberOfLines={1} style={[styles.oldPrice, { color: c.textSecondary }]}>{formatPrice(product.wholesaleCost)}</Text>}
+          </View>
+          <View style={styles.badgeRow}>
+            {product.supplier?.supplierVerified ? (
+              <View accessibilityLabel="Verified supplier" style={[styles.verifiedBadge, { backgroundColor: theme.dark ? '#123C2B' : '#EAF7EF' }]}>
+                <MaterialCommunityIcons name="check-decagram" size={14} color={theme.dark ? c.success : '#087443'} />
+              </View>
+            ) : null}
+            {product.isSponsored && !compact && <View style={[styles.badge, { backgroundColor: c.brandSurface }]}><Text numberOfLines={1} style={[styles.badgeText, { color: theme.dark ? c.primary : c.primaryDark }]}>{t.featured}</Text></View>}
+            {discount > 0 && <View style={[styles.discBadge, { backgroundColor: theme.dark ? '#123C2B' : '#EAF7EF' }]}><Text style={[styles.badgeText, { color: theme.dark ? c.success : '#087443' }]}>-{discount}%</Text></View>}
           </View>
           {!compact ? <View style={styles.metaRow}>
             <View style={styles.stockPill}>
@@ -130,14 +130,15 @@ export default function ProductCard({ product, onPress, style }) {
 
       <View style={[styles.actionWrap, compact && styles.actionWrapCompact]}>
         <PressableScale
+          hitSlop={{ top: 4, bottom: 4 }}
           onPress={() => setPreviewOpen(true)}
           accessibilityLabel={`${copy.quick}: ${getName(product)}`}
           style={({ pressed }) => [styles.quickView, { backgroundColor: pressed ? c.brandSurface : c.surfaceElevated }]}
         >
           <MaterialCommunityIcons name="eye-outline" size={16} color={c.primary} />
-          <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.9} style={[styles.quickText, { color: c.primary }]}>{copy.quick}</Text>
         </PressableScale>
         <PressableScale
+          hitSlop={{ top: 4, bottom: 4 }}
           scaleTo={0.97}
           onPress={handleAddToCart}
           disabled={adding || !available}
@@ -154,8 +155,8 @@ export default function ProductCard({ product, onPress, style }) {
                 <ActivityIndicator size="small" color={c.white} />
               ) : (
                 <>
-                  <MaterialCommunityIcons name={compact ? 'plus' : 'cart-plus'} size={compact ? 16 : 17} color={c.white} />
-                  <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={compact ? 0.85 : 0.9} maxFontSizeMultiplier={1.15} style={[styles.addText, compact && styles.addTextCompact, { color: c.white }]}>{compact ? t.add : t.addToCart}</Text>
+                  <MaterialCommunityIcons name="plus" size={16} color={c.white} />
+                  <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={compact ? 0.85 : 0.9} maxFontSizeMultiplier={1.15} style={[styles.addText, compact && styles.addTextCompact, { color: c.white }]}>{t.add}</Text>
                 </>
               )}
             </View>
@@ -173,20 +174,20 @@ export default function ProductCard({ product, onPress, style }) {
 }
 
 const styles = StyleSheet.create({
-  card: { borderRadius: 20, borderWidth: 1, marginBottom: spacing.md },
-  productLink: { minWidth: 0 },
-  imgWrap: { aspectRatio: 1, margin: 5, borderRadius: 16, padding: 5, overflow: 'hidden' },
+  card: { borderRadius: 18, borderWidth: 1, marginBottom: spacing.md },
+  productLink: { minWidth: 0, flex: 1 },
+  imgWrap: { aspectRatio: 1, margin: 8, borderRadius: 12, padding: 8, overflow: 'hidden' },
   img: { width: '100%', height: '100%' },
   imageFallback: { justifyContent: 'center', alignItems: 'center' },
-  badgeRow: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 6, marginBottom: 8 },
-  badge: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: borderRadius.sm },
-  discBadge: { paddingHorizontal: 6, paddingVertical: 3, borderRadius: 7 },
-  badgeText: { color: '#FFF', fontSize: fontSize.xs, fontWeight: fontWeight.bold },
-  verifiedBadge: { width: 28, height: 28, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderRadius: borderRadius.full },
-  info: { paddingHorizontal: spacing.md, paddingTop: spacing.sm, paddingBottom: spacing.md },
-  category: { fontSize: fontSize.xs, fontWeight: fontWeight.medium, marginBottom: 5 },
+  badgeRow: { height: 24, flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 6 },
+  badge: { flexShrink: 1, paddingHorizontal: 6, paddingVertical: 3, borderRadius: 6 },
+  discBadge: { paddingHorizontal: 6, paddingVertical: 3, borderRadius: 6 },
+  badgeText: { fontSize: fontSize.xs, fontWeight: fontWeight.bold },
+  verifiedBadge: { width: 24, height: 24, alignItems: 'center', justifyContent: 'center', borderRadius: 6 },
+  info: { paddingHorizontal: spacing.md, paddingTop: 0, paddingBottom: 10 },
+  category: { minHeight: 18, fontSize: fontSize.xs, fontWeight: fontWeight.medium, marginBottom: 5 },
   name: { fontWeight: fontWeight.semibold, marginBottom: spacing.sm },
-  priceRow: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'baseline', columnGap: 6, rowGap: 3 },
+  priceRow: { minHeight: 24, flexDirection: 'row', flexWrap: 'wrap', alignItems: 'baseline', columnGap: 6, rowGap: 3 },
   price: { maxWidth: '100%', fontSize: fontSize.md, fontWeight: fontWeight.heavy },
   priceCompact: { flexShrink: 1, fontSize: fontSize.sm },
   oldPrice: { maxWidth: '100%', fontSize: fontSize.xs, textDecorationLine: 'line-through' },
@@ -194,12 +195,12 @@ const styles = StyleSheet.create({
   stockPill: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 5 },
   stockDot: { width: 5, height: 5, borderRadius: borderRadius.full },
   stock: { flexShrink: 1, fontSize: fontSize.xs, fontWeight: fontWeight.medium },
-  actionWrap: { paddingHorizontal: spacing.sm, paddingBottom: spacing.sm, gap: 6 },
-  quickView: { minHeight: 44, borderRadius: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 4, paddingHorizontal: 4 },
+  actionWrap: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 8, paddingBottom: 12, paddingTop: 4, gap: 6 },
+  quickView: { width: 32, height: 36, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
   quickText: { flexShrink: 1, fontSize: 13, fontWeight: '600' },
-  actionWrapCompact: { alignItems: 'stretch', paddingHorizontal: 6, paddingBottom: 10 },
-  addBtn: { height: 44, borderRadius: 12, overflow: 'hidden' },
-  addBtnCompact: { width: '100%' },
+  actionWrapCompact: { paddingHorizontal: 8 },
+  addBtn: { flex: 1, height: 36, borderRadius: 10, overflow: 'hidden' },
+  addBtnCompact: { minWidth: 0 },
   addBtnFill: { width: '100%', flex: 1, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 6, paddingHorizontal: spacing.sm },
   addBtnFillCompact: { paddingHorizontal: 6, gap: 4 },
   addText: { flexShrink: 1, fontSize: fontSize.sm, lineHeight: 18, fontWeight: fontWeight.bold, includeFontPadding: false, textAlignVertical: 'center' },

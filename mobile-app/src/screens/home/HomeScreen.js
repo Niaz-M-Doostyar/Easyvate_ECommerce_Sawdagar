@@ -275,7 +275,7 @@ export default function HomeScreen({ navigation }) {
             <View style={{ height: Math.min(width - 48, 480), borderTopLeftRadius: 20, borderTopRightRadius: 20, overflow: 'hidden', backgroundColor: c.card }}>
               <WebView
                 originWhitelist={['*']}
-                source={{ html: `<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"></head><body style="margin:0;height:100vh;background:white"><img alt="View sponsored product" role="button" src="${readyAd.uri}" style="width:100%;height:100%;object-fit:contain" onload="window.ReactNativeWebView.postMessage('loaded')" onerror="window.ReactNativeWebView.postMessage('error')" onclick="window.ReactNativeWebView.postMessage('open')"></body></html>` }}
+                source={{ html: `<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"></head><body style="margin:0;height:100vh;background:white;box-sizing:border-box;padding:24px 20px 16px"><img alt="View sponsored product" role="button" src="${readyAd.uri}" style="width:100%;height:100%;object-fit:contain" onload="window.ReactNativeWebView.postMessage('loaded')" onerror="window.ReactNativeWebView.postMessage('error')" onclick="window.ReactNativeWebView.postMessage('open')"></body></html>` }}
                 scrollEnabled={false}
                 onMessage={({ nativeEvent }) => {
                   if (nativeEvent.data === 'loaded') setAdLoaded(true);
