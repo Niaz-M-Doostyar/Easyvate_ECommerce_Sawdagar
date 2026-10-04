@@ -78,7 +78,7 @@ export default function ProductQuickView({ product, onClose, onDetails }) {
       <View style={styles.overlay} accessibilityViewIsModal onAccessibilityEscape={() => dismiss()}>
         <Animated.View style={[StyleSheet.absoluteFill, { backgroundColor: '#081225', opacity: progress.interpolate({ inputRange: [0, 1], outputRange: [0, 0.58] }) }]} />
         <Pressable style={StyleSheet.absoluteFill} onPress={() => dismiss()} accessibilityLabel={copy.close} accessibilityRole="button" />
-        <Animated.View style={[styles.sheet, { backgroundColor: c.card, maxHeight: height - insets.top - 24, paddingBottom: Math.max(insets.bottom, 16), opacity: progress, transform: [{ translateY: progress.interpolate({ inputRange: [0, 1], outputRange: [80, 0] }) }] }]}>
+        <Animated.View style={[styles.sheet, { backgroundColor: c.card, maxHeight: height - insets.top - insets.bottom - 32, paddingBottom: Math.max(insets.bottom, 16), opacity: progress, transform: [{ translateY: progress.interpolate({ inputRange: [0, 1], outputRange: [80, 0] }) }] }]}>
           <View style={[styles.handle, { backgroundColor: c.border }]} />
           <View style={styles.heading}>
             <View style={styles.headingLabel}><MaterialCommunityIcons name="eye-outline" size={18} color={c.primary} /><Text accessibilityRole="header" style={[styles.eyebrow, { color: c.primary }]}>{copy.quick}</Text></View>
@@ -112,12 +112,12 @@ export default function ProductQuickView({ product, onClose, onDetails }) {
 }
 
 const styles = StyleSheet.create({
-  overlay: { flex: 1, justifyContent: 'flex-end', alignItems: 'center' },
-  sheet: { width: '100%', maxWidth: 600, borderTopLeftRadius: 32, borderTopRightRadius: 32, overflow: 'hidden' },
+  overlay: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 16 },
+  sheet: { width: '100%', maxWidth: 640, borderRadius: 28, overflow: 'hidden' },
   handle: { width: 36, height: 4, borderRadius: 2, alignSelf: 'center', marginTop: 10 },
   heading: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingVertical: 8 },
-  headingLabel: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  eyebrow: { fontSize: 14, fontWeight: '700' },
+  headingLabel: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 8 },
+  eyebrow: { flexShrink: 1, fontSize: 14, fontWeight: '700' },
   icon: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
   body: { paddingHorizontal: 20, paddingBottom: 16 },
   media: { borderRadius: 24, padding: 16, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },

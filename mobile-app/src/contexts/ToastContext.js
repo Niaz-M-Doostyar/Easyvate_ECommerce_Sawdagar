@@ -1,14 +1,12 @@
 import React, { createContext, useContext, useState, useCallback, useRef } from 'react';
-import { Animated, Text, StyleSheet, Platform } from 'react-native';
+import { Animated, Text, StyleSheet, Platform, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useTheme } from './ThemeContext';
 import { borderRadius, fontSize, fontWeight, spacing } from '../theme';
 
 const ToastContext = createContext();
 
 export function ToastProvider({ children }) {
-  const { theme } = useTheme();
-  const c = theme.colors;
+  const { width } = useWindowDimensions();
   const insets = useSafeAreaInsets();
   const [toast, setToast] = useState(null);
   const anim = useRef(new Animated.Value(0)).current;
@@ -23,13 +21,13 @@ export function ToastProvider({ children }) {
     }, duration);
   }, [anim]);
 
-  const bg = toast?.type === 'error' ? c.error : toast?.type === 'warning' ? c.warning : toast?.type === 'info' ? c.info : c.success;
+  const bg = toast?.type === 'error' ? '#B42318' : toast?.type === 'warning' ? '#8A5700' : toast?.type === 'info' ? '#17339B' : '#087443';
 
   return (
     <ToastContext.Provider value={{ toast: show, success: (m) => show(m, 'success'), error: (m) => show(m, 'error'), warning: (m) => show(m, 'warning'), info: (m) => show(m, 'info') }}>
       {children}
       {toast && (
-        <Animated.View style={[styles.toast, { backgroundColor: bg, top: insets.top + 10, opacity: anim, transform: [{ translateY: anim.interpolate({ inputRange: [0, 1], outputRange: [-30, 0] }) }] }]}>
+        <Animated.View style={[styles.toast, { backgroundColor: bg, left: Math.max(16, (width - 560) / 2), right: Math.max(16, (width - 560) / 2), top: insets.top + 10, opacity: anim, transform: [{ translateY: anim.interpolate({ inputRange: [0, 1], outputRange: [-30, 0] }) }] }]}>
           <Text style={styles.text}>{toast.msg}</Text>
         </Animated.View>
       )}

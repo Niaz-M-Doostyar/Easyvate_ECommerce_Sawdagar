@@ -41,13 +41,13 @@ export default function BlogDetailScreen({ navigation, route }) {
   }, [route.params?.id]);
 
   if (loading) return (
-    <SafeAreaView style={[styles.safe, { backgroundColor: c.background }]} edges={['top']}>
+    <SafeAreaView style={[styles.safe, { backgroundColor: c.background }]} edges={['top', 'left', 'right']}>
       <ScreenHeader title="Blog" onBack={() => navigation.goBack()} />
       <ActivityIndicator size="large" color={c.primary} style={{ marginTop: 60 }} />
     </SafeAreaView>
   );
   if (!post) return (
-    <SafeAreaView style={[styles.safe, { backgroundColor: c.background }]} edges={['top']}>
+    <SafeAreaView style={[styles.safe, { backgroundColor: c.background }]} edges={['top', 'left', 'right']}>
       <ScreenHeader title="Blog" onBack={() => navigation.goBack()} />
       <EmptyState icon="newspaper-outline" title="Post not found" />
     </SafeAreaView>
@@ -58,7 +58,7 @@ export default function BlogDetailScreen({ navigation, route }) {
   const mediaWidth = Math.min(width, 860);
 
   return (
-    <SafeAreaView style={[styles.safe, { backgroundColor: c.background }]} edges={['top']}>
+    <SafeAreaView style={[styles.safe, { backgroundColor: c.background }]} edges={['top', 'left', 'right']}>
       <ScreenHeader title={t.blog || 'Blog'} onBack={() => navigation.goBack()} />
       <ScrollView showsVerticalScrollIndicator={false}>
         {post.image && <RemoteImage source={post.image} width={800} style={{ width: mediaWidth, height: mediaWidth * 0.55, alignSelf: 'center' }} fallback={<View style={{ width: mediaWidth, height: mediaWidth * 0.55, alignSelf: 'center', backgroundColor: c.skeleton }} />} />}
@@ -75,7 +75,7 @@ export default function BlogDetailScreen({ navigation, route }) {
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1 },
+  safe: { flex: 1, width: '100%', maxWidth: 1200, alignSelf: 'center' },
   body: { width: '100%', maxWidth: 760, alignSelf: 'center', padding: spacing.lg },
   title: { fontSize: fontSize.xxl, fontWeight: fontWeight.bold, lineHeight: 32, marginBottom: 8 },
   date: { fontSize: fontSize.sm, marginBottom: spacing.lg },

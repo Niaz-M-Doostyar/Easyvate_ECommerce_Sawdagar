@@ -41,7 +41,7 @@ export default function ProvincePicker({ value, onChange, error }) {
 const styles = StyleSheet.create({
   wrap: { marginBottom: spacing.base }, label: { fontSize: fontSize.sm, fontWeight: fontWeight.medium, marginBottom: 6 },
   field: { minHeight: 50, borderWidth: 1, borderRadius: borderRadius.md, flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: spacing.md },
-  value: { flex: 1, fontSize: fontSize.base, lineHeight: 20, includeFontPadding: false, textAlignVertical: 'center' }, error: { fontSize: fontSize.xs, marginTop: 5 }, modal: { flex: 1 },
+  value: { flex: 1, fontSize: fontSize.base, lineHeight: 20, includeFontPadding: false, textAlignVertical: 'center' }, error: { fontSize: fontSize.xs, marginTop: 5 }, modal: { flex: 1, width: '100%', maxWidth: 720, alignSelf: 'center' },
   header: { minHeight: 64, borderBottomWidth: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: spacing.base },
   title: { flex: 1, marginEnd: 12, fontSize: fontSize.lg, fontWeight: fontWeight.bold }, close: { width: 48, height: 48, justifyContent: 'center', alignItems: 'center' }, list: { padding: spacing.base },
   option: { minHeight: 52, borderWidth: 1, borderRadius: borderRadius.md, paddingHorizontal: spacing.md, marginBottom: 8, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },

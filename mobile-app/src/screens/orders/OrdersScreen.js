@@ -58,7 +58,7 @@ export default function OrdersScreen({ navigation }) {
 
   if (!user) {
     return (
-      <SafeAreaView style={[styles.safe, { backgroundColor: c.background }]} edges={['top']}>
+      <SafeAreaView style={[styles.safe, { backgroundColor: c.background }]} edges={['top', 'left', 'right']}>
         <EmptyState
           icon="log-in-outline"
           title="Please login"
@@ -74,7 +74,7 @@ export default function OrdersScreen({ navigation }) {
   }
 
   return (
-    <SafeAreaView style={[styles.safe, { backgroundColor: c.background }]} edges={['top']}>
+    <SafeAreaView style={[styles.safe, { backgroundColor: c.background }]} edges={['top', 'left', 'right']}>
       <View style={styles.header}>
         <Text style={[styles.title, { color: c.text }]}>{t.orders}</Text>
         <Text style={[styles.subtitle, { color: c.textSecondary }]}>Track every purchase from checkout to delivery.</Text>
@@ -152,7 +152,7 @@ function OrderStat({ icon, label, value }) {
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1 },
+  safe: { flex: 1, width: '100%', maxWidth: 1200, alignSelf: 'center' },
   header: { paddingHorizontal: spacing.base, paddingTop: spacing.base },
   title: { fontSize: fontSize.xl, fontWeight: fontWeight.bold },
   subtitle: { fontSize: fontSize.sm, marginTop: 4 },

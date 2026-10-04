@@ -15,7 +15,7 @@ export default function OrderSuccessScreen({ navigation, route }) {
   const order = route.params?.order;
 
   return (
-    <SafeAreaView style={[styles.safe, { backgroundColor: c.background }]} edges={['top', 'bottom']}>
+    <SafeAreaView style={[styles.safe, { backgroundColor: c.background }]} edges={['top', 'bottom', 'left', 'right']}>
       <ScrollView contentContainerStyle={styles.center} showsVerticalScrollIndicator={false}>
         <View style={[styles.card, { backgroundColor: c.card, borderColor: c.border }, shadows.lg]}>
           <BrandLogo variant="symbol" size={72} style={styles.logo} />
@@ -52,7 +52,7 @@ export default function OrderSuccessScreen({ navigation, route }) {
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1 },
+  safe: { flex: 1, width: '100%', maxWidth: 1200, alignSelf: 'center' },
   center: { flexGrow: 1, justifyContent: 'center', alignItems: 'center', padding: spacing.xl },
   card: { width: '100%', borderWidth: 1, borderRadius: borderRadius.xl, padding: spacing.xl, alignItems: 'center' },
   logo: { marginBottom: spacing.base },

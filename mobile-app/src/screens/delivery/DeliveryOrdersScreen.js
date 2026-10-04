@@ -61,7 +61,7 @@ export default function DeliveryOrdersScreen({ navigation }) {
   };
 
   return (
-    <SafeAreaView style={[styles.safe, { backgroundColor: c.background }]} edges={['top']}>
+    <SafeAreaView style={[styles.safe, { backgroundColor: c.background }]} edges={['top', 'left', 'right']}>
       <ScreenHeader title={t.assignedOrders} onBack={() => navigation.goBack()} />
       <FilterTabs
         tabs={TABS.map((key) => ({ key, label: t[key] || key }))}
@@ -101,7 +101,7 @@ export default function DeliveryOrdersScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1 },
+  safe: { flex: 1, width: '100%', maxWidth: 1200, alignSelf: 'center' },
   card: { borderRadius: borderRadius.xl, borderWidth: 1, padding: spacing.base, marginBottom: spacing.md },
   cardTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 },
   ordNum: { fontSize: fontSize.md, fontWeight: fontWeight.bold },

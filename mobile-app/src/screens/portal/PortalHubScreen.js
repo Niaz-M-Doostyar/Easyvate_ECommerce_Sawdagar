@@ -83,7 +83,7 @@ export default function PortalHubScreen({ navigation }) {
   };
 
   return (
-    <SafeAreaView style={[styles.safe, { backgroundColor: c.background }]} edges={['top']}>
+    <SafeAreaView style={[styles.safe, { backgroundColor: c.background }]} edges={['top', 'left', 'right']}>
       <ScreenHeader
         title="Command Center"
         subtitle="Full website and admin parity, routed through a mobile shell."
@@ -140,7 +140,7 @@ function StatPill({ label, value, c }) {
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1 },
+  safe: { flex: 1, width: '100%', maxWidth: 1200, alignSelf: 'center' },
   scroll: { padding: spacing.base, paddingBottom: 120 },
   heroCard: { borderWidth: 1, borderRadius: borderRadius.xl, padding: spacing.xl, marginBottom: spacing.base },
   heroBadge: { flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start', borderRadius: borderRadius.full, paddingHorizontal: 12, paddingVertical: 8, gap: 6 },

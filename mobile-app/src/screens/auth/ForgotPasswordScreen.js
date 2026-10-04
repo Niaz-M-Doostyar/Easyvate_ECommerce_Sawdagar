@@ -79,7 +79,7 @@ export default function ForgotPasswordScreen({ navigation }) {
 
   if (sent) {
     return (
-      <SafeAreaView style={[styles.safe, { backgroundColor: c.background }]} edges={['top', 'bottom']}>
+      <SafeAreaView style={[styles.safe, { backgroundColor: c.background }]} edges={['top', 'bottom', 'left', 'right']}>
         <View style={[styles.center, { maxWidth: contentWidth }]}>
           <Ionicons name="mail-open-outline" size={64} color={c.primary} />
           <Text style={[styles.sentTitle, { color: c.text }]}>{isPhone ? 'Password updated' : 'Check your email'}</Text>
@@ -91,11 +91,11 @@ export default function ForgotPasswordScreen({ navigation }) {
   }
 
   return (
-    <SafeAreaView style={[styles.safe, { backgroundColor: c.background }]} edges={['top', 'bottom']}>
+    <SafeAreaView style={[styles.safe, { backgroundColor: c.background }]} edges={['top', 'bottom', 'left', 'right']}>
       <ScreenHeader title="" onBack={() => navigation.goBack()} />
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined} keyboardVerticalOffset={Platform.OS === 'ios' ? 18 : 0}>
         <ScrollView contentContainerStyle={[styles.scroll, isTablet && styles.scrollTablet]} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" showsVerticalScrollIndicator={false}>
-          <View style={[styles.content, { maxWidth: contentWidth }]}> 
+          <View style={[styles.content, { maxWidth: contentWidth, backgroundColor: c.card, borderColor: c.borderLight }]}>
           <Ionicons name="key-outline" size={48} color={c.primary} style={{ marginBottom: spacing.base }} />
           <Text style={[styles.title, { color: c.text }]}>{t.forgotPassword}</Text>
           <Text style={[styles.subtitle, { color: c.textSecondary }]}>Use your Afghan phone for OTP recovery, or email for a reset link.</Text>
@@ -118,11 +118,11 @@ export default function ForgotPasswordScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1 },
+  safe: { flex: 1, width: '100%', maxWidth: 1200, alignSelf: 'center' },
   scroll: { flexGrow: 1, padding: spacing.lg, paddingTop: spacing.sm, paddingBottom: spacing.xxl },
   scrollTablet: { justifyContent: 'center' },
-  content: { width: '100%', alignSelf: 'center' },
-  title: { fontSize: fontSize.xl, fontWeight: fontWeight.bold, marginBottom: 6 },
+  content: { width: '100%', alignSelf: 'center', padding: 20, borderWidth: 1, borderRadius: 24 },
+  title: { fontSize: fontSize.xxl, lineHeight: 36, fontWeight: fontWeight.bold, letterSpacing: -0.7, marginBottom: 8 },
   subtitle: { fontSize: fontSize.sm, marginBottom: spacing.lg, lineHeight: 21 },
   center: { flex: 1, width: '100%', alignSelf: 'center', justifyContent: 'center', alignItems: 'center', padding: spacing.lg },
   sentTitle: { fontSize: fontSize.xl, fontWeight: fontWeight.bold, marginTop: spacing.lg },

@@ -36,7 +36,7 @@ export default function SupplierOrdersScreen({ navigation }) {
   const onRefresh = async () => { setRefreshing(true); await load(); setRefreshing(false); };
 
   return (
-    <SafeAreaView style={[styles.safe, { backgroundColor: c.background }]} edges={['top']}>
+    <SafeAreaView style={[styles.safe, { backgroundColor: c.background }]} edges={['top', 'left', 'right']}>
       <ScreenHeader title={t.myOrders} onBack={() => navigation.goBack()} />
       {loading ? <ActivityIndicator size="large" color={c.primary} style={{ marginTop: 60 }} /> : orders.length === 0 ? (
         <EmptyState icon="receipt-outline" title="No orders yet" />
@@ -64,7 +64,7 @@ export default function SupplierOrdersScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1 },
+  safe: { flex: 1, width: '100%', maxWidth: 1200, alignSelf: 'center' },
   card: { borderRadius: borderRadius.xl, borderWidth: 1, padding: spacing.base, marginBottom: spacing.md },
   cardTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 },
   ordNum: { fontSize: fontSize.md, fontWeight: fontWeight.bold },

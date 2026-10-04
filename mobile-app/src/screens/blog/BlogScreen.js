@@ -41,7 +41,7 @@ export default function BlogScreen({ navigation }) {
   }, []);
 
   return (
-    <SafeAreaView style={[styles.safe, { backgroundColor: c.background }]} edges={['top']}>
+    <SafeAreaView style={[styles.safe, { backgroundColor: c.background }]} edges={['top', 'left', 'right']}>
       <ScreenHeader title={t.blog} onBack={() => navigation.goBack()} />
       {loading ? <ActivityIndicator size="large" color={c.primary} style={{ marginTop: 60 }} /> : loadError ? (
         <EmptyState icon="cloud-offline-outline" title="Blog temporarily unavailable" subtitle="Please try again later." />
@@ -67,7 +67,7 @@ export default function BlogScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1 },
+  safe: { flex: 1, width: '100%', maxWidth: 1200, alignSelf: 'center' },
   card: { borderRadius: borderRadius.xl, borderWidth: 1, overflow: 'hidden', marginBottom: spacing.base },
   cardImg: { width: '100%', height: 180 },
   cardBody: { padding: spacing.lg },

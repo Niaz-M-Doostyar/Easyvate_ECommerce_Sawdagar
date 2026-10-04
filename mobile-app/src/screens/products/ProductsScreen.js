@@ -1,10 +1,12 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, FlatList, TouchableOpacity, ActivityIndicator, StyleSheet, RefreshControl, Image, useWindowDimensions } from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, RefreshControl, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import useResponsiveLayout from '../../hooks/useResponsiveLayout';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useLanguage } from '../../contexts/LanguageContext';
 import ProductCard from '../../components/ProductCard';
+import CatalogSkeleton from '../../components/CatalogSkeleton';
 import CategoryIcon3D from '../../components/CategoryIcon3D';
 import EmptyState from '../../components/EmptyState';
 import ScreenHeader from '../../components/ScreenHeader';
@@ -26,12 +28,10 @@ const belongsToSupplier = (product, supplierId) => (
 );
 
 export default function ProductsScreen({ navigation, route }) {
-  const { width } = useWindowDimensions();
+  const { width, columns: numColumns, cardWidth: gridCardWidth } = useResponsiveLayout();
   const { theme } = useTheme();
   const { t, getName } = useLanguage();
   const c = theme.colors;
-  const numColumns = width >= 1024 ? 4 : 3;
-  const gridCardWidth = Math.max(0, (width - (spacing.base - 4) * 2) / numColumns - 6);
   const initCategoryId = route.params?.categoryId;
   const initSort = route.params?.sort || 'newest';
   const supplierId = route.params?.supplierId;
@@ -109,7 +109,7 @@ export default function ProductsScreen({ navigation, route }) {
   };
 
   return (
-    <SafeAreaView style={[styles.safe, { backgroundColor: c.background }]} edges={['top']}>
+    <SafeAreaView style={[styles.safe, { backgroundColor: c.background }]} edges={['top', 'left', 'right']}>
       <ScreenHeader
         title={route.params?.title || t.shop}
         onBack={() => navigation.goBack()}
@@ -171,7 +171,7 @@ export default function ProductsScreen({ navigation, route }) {
 
       <View style={styles.sortRow}>
         <View style={styles.resultCopy}>
-          <Text numberOfLines={1} style={[styles.resultTitle, { color: c.text }]}>{products.length} {products.length === 1 ? 'product' : 'products'}</Text>
+          <Text numberOfLines={1} style={[styles.resultTitle, { color: c.text }]}>{loading ? 'Loading products…' : `${products.length} ${products.length === 1 ? 'product' : 'products'}`} </Text>
           <Text numberOfLines={1} style={[styles.resultSubtitle, { color: c.textSecondary }]}>{selectedCategory ? `${getName(selectedCategory)} selected` : 'Showing every category'}</Text>
         </View>
         <View style={styles.sortActions}>
@@ -200,7 +200,7 @@ export default function ProductsScreen({ navigation, route }) {
       )}
 
       {loading ? (
-        <ActivityIndicator size="large" color={c.primary} style={{ marginTop: 60 }} />
+        <CatalogSkeleton />
       ) : products.length === 0 ? (
         <EmptyState icon="bag-outline" title={t.noResults} />
       ) : (
@@ -223,7 +223,7 @@ export default function ProductsScreen({ navigation, route }) {
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1 },
+  safe: { flex: 1, width: '100%', maxWidth: 1200, alignSelf: 'center' },
   backBtn: { width: 44, height: 44, borderRadius: borderRadius.full, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
   chipList: { maxHeight: 74, paddingVertical: spacing.sm },
   chipListContent: { paddingLeft: spacing.base, paddingRight: spacing.base / 2, alignItems: 'center' },
@@ -247,6 +247,6 @@ const styles = StyleSheet.create({
   sortDrop: { marginHorizontal: spacing.base, borderRadius: borderRadius.lg, borderWidth: 1, overflow: 'hidden', marginBottom: 4, ...shadows.md },
   sortItem: { minHeight: 48, justifyContent: 'center', paddingVertical: 12, paddingHorizontal: spacing.base },
   sortItemText: { fontSize: fontSize.base, lineHeight: 24, fontWeight: fontWeight.medium, includeFontPadding: false, textAlignVertical: 'center' },
-  grid: { paddingHorizontal: spacing.base - 4, paddingTop: 4, paddingBottom: 120 },
-  gridItem: { paddingHorizontal: 3 },
+  grid: { paddingHorizontal: spacing.base, paddingTop: 4, paddingBottom: 120 },
+  gridItem: { paddingHorizontal: 6, alignItems: 'center' },
 });

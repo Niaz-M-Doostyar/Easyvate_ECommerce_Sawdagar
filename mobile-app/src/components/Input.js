@@ -36,7 +36,7 @@ export default React.forwardRef(function Input({
       {label && <Text style={[styles.label, { color: error ? c.error : focused ? c.primary : c.textSecondary }]}>{label}</Text>}
       <View style={[styles.row, isMultiline ? styles.rowMultiline : null, focused ? styles.rowFocused : null, isDisabled ? styles.rowDisabled : null, { backgroundColor: isDisabled ? c.surfaceElevated : c.inputBg, borderColor, shadowColor: focused ? c.primary : c.black }]}>
         {icon && (
-          <View style={[styles.leadingIcon, { backgroundColor: focused ? c.brandSurfaceStrong : c.brandSurface }]}>
+          <View style={[styles.leadingIcon, { backgroundColor: 'transparent' }]}>
             <Ionicons name={icon} size={18} color={error ? c.error : focused ? c.primary : c.textSecondary} />
           </View>
         )}
@@ -92,9 +92,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     borderWidth: 1,
-    borderRadius: borderRadius.md,
+    borderRadius: 16,
     paddingHorizontal: spacing.md,
-    minHeight: 54,
+    minHeight: 56,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0,
     shadowRadius: 6,
@@ -112,7 +112,7 @@ const styles = StyleSheet.create({
     elevation: 0,
   },
   rowDisabled: { opacity: 0.58 },
-  leadingIcon: { width: 32, height: 32, borderRadius: 10, alignItems: 'center', justifyContent: 'center', marginEnd: spacing.sm },
+  leadingIcon: { width: 24, height: 32, borderRadius: 10, alignItems: 'center', justifyContent: 'center', marginEnd: spacing.sm },
   input: { flex: 1, minWidth: 0, fontSize: fontSize.base, paddingHorizontal: 0, paddingVertical: 10 },
   inputMultiline: { minHeight: 72 },
   secureButton: { width: 44, height: 44, marginEnd: -12, alignItems: 'center', justifyContent: 'center' },

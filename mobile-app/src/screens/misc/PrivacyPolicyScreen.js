@@ -40,7 +40,7 @@ export default function PrivacyPolicyScreen({ navigation }) {
   };
 
   return (
-    <SafeAreaView style={[styles.safe, { backgroundColor: c.background }]} edges={['top']}>
+    <SafeAreaView style={[styles.safe, { backgroundColor: c.background }]} edges={['top', 'left', 'right']}>
       <ScreenHeader title="Privacy Policy" onBack={() => navigation.goBack()} />
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
         <HeroCard
@@ -80,7 +80,7 @@ export default function PrivacyPolicyScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1 },
+  safe: { flex: 1, width: '100%', maxWidth: 1200, alignSelf: 'center' },
   scroll: { width: '100%', maxWidth: 760, alignSelf: 'center', padding: spacing.base, paddingBottom: 120 },
   hero: { marginBottom: spacing.base },
   card: { borderRadius: borderRadius.xl, borderWidth: 1, padding: spacing.lg, marginBottom: spacing.base },

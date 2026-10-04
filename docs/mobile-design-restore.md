@@ -38,3 +38,31 @@ All app screen and component source files were reviewed for shared styling and
 parsed with Babel. Representative simulator screens are checked visually.
 Authenticated supplier and delivery workflows need their corresponding accounts
 for full interactive verification.
+
+## Responsive redesign restore point
+
+The version immediately before the responsive redesign is preserved on GitHub:
+
+- Commit: `ceb90d86`
+- Branch: `backup/mobile-ui-before-responsive-2026-10-04`
+
+This restore point includes the working OTP integration and confirmed SMS test.
+To undo this design pass while retaining later work, find and revert its commit:
+
+```sh
+git log --oneline --grep='Modernize responsive mobile layouts and shared controls'
+git revert <redesign-commit-hash>
+git push
+```
+
+To restore the exact mobile source from this newer backup:
+
+```sh
+git restore --source=backup/mobile-ui-before-responsive-2026-10-04 -- mobile-app/src mobile-app/tests
+git add mobile-app/src mobile-app/tests
+git commit -m 'Restore mobile UI before responsive redesign'
+git push
+```
+
+Rebuild and distribute the mobile app to apply a restore to installed release
+versions. These commands do not modify production accounts, orders, or databases.

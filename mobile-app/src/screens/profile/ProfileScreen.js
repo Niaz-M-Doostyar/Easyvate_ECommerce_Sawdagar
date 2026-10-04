@@ -25,7 +25,7 @@ export default function ProfileScreen({ navigation }) {
 
   if (!user) {
     return (
-      <SafeAreaView style={[styles.safe, { backgroundColor: c.background }]} edges={['top']}>
+      <SafeAreaView style={[styles.safe, { backgroundColor: c.background }]} edges={['top', 'left', 'right']}>
         <ScreenHeader title={t.profile} showBack={false} />
         <EmptyState
           icon="person-outline"
@@ -105,7 +105,7 @@ export default function ProfileScreen({ navigation }) {
   ];
 
   return (
-    <SafeAreaView style={[styles.safe, { backgroundColor: c.background }]} edges={['top']}>
+    <SafeAreaView style={[styles.safe, { backgroundColor: c.background }]} edges={['top', 'left', 'right']}>
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
         <View
           style={[styles.profileHero, { backgroundColor: c.secondary }]}
@@ -229,7 +229,7 @@ function MenuCard({ items, c }) {
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1 },
+  safe: { flex: 1, width: '100%', maxWidth: 1200, alignSelf: 'center' },
   scroll: { width: '100%', maxWidth: 720, alignSelf: 'center', padding: spacing.base, paddingBottom: spacing.xxxl },
   profileHero: { padding: spacing.lg, borderRadius: borderRadius.xl, overflow: 'hidden', marginBottom: spacing.base },
   heroGradient: { position: 'absolute', top: 0, left: 0 },

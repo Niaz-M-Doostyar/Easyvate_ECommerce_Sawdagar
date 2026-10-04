@@ -13,7 +13,7 @@ export default function SettingsScreen({ navigation }) {
   const c = theme.colors;
 
   return (
-    <SafeAreaView style={[styles.safe, { backgroundColor: c.background }]} edges={['top']}>
+    <SafeAreaView style={[styles.safe, { backgroundColor: c.background }]} edges={['top', 'left', 'right']}>
       <ScreenHeader title={t.settings} onBack={() => navigation.goBack()} />
       <ScrollView contentContainerStyle={styles.scroll}>
         {/* Language */}
@@ -23,7 +23,7 @@ export default function SettingsScreen({ navigation }) {
             <TouchableOpacity key={key} onPress={() => setLang(key)}
               style={[styles.row, key !== Object.keys(langs).pop() && { borderBottomColor: c.border, borderBottomWidth: hairline }]}>
               <Text style={{ fontSize: 20, marginRight: 10 }}>{val.flag}</Text>
-              <Text style={[styles.rowLabel, { color: c.text }]}>{val.label}</Text>
+              <Text style={[styles.rowLabel, { color: c.text, flex: 1 }]}>{val.label}</Text>
               {lang === key && <Ionicons name="checkmark-circle" size={22} color={c.primary} style={{ marginLeft: 'auto' }} />}
             </TouchableOpacity>
           ))}
@@ -36,7 +36,7 @@ export default function SettingsScreen({ navigation }) {
             <TouchableOpacity key={th.key} onPress={() => switchTheme(th.key)}
               style={[styles.row, i < allThemes.length - 1 && { borderBottomColor: c.border, borderBottomWidth: hairline }]}>
               <View style={[styles.colorDot, { backgroundColor: th.colors.primary }]} />
-              <View>
+              <View style={{ flex: 1 }}>
                 <Text style={[styles.rowLabel, { color: c.text }]}>{th.name}</Text>
                 <Text style={{ color: c.textMuted, fontSize: fontSize.xs }}>{th.mode}</Text>
               </View>
@@ -62,7 +62,7 @@ export default function SettingsScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1 },
+  safe: { flex: 1, width: '100%', maxWidth: 1200, alignSelf: 'center' },
   scroll: { width: '100%', maxWidth: 720, alignSelf: 'center', padding: spacing.base, paddingBottom: 120 },
   sectionTitle: { fontSize: fontSize.sm, fontWeight: fontWeight.semibold, letterSpacing: 0.2, marginTop: spacing.lg, marginBottom: spacing.sm },
   card: { borderRadius: borderRadius.xl, borderWidth: 1, overflow: 'hidden' },

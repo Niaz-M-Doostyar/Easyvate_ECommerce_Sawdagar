@@ -41,7 +41,7 @@ export default function CartScreen({ navigation }) {
 
   if (items.length === 0) {
     return (
-      <SafeAreaView style={[styles.safe, { backgroundColor: c.background }]} edges={['top']}>
+      <SafeAreaView style={[styles.safe, { backgroundColor: c.background }]} edges={['top', 'left', 'right']}>
         <ScreenHeader title={t.cart} showBack={false} />
         <EmptyState
           icon="cart-outline"
@@ -55,7 +55,7 @@ export default function CartScreen({ navigation }) {
   }
 
   return (
-    <SafeAreaView style={[styles.safe, { backgroundColor: c.background }]} edges={['top']}>
+    <SafeAreaView style={[styles.safe, { backgroundColor: c.background }]} edges={['top', 'left', 'right']}>
       <ScreenHeader
         title={t.cart}
         subtitle={`${count} ${t.items}`}
@@ -158,7 +158,7 @@ export default function CartScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1 },
+  safe: { flex: 1, width: '100%', maxWidth: 1200, alignSelf: 'center' },
   clearBtn: { minHeight: 44, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, borderRadius: borderRadius.full, paddingHorizontal: 12, paddingVertical: 8 },
   clearLabel: { fontSize: fontSize.xs, lineHeight: 18, fontWeight: fontWeight.bold, includeFontPadding: false, textAlignVertical: 'center' },
   listContent: { width: '100%', maxWidth: 720, alignSelf: 'center', paddingHorizontal: spacing.base, paddingTop: spacing.lg, paddingBottom: spacing.lg },

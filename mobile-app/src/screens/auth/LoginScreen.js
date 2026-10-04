@@ -89,12 +89,12 @@ export default function LoginScreen({ navigation, route }) {
   };
 
   return (
-    <SafeAreaView style={[styles.safe, { backgroundColor: c.background }]} edges={['top', 'bottom']}>
+    <SafeAreaView style={[styles.safe, { backgroundColor: c.background }]} edges={['top', 'bottom', 'left', 'right']}>
       <ScreenHeader title="" onBack={handleBack} />
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined} keyboardVerticalOffset={Platform.OS === 'ios' ? 18 : 0}>
         <ScrollView contentContainerStyle={[styles.scroll, isTablet && styles.scrollTablet]} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" showsVerticalScrollIndicator={false}>
           <View style={[styles.content, { maxWidth: contentWidth }]}>
-          <View style={styles.formSection}>
+          <View style={[styles.formSection, { backgroundColor: c.card, borderColor: c.borderLight }]}>
             <Text style={[styles.title, { color: c.text }]}>{t.login}</Text>
             <Text style={[styles.subtitle, { color: c.textSecondary }]}>Sign in to continue shopping, track orders, and check out faster.</Text>
             <View style={styles.form}>
@@ -121,17 +121,17 @@ export default function LoginScreen({ navigation, route }) {
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1 },
+  safe: { flex: 1, width: '100%', maxWidth: 1200, alignSelf: 'center' },
   scroll: { flexGrow: 1, padding: spacing.lg, paddingTop: spacing.sm, paddingBottom: spacing.xxl },
   scrollTablet: { justifyContent: 'center' },
   content: { width: '100%', alignSelf: 'center' },
-  formSection: { paddingVertical: spacing.sm },
-  title: { fontSize: fontSize.xl, fontWeight: fontWeight.bold, marginBottom: 6 },
+  formSection: { borderWidth: 1, borderRadius: 24, padding: 20 },
+  title: { fontSize: fontSize.xxl, lineHeight: 36, fontWeight: fontWeight.bold, letterSpacing: -0.7, marginBottom: 8 },
   subtitle: { fontSize: fontSize.sm, lineHeight: 21, marginBottom: spacing.lg },
   form: { marginBottom: spacing.sm },
   forgotRow: { minHeight: 44, alignSelf: 'flex-end', justifyContent: 'center', marginTop: -8, marginBottom: spacing.sm, paddingHorizontal: spacing.xs },
   forgotText: { fontSize: fontSize.sm, lineHeight: 20, fontWeight: fontWeight.semibold, includeFontPadding: false, textAlignVertical: 'center' },
-  footer: { minHeight: 44, flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', alignItems: 'center', marginTop: 'auto', paddingVertical: spacing.lg },
+  footer: { gap: 4, minHeight: 44, flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', alignItems: 'center', marginTop: 20, paddingVertical: spacing.lg },
   footerText: { fontSize: fontSize.base },
   footerLinkButton: { minHeight: 44, justifyContent: 'center', paddingHorizontal: spacing.xs },
   footerLink: { fontSize: fontSize.base, lineHeight: 24, fontWeight: fontWeight.semibold, includeFontPadding: false, textAlignVertical: 'center' },

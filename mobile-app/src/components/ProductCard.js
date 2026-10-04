@@ -12,7 +12,7 @@ import ProductQuickView, { previewCopy } from './ProductQuickView';
 import { spacing, fontSize, fontWeight, borderRadius } from '../theme';
 
 export default function ProductCard({ product, onPress, style }) {
-  const { width: viewportWidth } = useWindowDimensions();
+  const { width: viewportWidth, fontScale } = useWindowDimensions();
   const { theme } = useTheme();
   const { t, getName, isRTL, lang } = useLanguage();
   const { addItem } = useCart();
@@ -32,19 +32,21 @@ export default function ProductCard({ product, onPress, style }) {
 
   const flattenedStyle = StyleSheet.flatten(style) || {};
   const styleWidth = typeof flattenedStyle.width === 'number' ? flattenedStyle.width : 0;
-  // Match the three-column phone grid before the first layout measurement.
+  // Estimate the phone grid until the card has been measured.
   const inferredGridWidth = viewportWidth < 768
-    ? Math.max(0, (viewportWidth - spacing.base * 2 - spacing.md * 2) / 3)
+    ? Math.max(0, (viewportWidth - spacing.base * 2) / 2 - 12)
     : 0;
   const cardWidth = styleWidth || measuredWidth || inferredGridWidth;
-  const compact = cardWidth > 0 && cardWidth < 150;
+  const compact = cardWidth > 0 && cardWidth < 180;
+  const hasBadges = !!product.supplier?.supplierVerified || discount > 0 || (!compact && !!product.isSponsored);
   const dynamicNameFontSize = compact ? fontSize.sm : fontSize.base;
   const dynamicInfoPadding = (() => {
     if (!cardWidth) return spacing.md;
-    if (cardWidth < 160) return spacing.sm;
+    if (cardWidth < 180) return spacing.sm;
     if (cardWidth < 220) return spacing.sm + 2;
     return spacing.md;
   })();
+  const actionHeight = Math.max(44, Math.ceil(22 * fontScale + 16));
   const textAlignment = { textAlign: isRTL ? 'right' : 'left' };
   const stockColor = available
     ? (theme.dark ? c.success : '#087443')
@@ -102,7 +104,7 @@ export default function ProductCard({ product, onPress, style }) {
           <Text
             numberOfLines={2}
             allowFontScaling
-            style={[styles.name, textAlignment, { color: c.text, fontSize: dynamicNameFontSize, minHeight: Math.round(dynamicNameFontSize * 1.4) * 2, lineHeight: Math.round(dynamicNameFontSize * 1.4) }]}
+            style={[styles.name, textAlignment, { color: c.text, fontSize: dynamicNameFontSize, minHeight: Math.ceil(dynamicNameFontSize * 1.4 * fontScale) * 2, lineHeight: Math.round(dynamicNameFontSize * 1.4) }]}
           >
             {getName(product)}
           </Text>
@@ -110,7 +112,11 @@ export default function ProductCard({ product, onPress, style }) {
             <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.85} style={[styles.price, compact && styles.priceCompact, { color: c.text }]}>{formatPrice(product.retailPrice)}</Text>
             {hasDiscount && !compact && <Text numberOfLines={1} style={[styles.oldPrice, { color: c.textSecondary }]}>{formatPrice(product.wholesaleCost)}</Text>}
           </View>
-          <View style={styles.badgeRow}>
+          <View style={[styles.badgeRow, { height: Math.ceil(24 * fontScale) }]}>
+            {(!compact || !hasBadges) && <View style={styles.stockPill}>
+              <View style={[styles.stockDot, { backgroundColor: stockColor }]} />
+              <Text numberOfLines={1} style={[styles.stock, { color: stockColor }]}>{available ? t.inStock : t.outOfStock}</Text>
+            </View>}
             {product.supplier?.supplierVerified ? (
               <View accessibilityLabel="Verified supplier" style={[styles.verifiedBadge, { backgroundColor: theme.dark ? '#123C2B' : '#EAF7EF' }]}>
                 <MaterialCommunityIcons name="check-decagram" size={14} color={theme.dark ? c.success : '#087443'} />
@@ -119,12 +125,6 @@ export default function ProductCard({ product, onPress, style }) {
             {product.isSponsored && !compact && <View style={[styles.badge, { backgroundColor: c.brandSurface }]}><Text numberOfLines={1} style={[styles.badgeText, { color: theme.dark ? c.primary : c.primaryDark }]}>{t.featured}</Text></View>}
             {discount > 0 && <View style={[styles.discBadge, { backgroundColor: theme.dark ? '#123C2B' : '#EAF7EF' }]}><Text style={[styles.badgeText, { color: theme.dark ? c.success : '#087443' }]}>-{discount}%</Text></View>}
           </View>
-          {!compact ? <View style={styles.metaRow}>
-            <View style={styles.stockPill}>
-              <View style={[styles.stockDot, { backgroundColor: stockColor }]} />
-              <Text numberOfLines={1} style={[styles.stock, { color: stockColor }]}>{available ? t.inStock : t.outOfStock}</Text>
-            </View>
-          </View> : null}
         </View>
       </PressableScale>
 
@@ -133,7 +133,7 @@ export default function ProductCard({ product, onPress, style }) {
           hitSlop={{ top: 4, bottom: 4 }}
           onPress={() => setPreviewOpen(true)}
           accessibilityLabel={`${copy.quick}: ${getName(product)}`}
-          style={({ pressed }) => [styles.quickView, { backgroundColor: pressed ? c.brandSurface : c.surfaceElevated }]}
+          style={({ pressed }) => [styles.quickView, { height: actionHeight, backgroundColor: pressed ? c.brandSurface : c.surfaceElevated }]}
         >
           <MaterialCommunityIcons name="eye-outline" size={16} color={c.primary} />
         </PressableScale>
@@ -145,7 +145,7 @@ export default function ProductCard({ product, onPress, style }) {
           accessibilityRole="button"
           accessibilityLabel={available ? `${t.addToCart}: ${getName(product)}` : `${getName(product)}: ${t.outOfStock}`}
           accessibilityState={{ disabled: adding || !available, busy: adding }}
-          style={[styles.addBtn, { backgroundColor: available ? c.primaryDark : c.surfaceElevated }, compact && styles.addBtnCompact]}
+          style={[styles.addBtn, { height: actionHeight, backgroundColor: available ? c.primaryDark : c.surfaceElevated }, compact && styles.addBtnCompact]}
         >
           {available ? (
             <View
@@ -156,14 +156,14 @@ export default function ProductCard({ product, onPress, style }) {
               ) : (
                 <>
                   <MaterialCommunityIcons name="plus" size={16} color={c.white} />
-                  <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={compact ? 0.85 : 0.9} maxFontSizeMultiplier={1.15} style={[styles.addText, compact && styles.addTextCompact, { color: c.white }]}>{t.add}</Text>
+                  <Text numberOfLines={1} style={[styles.addText, compact && styles.addTextCompact, { color: c.white }]}>{t.add}</Text>
                 </>
               )}
             </View>
           ) : (
             <View style={[styles.addBtnFill, compact && styles.addBtnFillCompact]}>
               {!compact ? <MaterialCommunityIcons name="cart-off" size={17} color={c.textSecondary} /> : null}
-              <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={compact ? 0.85 : 0.9} maxFontSizeMultiplier={1.15} style={[styles.addText, compact && styles.addTextCompact, { color: c.textSecondary }]}>{compact ? t.soldOut : t.outOfStock}</Text>
+              <Text numberOfLines={1} style={[styles.addText, compact && styles.addTextCompact, { color: c.textSecondary }]}>{compact ? t.soldOut : t.outOfStock}</Text>
             </View>
           )}
         </PressableScale>
@@ -174,9 +174,9 @@ export default function ProductCard({ product, onPress, style }) {
 }
 
 const styles = StyleSheet.create({
-  card: { borderRadius: 18, borderWidth: 1, marginBottom: spacing.md },
+  card: { borderRadius: 22, borderWidth: 1, marginBottom: spacing.md },
   productLink: { minWidth: 0, flex: 1 },
-  imgWrap: { aspectRatio: 1, margin: 8, borderRadius: 12, padding: 8, overflow: 'hidden' },
+  imgWrap: { aspectRatio: 1, margin: 8, borderRadius: 14, padding: 12, overflow: 'hidden' },
   img: { width: '100%', height: '100%' },
   imageFallback: { justifyContent: 'center', alignItems: 'center' },
   badgeRow: { height: 24, flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 6 },
@@ -186,20 +186,19 @@ const styles = StyleSheet.create({
   verifiedBadge: { width: 24, height: 24, alignItems: 'center', justifyContent: 'center', borderRadius: 6 },
   info: { paddingHorizontal: spacing.md, paddingTop: 0, paddingBottom: 10 },
   category: { minHeight: 18, fontSize: fontSize.xs, fontWeight: fontWeight.medium, marginBottom: 5 },
-  name: { fontWeight: fontWeight.semibold, marginBottom: spacing.sm },
+  name: { letterSpacing: -0.2, fontWeight: fontWeight.semibold, marginBottom: spacing.sm },
   priceRow: { minHeight: 24, flexDirection: 'row', flexWrap: 'wrap', alignItems: 'baseline', columnGap: 6, rowGap: 3 },
   price: { maxWidth: '100%', fontSize: fontSize.md, fontWeight: fontWeight.heavy },
   priceCompact: { flexShrink: 1, fontSize: fontSize.sm },
   oldPrice: { maxWidth: '100%', fontSize: fontSize.xs, textDecorationLine: 'line-through' },
-  metaRow: { flexDirection: 'row', alignItems: 'center', marginTop: spacing.sm },
   stockPill: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 5 },
   stockDot: { width: 5, height: 5, borderRadius: borderRadius.full },
   stock: { flexShrink: 1, fontSize: fontSize.xs, fontWeight: fontWeight.medium },
   actionWrap: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 8, paddingBottom: 12, paddingTop: 4, gap: 6 },
-  quickView: { width: 32, height: 36, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
+  quickView: { width: 44, height: 44, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
   quickText: { flexShrink: 1, fontSize: 13, fontWeight: '600' },
   actionWrapCompact: { paddingHorizontal: 8 },
-  addBtn: { flex: 1, height: 36, borderRadius: 10, overflow: 'hidden' },
+  addBtn: { flex: 1, height: 44, borderRadius: 12, overflow: 'hidden' },
   addBtnCompact: { minWidth: 0 },
   addBtnFill: { width: '100%', flex: 1, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 6, paddingHorizontal: spacing.sm },
   addBtnFillCompact: { paddingHorizontal: 6, gap: 4 },

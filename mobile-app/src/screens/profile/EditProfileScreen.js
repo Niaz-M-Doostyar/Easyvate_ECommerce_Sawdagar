@@ -50,11 +50,11 @@ export default function EditProfileScreen({ navigation }) {
   };
 
   return (
-    <SafeAreaView style={[styles.safe, { backgroundColor: c.background }]} edges={['top']}>
+    <SafeAreaView style={[styles.safe, { backgroundColor: c.background }]} edges={['top', 'left', 'right']}>
       <ScreenHeader title={t.editProfile} onBack={() => navigation.goBack()} />
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
-          <Input label={t.fullName} icon="person-outline" value={name} onChangeText={setName} />
+          <View style={[styles.form, { backgroundColor: c.card, borderColor: c.borderLight }]}><Input label={t.fullName} icon="person-outline" value={name} onChangeText={setName} />
           <Input label={t.email} icon="mail-outline" value={user?.email || ''} editable={false} />
           <Input label={t.phone} icon="call-outline" value={phone} onChangeText={setPhone} keyboardType="phone-pad" />
           {user?.role === 'supplier' && (
@@ -69,6 +69,7 @@ export default function EditProfileScreen({ navigation }) {
             </>
           )}
           <Button title={t.save} onPress={handleSave} loading={loading} style={{ marginTop: spacing.lg }} />
+          </View>
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -76,6 +77,7 @@ export default function EditProfileScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1 },
+  safe: { flex: 1, width: '100%', maxWidth: 1200, alignSelf: 'center' },
+  form: { padding: 20, borderRadius: 24, borderWidth: 1 },
   scroll: { width: '100%', maxWidth: 620, alignSelf: 'center', padding: spacing.lg, paddingBottom: 120 },
 });

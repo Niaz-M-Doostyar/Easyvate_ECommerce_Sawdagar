@@ -16,6 +16,7 @@ import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityI
 import ScreenHeader from '../../components/ScreenHeader';
 import EmptyState from '../../components/EmptyState';
 import CategoryIcon3D from '../../components/CategoryIcon3D';
+import useResponsiveLayout from '../../hooks/useResponsiveLayout';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { categoriesApi } from '../../services/api';
@@ -30,11 +31,10 @@ const QUICK_LINKS = [
 ];
 
 export default function CategoriesScreen({ navigation }) {
-  const { width } = useWindowDimensions();
+  const { width, columns: numColumns } = useResponsiveLayout();
   const { theme } = useTheme();
   const { getName, isRTL } = useLanguage();
   const c = theme.colors;
-  const numColumns = width >= 768 ? 4 : 2;
   const [categories, setCategories] = useState([]);
   const [query, setQuery] = useState('');
   const [loading, setLoading] = useState(true);
@@ -116,7 +116,7 @@ export default function CategoriesScreen({ navigation }) {
   );
 
   return (
-    <SafeAreaView style={[styles.safe, { backgroundColor: c.background }]} edges={['top']}>
+    <SafeAreaView style={[styles.safe, { backgroundColor: c.background }]} edges={['top', 'left', 'right']}>
       <ScreenHeader
         title="Categories"
         subtitle="Browse before viewing products"
@@ -144,7 +144,7 @@ export default function CategoriesScreen({ navigation }) {
           ListEmptyComponent={<EmptyState icon="shape-outline" title="No categories found" subtitle="Try a different search." />}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={async () => { setRefreshing(true); await loadCategories(); setRefreshing(false); }} tintColor={c.primary} />}
           contentContainerStyle={styles.list}
-          columnWrapperStyle={styles.categoryRow}
+          columnWrapperStyle={numColumns > 1 ? styles.categoryRow : undefined}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
           renderItem={({ item }) => (
@@ -178,7 +178,7 @@ export default function CategoriesScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1 },
+  safe: { flex: 1, width: '100%', maxWidth: 1200, alignSelf: 'center' },
   list: { flexGrow: 1, paddingHorizontal: spacing.md, paddingBottom: 120 },
   headerAction: { width: 44, height: 44, borderRadius: borderRadius.full, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
   intro: { flexDirection: 'row', alignItems: 'center', borderRadius: borderRadius.xl, padding: spacing.base, marginTop: spacing.sm, marginHorizontal: 4, overflow: 'hidden' },

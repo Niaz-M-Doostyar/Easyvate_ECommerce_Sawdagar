@@ -98,12 +98,12 @@ export default function RegisterScreen({ navigation }) {
   ];
 
   return (
-    <SafeAreaView style={[styles.safe, { backgroundColor: c.background }]} edges={['top', 'bottom']}>
+    <SafeAreaView style={[styles.safe, { backgroundColor: c.background }]} edges={['top', 'bottom', 'left', 'right']}>
       <ScreenHeader title={''} onBack={handleBack} />
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined} keyboardVerticalOffset={Platform.OS === 'ios' ? 18 : 0}>
         <ScrollView contentContainerStyle={[styles.scroll, isTablet && styles.scrollTablet]} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" showsVerticalScrollIndicator={false}>
           <View style={[styles.content, { maxWidth: contentWidth }]}>
-          <View style={styles.formSection}>
+          <View style={[styles.formSection, { backgroundColor: c.card, borderColor: c.borderLight }]}>
             <Text style={[styles.step, {color:c.primary}]}>{challengeId ? 'STEP 2 OF 2 · VERIFICATION' : 'STEP 1 OF 2 · YOUR DETAILS'}</Text>
             <Text style={[styles.heading, {color:c.text}]}>{challengeId ? 'Verify your phone' : 'Create your account'}</Text>
             <Text style={[styles.subtitle, {color:c.textSecondary}]}>{challengeId ? 'Enter the six-digit code to finish signing up.' : 'Shop, track orders and check out faster with Sawdagar.'}</Text>
@@ -162,17 +162,17 @@ const styles = StyleSheet.create({
   step: {fontSize: 12,fontWeight:'700',letterSpacing:1.1,marginBottom:10},
   heading:{fontSize:28,fontWeight:'700',letterSpacing:-0.6,marginBottom:8},
   subtitle:{fontSize:14,lineHeight:22,marginBottom:24},
-  safe: { flex: 1 },
+  safe: { flex: 1, width: '100%', maxWidth: 1200, alignSelf: 'center' },
   scroll: { flexGrow: 1, padding: spacing.lg, paddingTop: spacing.sm, paddingBottom: spacing.xxl },
   scrollTablet: { justifyContent: 'center' },
   content: { width: '100%', alignSelf: 'center' },
   sectionLabel: { fontSize: fontSize.sm, fontWeight: fontWeight.semibold, marginBottom: spacing.md },
-  formSection: { paddingVertical: spacing.sm },
+  formSection: { borderWidth: 1, borderRadius: 24, padding: 20 },
   roleRow: { flexDirection: 'row', gap: 12, marginBottom: spacing.lg },
   roleBtn: { flex: 1, minHeight: 64, padding: spacing.md, borderRadius: borderRadius.lg, borderWidth: 1, justifyContent: 'space-between', gap: spacing.md },
   roleIconRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   roleLabel: { fontSize: fontSize.sm, lineHeight: 20, fontWeight: fontWeight.semibold, includeFontPadding: false },
-  footer: { minHeight: 44, flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', alignItems: 'center', paddingVertical: spacing.lg },
+  footer: { gap: 4, minHeight: 44, flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', alignItems: 'center', paddingVertical: spacing.lg },
   footerText: { fontSize: fontSize.base },
   footerLinkButton: { minHeight: 44, justifyContent: 'center', paddingHorizontal: spacing.xs },
   footerLink: { fontSize: fontSize.base, lineHeight: 24, fontWeight: fontWeight.semibold, includeFontPadding: false, textAlignVertical: 'center' },

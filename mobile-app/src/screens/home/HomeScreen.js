@@ -4,11 +4,13 @@ import { WebView } from 'react-native-webview';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import useResponsiveLayout from '../../hooks/useResponsiveLayout';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { useCart } from '../../contexts/CartContext';
 import ProductCard from '../../components/ProductCard';
+import MarketplaceIntro from '../../components/MarketplaceIntro';
 import HomeHeroCarousel from '../../components/HomeHeroCarousel';
 import RemoteImage from '../../components/RemoteImage';
 import SectionHeader from '../../components/SectionHeader';
@@ -46,18 +48,16 @@ const ACTION_GRADIENTS = [
 
 export default function HomeScreen({ navigation }) {
   const scrollRef = useRef(null);
-  const { width } = useWindowDimensions();
+  const { width, height, isTablet, columns: gridColumns, cardWidth: gridCardWidth } = useResponsiveLayout();
   const { theme } = useTheme();
   const { t, getName, isRTL } = useLanguage();
   const { user } = useAuth();
   const { count: cartCount } = useCart();
   const c = theme.colors;
-  const isTablet = width >= 768;
+  const adSize = Math.max(120, Math.min(width - 48, height - 200, 480));
   const promoCardWidth = Math.min(width * (isTablet ? 0.52 : 0.78), 560);
   const actionCardWidth = Math.min(width * (isTablet ? 0.42 : 0.72), 420);
-  const newArrivalCardWidth = Math.min(300, width * 0.45);
-  const gridColumns = width >= 1024 ? 4 : 3;
-  const gridCardWidth = Math.max(0, (width - spacing.base * 2) / gridColumns - 8);
+  const newArrivalCardWidth = Math.min(260, Math.max(164, width * 0.46));
 
   const [categories, setCategories] = useState([]);
   const [featured, setFeatured] = useState([]);
@@ -268,11 +268,11 @@ export default function HomeScreen({ navigation }) {
   ];
 
   return (
-    <SafeAreaView style={[styles.safe, { backgroundColor: c.background }]} edges={['top']}>
+    <SafeAreaView style={[styles.safe, { backgroundColor: c.background }]} edges={['top', 'left', 'right']}>
       {adVisible && readyAd && <Modal visible transparent animationType="fade" onRequestClose={() => setAdVisible(false)}>
         <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#06122ab8', padding: 24, opacity: adLoaded ? 1 : 0 }}>
-          <View style={{ width: Math.min(width - 48, 480), position: 'relative' }}>
-            <View style={{ height: Math.min(width - 48, 480), borderTopLeftRadius: 20, borderTopRightRadius: 20, overflow: 'hidden', backgroundColor: c.card }}>
+          <View style={{ width: adSize, position: 'relative' }}>
+            <View style={{ height: adSize, borderTopLeftRadius: 20, borderTopRightRadius: 20, overflow: 'hidden', backgroundColor: c.card }}>
               <WebView
                 originWhitelist={['*']}
                 source={{ html: `<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"></head><body style="margin:0;height:100vh;background:white;box-sizing:border-box;padding:24px 20px 16px"><img alt="View sponsored product" role="button" src="${readyAd.uri}" style="width:100%;height:100%;object-fit:contain" onload="window.ReactNativeWebView.postMessage('loaded')" onerror="window.ReactNativeWebView.postMessage('error')" onclick="window.ReactNativeWebView.postMessage('open')"></body></html>` }}
@@ -289,7 +289,7 @@ export default function HomeScreen({ navigation }) {
             <TouchableOpacity onPress={() => { setAdVisible(false); goProduct(readyAd.product); }} accessibilityRole="button" style={{ backgroundColor: c.card, padding: 16, borderBottomLeftRadius: 20, borderBottomRightRadius: 20 }}>
               <Text numberOfLines={2} style={{ color: c.text, fontSize: fontSize.md, lineHeight: 24, fontWeight: fontWeight.semibold, textAlign: isRTL ? 'right' : 'left' }}>{getName(readyAd.product)}</Text>
             </TouchableOpacity>
-            <TouchableOpacity accessibilityRole="button" accessibilityLabel="Close ad" onPress={() => setAdVisible(false)} style={{ position: 'absolute', top: 10, right: 10, width: 38, height: 38, borderRadius: 19, alignItems: 'center', justifyContent: 'center', backgroundColor: '#0009' }}>
+            <TouchableOpacity accessibilityRole="button" accessibilityLabel="Close ad" onPress={() => setAdVisible(false)} style={{ position: 'absolute', top: 10, right: 10, width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center', backgroundColor: '#0009' }}>
               <MaterialCommunityIcons name="close" size={24} color="#fff" />
             </TouchableOpacity>
           </View>
@@ -297,7 +297,7 @@ export default function HomeScreen({ navigation }) {
       </Modal>}
       <View style={[styles.header, { borderBottomColor: c.border }]}>
         <View style={styles.brandBlock}>
-          <BrandLogo width={172} />
+          <BrandLogo width={140} />
           <Text style={[styles.greeting, { color: c.textSecondary }]}>
             {user ? `Welcome back, ${user.name?.split(' ')[0]}` : 'Afghanistan online shopping app'}
           </Text>
@@ -331,6 +331,8 @@ export default function HomeScreen({ navigation }) {
             <Text style={[styles.audienceText, { color: c.text }]} numberOfLines={3}>{audienceMessage}</Text>
           </View>
         ) : null}
+
+        <MarketplaceIntro />
 
         <SectionReveal delay={20}>
           <HomeHeroCarousel
@@ -498,7 +500,7 @@ export default function HomeScreen({ navigation }) {
           <SectionHeader title={t.featured} actionLabel={t.seeAll} onAction={() => navigation.navigate('Products')} />
           <View style={styles.grid}>
             {loading ? Array.from({ length: 6 }).map((_, i) => (
-              <View key={i} style={styles.gridItem}>
+              <View key={i} style={[styles.gridItem, { width: `${100 / gridColumns}%` }]}>
                 <SkeletonLoader width="100%" height={180} radius={borderRadius.lg} />
                 <SkeletonLoader width="80%" height={14} style={{ marginTop: 8 }} />
                 <SkeletonLoader width="40%" height={14} style={{ marginTop: 4 }} />
@@ -559,10 +561,10 @@ function SectionReveal({ children, delay = 0 }) {
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1 },
-  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: spacing.base, paddingVertical: spacing.md, borderBottomWidth: 1 },
+  safe: { flex: 1, width: '100%', maxWidth: 1200, alignSelf: 'center' },
+  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: spacing.base, paddingVertical: spacing.sm, borderBottomWidth: 1 },
   brandBlock: { flex: 1, paddingRight: spacing.base },
-  greeting: { fontSize: fontSize.sm, lineHeight: 20, marginTop: 6 },
+  greeting: { fontSize: fontSize.xs, lineHeight: 20, marginTop: 6 },
   headerRight: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   iconBtn: { width: 44, height: 44, borderRadius: borderRadius.full, justifyContent: 'center', alignItems: 'center', borderWidth: 1 },
   cartBadge: { position: 'absolute', top: -2, right: -2, minWidth: 20, height: 20, paddingHorizontal: 3, borderRadius: borderRadius.full, justifyContent: 'center', alignItems: 'center' },
@@ -570,8 +572,8 @@ const styles = StyleSheet.create({
   searchBar: { flexDirection: 'row', alignItems: 'center', marginHorizontal: spacing.base, marginTop: spacing.sm, paddingHorizontal: spacing.md, height: 50, borderRadius: borderRadius.md, borderWidth: 1, gap: 10 },
   searchText: { flex: 1, minWidth: 0, fontSize: fontSize.base, lineHeight: 24, includeFontPadding: false, textAlignVertical: 'center' },
   carouselMeta: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, paddingHorizontal: spacing.base, marginTop: spacing.sm },
-  carouselPill: { flexDirection: 'row', alignItems: 'center', gap: 6, borderWidth: 1, borderRadius: borderRadius.md, paddingHorizontal: 12, paddingVertical: 8 },
-  carouselPillText: { fontSize: fontSize.xs, fontWeight: fontWeight.semibold },
+  carouselPill: { flex: 1, minWidth: 90, flexDirection: 'row', alignItems: 'center', gap: 6, borderWidth: 1, borderRadius: borderRadius.md, paddingHorizontal: 8, paddingVertical: 12 },
+  carouselPillText: { flex: 1, fontSize: fontSize.xs, fontWeight: fontWeight.semibold },
   promoCard: { borderRadius: borderRadius.xl, overflow: 'hidden', marginRight: spacing.md, borderWidth: 1 },
   promoImageWrap: { ...StyleSheet.absoluteFillObject, zIndex: 1 },
   promoImageLayer: { width: '100%', height: '100%' },
@@ -586,9 +588,9 @@ const styles = StyleSheet.create({
   promoTitle: { fontSize: fontSize.md, fontWeight: fontWeight.heavy, lineHeight: 22, marginTop: 4 },
   promoButton: { height: 44, alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 5, borderWidth: 1, borderRadius: borderRadius.full, paddingHorizontal: 14, marginTop: spacing.md },
   promoButtonText: { fontSize: fontSize.sm, lineHeight: 20, fontWeight: fontWeight.bold, includeFontPadding: false, textAlign: 'center', textAlignVertical: 'center' },
-  audienceMessage: { flexDirection: 'row', alignItems: 'flex-start', gap: 10, marginHorizontal: spacing.base, borderRadius: borderRadius.lg, padding: spacing.md, marginTop: spacing.sm, borderWidth: 1 },
-  audienceIcon: { width: 34, height: 34, borderRadius: borderRadius.full, justifyContent: 'center', alignItems: 'center' },
-  audienceText: { flex: 1, fontSize: fontSize.sm, lineHeight: 20, fontWeight: fontWeight.semibold },
+  audienceMessage: { flexDirection: 'row', alignItems: 'flex-start', gap: 10, marginHorizontal: spacing.base, borderRadius: borderRadius.md, padding: 8, marginTop: spacing.sm, borderWidth: 1 },
+  audienceIcon: { width: 26, height: 26, borderRadius: borderRadius.full, justifyContent: 'center', alignItems: 'center' },
+  audienceText: { flex: 1, fontSize: fontSize.xs, lineHeight: 18, fontWeight: fontWeight.medium },
   actionCard: { height: 172, marginRight: 12, borderRadius: borderRadius.xl, overflow: 'hidden' },
   actionCardFill: { height: '100%', padding: spacing.base, justifyContent: 'flex-end' },
   actionGlow: { position: 'absolute', top: -30, right: -24, width: 110, height: 110, borderRadius: borderRadius.full, backgroundColor: 'rgba(255,255,255,0.18)' },
@@ -618,5 +620,5 @@ const styles = StyleSheet.create({
   bigBannerButton: { height: 44, alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 5, borderWidth: 1, borderRadius: borderRadius.full, paddingHorizontal: 14, marginTop: spacing.md },
   bigBannerButtonText: { fontSize: fontSize.sm, lineHeight: 20, fontWeight: fontWeight.bold, includeFontPadding: false, textAlign: 'center', textAlignVertical: 'center' },
   grid: { flexDirection: 'row', flexWrap: 'wrap', paddingHorizontal: spacing.base },
-  gridItem: { paddingHorizontal: 4 },
+  gridItem: { paddingHorizontal: 6, alignItems: 'center' },
 });

@@ -331,7 +331,7 @@ export default function PortalScreen({ navigation, route }) {
   }
 
   return (
-    <SafeAreaView style={[styles.safe, { backgroundColor: c.background }]} edges={['top']}>
+    <SafeAreaView style={[styles.safe, { backgroundColor: c.background }]} edges={['top', 'left', 'right']}>
       <View style={[styles.header, { backgroundColor: c.card, borderBottomColor: c.border }]}> 
         <View style={styles.headerTop}>
           <TouchableOpacity onPress={() => navigation.goBack()} style={styles.headerAction}>
@@ -438,7 +438,7 @@ function ToolButton({ icon, onPress, disabled, c }) {
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1 },
+  safe: { flex: 1, width: '100%', maxWidth: 1200, alignSelf: 'center' },
   loadingWrap: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: spacing.xl },
   loadingText: { fontSize: fontSize.base, marginTop: spacing.base },
   header: { borderBottomWidth: 1 },

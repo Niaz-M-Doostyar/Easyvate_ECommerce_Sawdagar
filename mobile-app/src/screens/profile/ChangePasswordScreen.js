@@ -32,14 +32,15 @@ export default function ChangePasswordScreen({ navigation }) {
   };
 
   return (
-    <SafeAreaView style={[styles.safe, { backgroundColor: c.background }]} edges={['top']}>
+    <SafeAreaView style={[styles.safe, { backgroundColor: c.background }]} edges={['top', 'left', 'right']}>
       <ScreenHeader title={t.changePassword} onBack={() => navigation.goBack()} />
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
-          <Input label={t.currentPassword} icon="lock-closed-outline" value={current} onChangeText={setCurrent} secureTextEntry />
+          <View style={[styles.form, { backgroundColor: c.card, borderColor: c.borderLight }]}><Input label={t.currentPassword} icon="lock-closed-outline" value={current} onChangeText={setCurrent} secureTextEntry />
           <Input label={t.newPassword} icon="lock-closed-outline" value={newPass} onChangeText={setNewPass} secureTextEntry />
           <Input label={t.confirmPassword} icon="lock-closed-outline" value={confirm} onChangeText={setConfirm} secureTextEntry />
           <Button title={t.save} onPress={handleSave} loading={loading} style={{ marginTop: spacing.lg }} />
+          </View>
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -47,6 +48,7 @@ export default function ChangePasswordScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1 },
+  safe: { flex: 1, width: '100%', maxWidth: 1200, alignSelf: 'center' },
+  form: { padding: 20, borderRadius: 24, borderWidth: 1 },
   scroll: { width: '100%', maxWidth: 620, alignSelf: 'center', padding: spacing.lg, paddingBottom: 120 },
 });

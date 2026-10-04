@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, ActivityIndicator, StyleSheet } from 'react-native';
+import { View, Text, ActivityIndicator, StyleSheet, useWindowDimensions } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import { useTheme } from '../contexts/ThemeContext';
 import { fontSize, fontWeight } from '../theme';
@@ -8,14 +8,16 @@ import PressableScale from './PressableScale';
 export default function Button({ title, onPress, variant = 'primary', size = 'md', loading, disabled, icon, style, textStyle, accessibilityLabel, ...rest }) {
   const { theme } = useTheme();
   const c = theme.colors;
+  const { fontScale } = useWindowDimensions();
   const isPrimary = variant === 'primary';
   const isOutline = variant === 'outline';
   const isGhost = variant === 'ghost';
   const inactive = Boolean(loading || disabled);
   const textColor = isPrimary ? c.white : isGhost ? c.textSecondary : theme.dark ? c.primary : c.primaryDark;
-  const height = size === 'sm' ? 44 : size === 'lg' ? 54 : 50;
+  const baseHeight = size === 'sm' ? 44 : size === 'lg' ? 54 : 50;
+  const height = fontScale > 1.15 ? Math.max(baseHeight, Math.ceil(44 * fontScale + 16)) : baseHeight;
   const fs = size === 'sm' ? fontSize.sm : fontSize.base;
-  const radius = size === 'sm' ? 10 : 12;
+  const radius = size === 'sm' ? 12 : 16;
   const externalStyle = StyleSheet.flatten(style) || {};
   const externallySized = externalStyle.flex != null || externalStyle.width != null || externalStyle.minWidth != null || externalStyle.alignSelf === 'stretch';
   const flexSized = externalStyle.flex != null || externalStyle.flexGrow != null;
@@ -29,7 +31,7 @@ export default function Button({ title, onPress, variant = 'primary', size = 'md
   const content = loading ? <ActivityIndicator color={textColor} size="small" /> : (
     <>
       {icon}
-      <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.86} maxFontSizeMultiplier={1.15} style={[styles.text, { color: textColor, fontSize: fs, lineHeight: size === 'sm' ? 20 : 22 }, textStyle]}>{title}</Text>
+      <Text numberOfLines={2} style={[styles.text, { color: textColor, fontSize: fs, lineHeight: size === 'sm' ? 20 : 22 }, textStyle]}>{title}</Text>
     </>
   );
 

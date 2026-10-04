@@ -12,7 +12,7 @@ export default function AboutScreen({ navigation }) {
   const { theme } = useTheme();
   const c = theme.colors;
   return (
-    <SafeAreaView style={[styles.safe, { backgroundColor: c.background }]} edges={['top']}>
+    <SafeAreaView style={[styles.safe, { backgroundColor: c.background }]} edges={['top', 'left', 'right']}>
       <ScreenHeader title="About" onBack={() => navigation.goBack()} />
       <ScrollView contentContainerStyle={styles.scroll}>
         <HeroCard
@@ -46,7 +46,7 @@ function InfoRow({ icon, label, value, c }) {
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1 },
+  safe: { flex: 1, width: '100%', maxWidth: 1200, alignSelf: 'center' },
   scroll: { width: '100%', maxWidth: 760, alignSelf: 'center', padding: spacing.lg, paddingBottom: 120, alignItems: 'center' },
   hero: { width: '100%', marginTop: spacing.xl },
   heroBrand: { fontSize: fontSize.xxl, fontWeight: fontWeight.heavy, letterSpacing: 0.2 },

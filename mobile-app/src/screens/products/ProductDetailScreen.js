@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator, useWindowDimensions, Share } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator, Share } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import useResponsiveLayout from '../../hooks/useResponsiveLayout';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useCart } from '../../contexts/CartContext';
@@ -17,18 +18,17 @@ import { formatPrice, WEBSITE_URL } from '../../config';
 import { spacing, fontSize, fontWeight, borderRadius } from '../../theme';
 
 export default function ProductDetailScreen({ navigation, route }) {
-  const { width: viewportWidth } = useWindowDimensions();
+  const { width: viewportWidth, isTablet, fontScale } = useResponsiveLayout();
   const insets = useSafeAreaInsets();
   const { theme } = useTheme();
   const { t, getName, getDesc } = useLanguage();
   const { addItem } = useCart();
   const toast = useToast();
   const c = theme.colors;
-  const isTablet = viewportWidth >= 768;
-  const compactBottomBar = viewportWidth < 520;
-  const imageWidth = Math.min(viewportWidth - spacing.base * 2, 620);
+  const compactBottomBar = viewportWidth < 520 || fontScale > 1.3;
+  const imageWidth = Math.min((isTablet ? viewportWidth / 2 : viewportWidth) - spacing.base * 2, 620);
   const imageHeight = imageWidth;
-  const contentWidth = isTablet ? Math.min(viewportWidth - spacing.xl * 2, 820) : viewportWidth;
+  const contentWidth = viewportWidth;
   const [product, setProduct] = useState(route.params?.product || null);
   const [loading, setLoading] = useState(!product);
   const [imgIdx, setImgIdx] = useState(0);
@@ -143,7 +143,7 @@ export default function ProductDetailScreen({ navigation, route }) {
 
   if (loading) {
     return (
-      <SafeAreaView style={[styles.safe, { backgroundColor: c.background }]} edges={['top']}>
+      <SafeAreaView style={[styles.safe, { backgroundColor: c.background }]} edges={['top', 'left', 'right']}>
         <ScreenHeader title="" onBack={() => navigation.goBack()} />
         <ActivityIndicator size="large" color={c.primary} style={{ marginTop: 100 }} />
       </SafeAreaView>
@@ -152,7 +152,7 @@ export default function ProductDetailScreen({ navigation, route }) {
 
   if (!product) {
     return (
-      <SafeAreaView style={[styles.safe, { backgroundColor: c.background }]} edges={['top']}>
+      <SafeAreaView style={[styles.safe, { backgroundColor: c.background }]} edges={['top', 'left', 'right']}>
         <ScreenHeader title="" onBack={() => navigation.goBack()} />
         <EmptyState icon="bag-outline" title="Product not found" />
       </SafeAreaView>
@@ -170,9 +170,10 @@ export default function ProductDetailScreen({ navigation, route }) {
   const orderTotal = (product.retailPrice || 0) * qty;
 
   return (
-    <SafeAreaView style={[styles.safe, { backgroundColor: c.background }]} edges={['top']}>
+    <SafeAreaView style={[styles.safe, { backgroundColor: c.background }]} edges={['top', 'left', 'right']}>
       <ScrollView showsVerticalScrollIndicator={false}>
-        <View style={[styles.imgWrap, isTablet && styles.imgWrapTablet]}>
+        <View style={{ flexDirection: isTablet ? 'row' : 'column', alignItems: isTablet ? 'flex-start' : undefined }}>
+        <View style={[styles.imgWrap, isTablet && { width: '50%' }]}>
           <View style={[styles.imageFrame, { width: imageWidth, height: imageHeight, backgroundColor: c.card, borderColor: c.borderLight }]}>
           <ScrollView
             horizontal
@@ -221,7 +222,7 @@ export default function ProductDetailScreen({ navigation, route }) {
           </View>
         </View>
 
-        <View style={[styles.body, isTablet && { width: contentWidth, alignSelf: 'center' }]}>
+        <View style={[styles.body, isTablet && { width: '50%' }]}>
           <View style={[styles.infoCard, { backgroundColor: c.card, borderColor: c.border }]}>
             <View style={styles.overlayBadges}>
               <View style={[styles.overlayPill, { backgroundColor: c.brandSurface }]}>
@@ -304,6 +305,7 @@ export default function ProductDetailScreen({ navigation, route }) {
             </View>
           </View>
         </View>
+        </View>
       </ScrollView>
 
       <View style={[styles.bottomBar, compactBottomBar && styles.bottomBarCompact, isTablet && { width: contentWidth, alignSelf: 'center' }, { backgroundColor: c.card, borderTopColor: c.border, paddingBottom: Math.max(insets.bottom, spacing.md) }]}>
@@ -352,14 +354,14 @@ function FeatureTile({ icon, label }) {
 function DetailRow({ label, value, c }) {
   return (
     <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 10, borderBottomWidth: 0.5, borderBottomColor: c.border }}>
-      <Text style={{ color: c.textSecondary, fontSize: fontSize.sm }}>{label}</Text>
+      <Text style={{ flex: 1, marginRight: 12, color: c.textSecondary, fontSize: fontSize.sm }}>{label}</Text>
       <Text style={{ color: c.text, fontSize: fontSize.sm, fontWeight: fontWeight.medium, maxWidth: '55%', textAlign: 'right' }}>{value}</Text>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1 },
+  safe: { flex: 1, width: '100%', maxWidth: 1200, alignSelf: 'center' },
   imgWrap: { position: 'relative', alignItems: 'center', paddingTop: spacing.base },
   imgWrapTablet: { alignItems: 'center', paddingTop: spacing.base },
   imageFrame: { position: 'relative', overflow: 'hidden', borderRadius: 28, borderWidth: 1 },
@@ -383,7 +385,7 @@ const styles = StyleSheet.create({
   supplierVerifiedPill: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 8, paddingVertical: 4, borderRadius: borderRadius.full, marginLeft: 8 },
   supplierVerifiedText: { fontSize: fontSize.xs, lineHeight: 18, fontWeight: fontWeight.bold, includeFontPadding: false, textAlignVertical: 'center' },
   supplierLocation: { fontSize: fontSize.xs, marginTop: 5 },
-  priceRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: spacing.md },
+  priceRow: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 10, marginTop: spacing.md },
   price: { fontSize: fontSize.xxl, fontWeight: fontWeight.heavy },
   oldPrice: { fontSize: fontSize.md, textDecorationLine: 'line-through' },
   stockBadge: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 12, paddingVertical: 8, borderRadius: borderRadius.full, alignSelf: 'flex-start' },
@@ -391,7 +393,7 @@ const styles = StyleSheet.create({
   featureRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginTop: spacing.lg },
   featureTile: { flexDirection: 'row', alignItems: 'center', gap: 6, borderRadius: borderRadius.full, paddingHorizontal: 12, paddingVertical: 9 },
   featureText: { fontSize: fontSize.xs, lineHeight: 18, fontWeight: fontWeight.bold, includeFontPadding: false, textAlignVertical: 'center' },
-  qtyCard: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: spacing.md, borderWidth: 1, borderRadius: borderRadius.xl, padding: spacing.lg, marginTop: spacing.base },
+  qtyCard: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: spacing.md, borderWidth: 1, borderRadius: borderRadius.xl, padding: spacing.lg, marginTop: spacing.base },
   qtyCopy: { flex: 1 },
   qtyHeading: { fontSize: fontSize.base, fontWeight: fontWeight.bold },
   qtySubhead: { fontSize: fontSize.sm, marginTop: 4 },

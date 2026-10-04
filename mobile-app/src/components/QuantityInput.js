@@ -114,7 +114,7 @@ export default function QuantityInput({
         style={({ pressed }) => [
           styles.stepButton,
           compact && styles.stepButtonSmall,
-          { backgroundColor: c.primary, borderColor: c.primary },
+          { backgroundColor: c.primaryDark, borderColor: c.primaryDark },
           increaseDisabled && { opacity: 0.45 },
         ]}
       >
@@ -151,7 +151,7 @@ const styles = StyleSheet.create({
     borderRadius: borderRadius.md,
   },
   input: {
-    width: 78,
+    width: 56,
     height: 44,
     borderRadius: borderRadius.md,
     paddingHorizontal: 8,
@@ -161,7 +161,7 @@ const styles = StyleSheet.create({
     fontWeight: fontWeight.bold,
   },
   inputSmall: {
-    width: 54,
+    width: 44,
     height: 44,
     borderRadius: borderRadius.sm,
     fontSize: fontSize.base,

@@ -34,8 +34,8 @@ export default function ScreenHeader({ title, subtitle, onBack, right, showBack 
         ) : null}
       </View>
       <View style={[styles.titleWrap, !showBack && { paddingStart: 0 }]}>
-        <Text accessibilityRole="header" numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.86} maxFontSizeMultiplier={1.2} style={[styles.title, { color: c.text, textAlign: isRTL ? 'right' : 'left' }]}>{title}</Text>
-        {subtitle ? <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.86} maxFontSizeMultiplier={1.15} style={[styles.subtitle, { color: c.textSecondary, textAlign: isRTL ? 'right' : 'left' }]}>{subtitle}</Text> : null}
+        <Text accessibilityRole="header" numberOfLines={2} style={[styles.title, { color: c.text, textAlign: isRTL ? 'right' : 'left' }]}>{title}</Text>
+        {subtitle ? <Text numberOfLines={2} style={[styles.subtitle, { color: c.textSecondary, textAlign: isRTL ? 'right' : 'left' }]}>{subtitle}</Text> : null}
       </View>
       {right ? <View onLayout={syncSideWidth} style={styles.rightWrap}>{right}</View> : <View onLayout={syncSideWidth} style={styles.sidePlaceholder} />}
     </View>
@@ -48,7 +48,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: spacing.base,
     paddingVertical: spacing.md,
-    minHeight: 72,
+    minHeight: 76,
   },
   iconBtn: {
     width: 44,

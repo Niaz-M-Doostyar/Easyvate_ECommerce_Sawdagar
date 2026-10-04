@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, TextInput, FlatList, TouchableOpacity, ActivityIndicator, StyleSheet, Keyboard, useWindowDimensions } from 'react-native';
+import { View, Text, TextInput, FlatList, TouchableOpacity, ActivityIndicator, StyleSheet, Keyboard } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import useResponsiveLayout from '../../hooks/useResponsiveLayout';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useLanguage } from '../../contexts/LanguageContext';
 import ProductCard from '../../components/ProductCard';
@@ -11,12 +12,10 @@ import { productsApi } from '../../services/api';
 import { spacing, fontSize, fontWeight, borderRadius } from '../../theme';
 
 export default function SearchScreen({ navigation }) {
-  const { width } = useWindowDimensions();
+  const { width, columns: numColumns, cardWidth: gridCardWidth } = useResponsiveLayout();
   const { theme } = useTheme();
   const { t } = useLanguage();
   const c = theme.colors;
-  const numColumns = width >= 1024 ? 4 : 3;
-  const gridCardWidth = Math.max(0, (width - (spacing.base - 4) * 2) / numColumns - 6);
   const quickSuggestions = ['Rice', 'Cooking oil', 'Fresh arrivals', 'Electronics'];
   const inputRef = useRef();
   const [query, setQuery] = useState('');
@@ -45,7 +44,7 @@ export default function SearchScreen({ navigation }) {
   const showPrompt = query.trim().length < 2 && !loading && !searched;
 
   return (
-    <SafeAreaView style={[styles.safe, { backgroundColor: c.background }]} edges={['top']}>
+    <SafeAreaView style={[styles.safe, { backgroundColor: c.background }]} edges={['top', 'left', 'right']}>
       <ScreenHeader title={t.searchTitle || 'Search'} onBack={() => navigation.goBack()} />
       <View style={[styles.searchWrap, { borderBottomColor: c.border }]}>
         <View style={[styles.searchRow, { backgroundColor: c.inputBg, borderColor: c.inputBorder }]}>
@@ -106,7 +105,7 @@ export default function SearchScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1 },
+  safe: { flex: 1, width: '100%', maxWidth: 1200, alignSelf: 'center' },
   searchWrap: { paddingHorizontal: spacing.base, paddingBottom: spacing.sm, borderBottomWidth: 1 },
   searchRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, height: 54, borderRadius: borderRadius.xl, borderWidth: 1, gap: 8 },
   input: { flex: 1, fontSize: fontSize.base, padding: 0 },
@@ -123,6 +122,6 @@ const styles = StyleSheet.create({
   resultBar: { paddingHorizontal: spacing.base, paddingTop: spacing.base },
   resultTitle: { fontSize: fontSize.md, fontWeight: fontWeight.bold },
   resultSubtitle: { fontSize: fontSize.sm, marginTop: 4 },
-  grid: { paddingHorizontal: spacing.base - 4, paddingTop: spacing.md, paddingBottom: 120 },
-  gridItem: { paddingHorizontal: 3 },
+  grid: { paddingHorizontal: spacing.base, paddingTop: spacing.md, paddingBottom: 120 },
+  gridItem: { paddingHorizontal: 6, alignItems: 'center' },
 });

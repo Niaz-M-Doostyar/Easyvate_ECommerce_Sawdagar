@@ -75,7 +75,7 @@ export default function SupplierSponsorshipsScreen({ navigation }) {
   const selectedProduct = products.find((p) => p.id === selectedProductId);
 
   return (
-    <SafeAreaView style={[styles.safe, { backgroundColor: c.background }]} edges={['top']}>
+    <SafeAreaView style={[styles.safe, { backgroundColor: c.background }]} edges={['top', 'left', 'right']}>
       <ScreenHeader title={t.sponsorships} onBack={() => navigation.goBack()} />
       {!loading && (
         <View style={styles.productSection}>
@@ -140,7 +140,7 @@ export default function SupplierSponsorshipsScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1 },
+  safe: { flex: 1, width: '100%', maxWidth: 1200, alignSelf: 'center' },
   productSection: { paddingHorizontal: spacing.base, paddingTop: spacing.base },
   productLabel: { fontSize: fontSize.xs, fontWeight: fontWeight.bold, marginBottom: 8, letterSpacing: 0.8, textTransform: 'uppercase' },
   productChip: { minHeight: 44, justifyContent: 'center', borderWidth: 1, borderRadius: borderRadius.full, paddingHorizontal: 12, paddingVertical: 8 },

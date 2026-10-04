@@ -43,5 +43,5 @@ export default function StatusBadge({ status }) {
 const styles = StyleSheet.create({
   badge: { minHeight: 28, maxWidth: '100%', flexDirection: 'row', alignItems: 'center', gap: 5, justifyContent: 'center', paddingHorizontal: spacing.sm + 2, paddingVertical: 4, borderRadius: borderRadius.full, borderWidth: 1, alignSelf: 'flex-start' },
   dot: { width: 5, height: 5, borderRadius: borderRadius.full },
-  text: { flexShrink: 1, fontSize: fontSize.xs, lineHeight: 16, fontWeight: fontWeight.semibold, textTransform: 'capitalize' },
+  text: { flexShrink: 1, fontSize: fontSize.xs, lineHeight: 18, fontWeight: fontWeight.semibold, textTransform: 'capitalize' },
 });
