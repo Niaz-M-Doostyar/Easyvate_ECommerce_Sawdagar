@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, FlatList, Image, RefreshControl, StyleSheet, Animated, useWindowDimensions, Modal } from 'react-native';
+import { WebView } from 'react-native-webview';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
@@ -63,10 +64,44 @@ export default function HomeScreen({ navigation }) {
   const [recommended, setRecommended] = useState([]);
   const [sponsored, setSponsored] = useState([]);
   const [adVisible, setAdVisible] = useState(false);
+  const [readyAd, setReadyAd] = useState(null);
+  const [adLoaded, setAdLoaded] = useState(false);
   const adShown = useRef(false);
   const adProduct = sponsored.find(product => product.images?.[0]?.url || product.image || product.thumbnail);
   const adImage = adProduct?.images?.[0]?.url || adProduct?.image || adProduct?.thumbnail;
-  useEffect(() => { if (!adProduct || adShown.current) return; adShown.current = true; setAdVisible(true); const timer = setTimeout(() => setAdVisible(false), 4000); return () => clearTimeout(timer); }, [adProduct]);
+  useEffect(() => {
+    if (!adProduct || adShown.current) return;
+    let active = true;
+    const preload = async () => {
+      const candidates = buildImageUriCandidates(adImage, { width: 800, quality: 80 });
+      for (const uri of candidates) {
+        try {
+          const response = await fetch(uri);
+          if (!response.ok) continue;
+          const blob = await response.blob();
+          const loaded = await new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result);
+            reader.onerror = reject;
+            reader.readAsDataURL(blob);
+          });
+          if (!active) return;
+          if (!loaded) continue;
+          adShown.current = true;
+          setReadyAd({ product: adProduct, uri: loaded });
+          setAdVisible(true);
+          return;
+        } catch { if (!active) return; }
+      }
+    };
+    preload();
+    return () => { active = false; };
+  }, [adProduct?.id, adImage]);
+  useEffect(() => {
+    if (!adVisible || !adLoaded) return;
+    const timer = setTimeout(() => setAdVisible(false), 4000);
+    return () => clearTimeout(timer);
+  }, [adVisible, adLoaded]);
   const [newArrivals, setNewArrivals] = useState([]);
   const [heroContent, setHeroContent] = useState(null);
   const [promoBanners, setPromoBanners] = useState([]);
@@ -231,18 +266,29 @@ export default function HomeScreen({ navigation }) {
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: c.background }]} edges={['top']}>
-      <Modal visible={adVisible && !!adProduct} transparent animationType="fade" onRequestClose={() => setAdVisible(false)}>
-        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#06122ab8', padding: 24 }}>
+      {adVisible && readyAd && <Modal visible transparent animationType="fade" onRequestClose={() => setAdVisible(false)}>
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#06122ab8', padding: 24, opacity: adLoaded ? 1 : 0 }}>
           <View style={{ width: Math.min(width - 48, 480), height: Math.min(width - 48, 480), position: 'relative' }}>
-            <TouchableOpacity accessibilityRole="button" accessibilityLabel={`View ${adProduct ? getName(adProduct) : 'sponsored product'}`} onPress={() => { setAdVisible(false); goProduct(adProduct); }} style={{ flex: 1 }}>
-              <RemoteImage source={adImage} width={800} quality={80} resizeMode="contain" style={{ width: '100%', height: '100%', borderRadius: 20, backgroundColor: c.card }} />
-            </TouchableOpacity>
+            <View style={{ flex: 1, borderRadius: 20, overflow: 'hidden', backgroundColor: c.card }}>
+              <WebView
+                originWhitelist={['*']}
+                source={{ html: `<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"></head><body style="margin:0;height:100vh;background:white"><img alt="View sponsored product" role="button" src="${readyAd.uri}" style="width:100%;height:100%;object-fit:contain" onload="window.ReactNativeWebView.postMessage('loaded')" onerror="window.ReactNativeWebView.postMessage('error')" onclick="window.ReactNativeWebView.postMessage('open')"></body></html>` }}
+                scrollEnabled={false}
+                onMessage={({ nativeEvent }) => {
+                  if (nativeEvent.data === 'loaded') setAdLoaded(true);
+                  if (nativeEvent.data === 'error') setAdVisible(false);
+                  if (nativeEvent.data === 'open') { setAdVisible(false); goProduct(readyAd.product); }
+                }}
+                onError={() => setAdVisible(false)}
+                style={{ flex: 1, backgroundColor: 'transparent' }}
+              />
+            </View>
             <TouchableOpacity accessibilityRole="button" accessibilityLabel="Close ad" onPress={() => setAdVisible(false)} style={{ position: 'absolute', top: 10, right: 10, width: 38, height: 38, borderRadius: 19, alignItems: 'center', justifyContent: 'center', backgroundColor: '#0009' }}>
               <MaterialCommunityIcons name="close" size={24} color="#fff" />
             </TouchableOpacity>
           </View>
         </View>
-      </Modal>
+      </Modal>}
       <View style={[styles.header, { borderBottomColor: c.border }]}>
         <View style={styles.brandBlock}>
           <BrandLogo width={172} />
