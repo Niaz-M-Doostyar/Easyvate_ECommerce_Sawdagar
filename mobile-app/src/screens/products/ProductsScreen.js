@@ -128,7 +128,7 @@ export default function ProductsScreen({ navigation, route }) {
           <TouchableOpacity activeOpacity={0.85} onPress={() => setCategoryId(item.id)}
             accessibilityRole="button"
             accessibilityState={{ selected: String(categoryId ?? '') === String(item.id ?? '') }}
-            style={[styles.chip, { backgroundColor: String(categoryId ?? '') === String(item.id ?? '') ? c.primary : c.card, borderColor: String(categoryId ?? '') === String(item.id ?? '') ? c.primary : c.border }]}>
+            style={[styles.chip, { backgroundColor: String(categoryId ?? '') === String(item.id ?? '') ? c.primaryDark : c.card, borderColor: String(categoryId ?? '') === String(item.id ?? '') ? c.primary : c.border }]}>
             {item.image ? (
               <Image source={{ uri: optimizedImageUri(item.image, { width: 80 }) }} style={[styles.chipImg, { backgroundColor: c.skeleton }]} />
             ) : item.id == null ? (
@@ -161,7 +161,7 @@ export default function ProductsScreen({ navigation, route }) {
             ]}
             keyExtractor={item => item.key}
             renderItem={({ item }) => (
-              <TouchableOpacity onPress={item.onPress} style={[styles.filterOption, { backgroundColor: item.selected ? c.primary : c.card, borderColor: item.selected ? c.primary : c.border }]}>
+              <TouchableOpacity onPress={item.onPress} style={[styles.filterOption, { backgroundColor: item.selected ? c.primaryDark : c.card, borderColor: item.selected ? c.primary : c.border }]}>
                 <Text numberOfLines={1} maxFontSizeMultiplier={1.15} style={[styles.filterOptionText, { color: item.selected ? c.white : c.text }]}>{item.label}</Text>
               </TouchableOpacity>
             )}

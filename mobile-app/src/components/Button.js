@@ -29,7 +29,7 @@ export default function Button({ title, onPress, variant = 'primary', size = 'md
   const content = loading ? <ActivityIndicator color={textColor} size="small" /> : (
     <>
       {icon}
-      <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.86} maxFontSizeMultiplier={1.15} style={[styles.text, { color: textColor, fontSize: fs, lineHeight: size === 'sm' ? 18 : 20 }, textStyle]}>{title}</Text>
+      <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.86} maxFontSizeMultiplier={1.15} style={[styles.text, { color: textColor, fontSize: fs, lineHeight: size === 'sm' ? 20 : 22 }, textStyle]}>{title}</Text>
     </>
   );
 
@@ -68,7 +68,7 @@ export default function Button({ title, onPress, variant = 'primary', size = 'md
 
         return isPrimary ? (
           <LinearGradient
-            colors={[c.primary, c.primary]}
+            colors={[c.primaryDark, c.primaryDark]}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
             style={faceStyle}

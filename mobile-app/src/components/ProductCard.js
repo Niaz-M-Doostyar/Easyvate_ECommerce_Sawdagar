@@ -96,15 +96,17 @@ export default function ProductCard({ product, onPress, style }) {
               <MaterialCommunityIcons name="image-outline" size={34} color={c.textMuted} />
             </View>
           )}
-          {product.supplier?.supplierVerified ? (
-            <View style={[styles.verifiedBadge, { backgroundColor: c.card, borderColor: c.borderLight }]}>
-              <MaterialCommunityIcons name="check-decagram" size={16} color={theme.dark ? c.success : '#087443'} />
-            </View>
-          ) : null}
-          {product.isSponsored && !compact && <View style={[styles.badge, { backgroundColor: c.primaryDark }]}><Text style={styles.badgeText}>{t.featured}</Text></View>}
-          {discount > 0 && <View style={[styles.discBadge, { backgroundColor: c.primaryDark }]}><Text style={styles.badgeText}>-{discount}%</Text></View>}
         </View>
         <View style={[styles.info, { paddingHorizontal: dynamicInfoPadding }]}>
+          {(product.supplier?.supplierVerified || discount > 0 || (product.isSponsored && !compact)) && <View style={styles.badgeRow}>
+            {product.supplier?.supplierVerified ? (
+              <View style={[styles.verifiedBadge, { backgroundColor: c.card, borderColor: c.borderLight }]}>
+                <MaterialCommunityIcons name="check-decagram" size={16} color={theme.dark ? c.success : '#087443'} />
+              </View>
+            ) : null}
+            {product.isSponsored && !compact && <View style={[styles.badge, { backgroundColor: c.primaryDark }]}><Text style={styles.badgeText}>{t.featured}</Text></View>}
+            {discount > 0 && <View style={[styles.discBadge, { backgroundColor: c.primaryDark }]}><Text style={styles.badgeText}>-{discount}%</Text></View>}
+          </View>}
           {categoryName && !compact ? <Text numberOfLines={1} style={[styles.category, textAlignment, { color: c.textSecondary }]}>{categoryName}</Text> : null}
           <Text
             numberOfLines={2}
@@ -142,7 +144,7 @@ export default function ProductCard({ product, onPress, style }) {
           accessibilityRole="button"
           accessibilityLabel={available ? `${t.addToCart}: ${getName(product)}` : `${getName(product)}: ${t.outOfStock}`}
           accessibilityState={{ disabled: adding || !available, busy: adding }}
-          style={[styles.addBtn, { backgroundColor: available ? c.primary : c.surfaceElevated }, compact && styles.addBtnCompact]}
+          style={[styles.addBtn, { backgroundColor: available ? c.primaryDark : c.surfaceElevated }, compact && styles.addBtnCompact]}
         >
           {available ? (
             <View
@@ -176,10 +178,11 @@ const styles = StyleSheet.create({
   imgWrap: { aspectRatio: 1, margin: 5, borderRadius: 16, padding: 5, overflow: 'hidden' },
   img: { width: '100%', height: '100%' },
   imageFallback: { justifyContent: 'center', alignItems: 'center' },
-  badge: { position: 'absolute', top: 8, start: 8, maxWidth: '80%', paddingHorizontal: 8, paddingVertical: 4, borderRadius: borderRadius.sm },
-  discBadge: { position: 'absolute', bottom: 5, start: 5, paddingHorizontal: 6, paddingVertical: 3, borderRadius: 7 },
+  badgeRow: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 6, marginBottom: 8 },
+  badge: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: borderRadius.sm },
+  discBadge: { paddingHorizontal: 6, paddingVertical: 3, borderRadius: 7 },
   badgeText: { color: '#FFF', fontSize: fontSize.xs, fontWeight: fontWeight.bold },
-  verifiedBadge: { position: 'absolute', bottom: 8, end: 8, width: 28, height: 28, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderRadius: borderRadius.full },
+  verifiedBadge: { width: 28, height: 28, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderRadius: borderRadius.full },
   info: { paddingHorizontal: spacing.md, paddingTop: spacing.sm, paddingBottom: spacing.md },
   category: { fontSize: fontSize.xs, fontWeight: fontWeight.medium, marginBottom: 5 },
   name: { fontWeight: fontWeight.semibold, marginBottom: spacing.sm },
@@ -193,12 +196,12 @@ const styles = StyleSheet.create({
   stock: { flexShrink: 1, fontSize: fontSize.xs, fontWeight: fontWeight.medium },
   actionWrap: { paddingHorizontal: spacing.sm, paddingBottom: spacing.sm, gap: 6 },
   quickView: { minHeight: 44, borderRadius: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 4, paddingHorizontal: 4 },
-  quickText: { flexShrink: 1, fontSize: 11, fontWeight: '600' },
+  quickText: { flexShrink: 1, fontSize: 13, fontWeight: '600' },
   actionWrapCompact: { alignItems: 'stretch', paddingHorizontal: 6, paddingBottom: 10 },
   addBtn: { height: 44, borderRadius: 12, overflow: 'hidden' },
   addBtnCompact: { width: '100%' },
   addBtnFill: { width: '100%', flex: 1, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 6, paddingHorizontal: spacing.sm },
   addBtnFillCompact: { paddingHorizontal: 6, gap: 4 },
   addText: { flexShrink: 1, fontSize: fontSize.sm, lineHeight: 18, fontWeight: fontWeight.bold, includeFontPadding: false, textAlignVertical: 'center' },
-  addTextCompact: { flexShrink: 1, fontSize: 12, lineHeight: 16, textAlign: 'center' },
+  addTextCompact: { flexShrink: 1, fontSize: 14, lineHeight: 20, textAlign: 'center' },
 });

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, FlatList, Image, RefreshControl, StyleSheet, Animated, useWindowDimensions, Modal } from 'react-native';
 import { WebView } from 'react-native-webview';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -67,7 +67,10 @@ export default function HomeScreen({ navigation }) {
   const [readyAd, setReadyAd] = useState(null);
   const [adLoaded, setAdLoaded] = useState(false);
   const adShown = useRef(false);
-  const adProduct = sponsored.find(product => product.images?.[0]?.url || product.image || product.thumbnail);
+  const adProduct = useMemo(() => {
+    const candidates = sponsored.filter(product => product.images?.[0]?.url || product.image || product.thumbnail);
+    return candidates[Math.floor(Math.random() * candidates.length)];
+  }, [sponsored]);
   const adImage = adProduct?.images?.[0]?.url || adProduct?.image || adProduct?.thumbnail;
   useEffect(() => {
     if (!adProduct || adShown.current) return;
@@ -268,8 +271,8 @@ export default function HomeScreen({ navigation }) {
     <SafeAreaView style={[styles.safe, { backgroundColor: c.background }]} edges={['top']}>
       {adVisible && readyAd && <Modal visible transparent animationType="fade" onRequestClose={() => setAdVisible(false)}>
         <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#06122ab8', padding: 24, opacity: adLoaded ? 1 : 0 }}>
-          <View style={{ width: Math.min(width - 48, 480), height: Math.min(width - 48, 480), position: 'relative' }}>
-            <View style={{ flex: 1, borderRadius: 20, overflow: 'hidden', backgroundColor: c.card }}>
+          <View style={{ width: Math.min(width - 48, 480), position: 'relative' }}>
+            <View style={{ height: Math.min(width - 48, 480), borderTopLeftRadius: 20, borderTopRightRadius: 20, overflow: 'hidden', backgroundColor: c.card }}>
               <WebView
                 originWhitelist={['*']}
                 source={{ html: `<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"></head><body style="margin:0;height:100vh;background:white"><img alt="View sponsored product" role="button" src="${readyAd.uri}" style="width:100%;height:100%;object-fit:contain" onload="window.ReactNativeWebView.postMessage('loaded')" onerror="window.ReactNativeWebView.postMessage('error')" onclick="window.ReactNativeWebView.postMessage('open')"></body></html>` }}
@@ -283,6 +286,9 @@ export default function HomeScreen({ navigation }) {
                 style={{ flex: 1, backgroundColor: 'transparent' }}
               />
             </View>
+            <TouchableOpacity onPress={() => { setAdVisible(false); goProduct(readyAd.product); }} accessibilityRole="button" style={{ backgroundColor: c.card, padding: 16, borderBottomLeftRadius: 20, borderBottomRightRadius: 20 }}>
+              <Text numberOfLines={2} style={{ color: c.text, fontSize: fontSize.md, lineHeight: 24, fontWeight: fontWeight.semibold, textAlign: isRTL ? 'right' : 'left' }}>{getName(readyAd.product)}</Text>
+            </TouchableOpacity>
             <TouchableOpacity accessibilityRole="button" accessibilityLabel="Close ad" onPress={() => setAdVisible(false)} style={{ position: 'absolute', top: 10, right: 10, width: 38, height: 38, borderRadius: 19, alignItems: 'center', justifyContent: 'center', backgroundColor: '#0009' }}>
               <MaterialCommunityIcons name="close" size={24} color="#fff" />
             </TouchableOpacity>

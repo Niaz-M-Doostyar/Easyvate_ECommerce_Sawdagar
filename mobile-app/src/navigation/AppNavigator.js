@@ -284,7 +284,7 @@ function MainTabs() {
         tabBarBadgeStyle: {
           backgroundColor: theme.dark ? c.primaryDark : c.primary,
           color: c.white,
-          fontSize: 10,
+          fontSize: 12,
           fontWeight: fontWeight.bold,
           minWidth: 18,
           height: 18,

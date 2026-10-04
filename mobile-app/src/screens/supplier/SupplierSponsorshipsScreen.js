@@ -94,7 +94,7 @@ export default function SupplierSponsorshipsScreen({ navigation }) {
                 return (
                   <TouchableOpacity
                     onPress={() => setSelectedProductId(item.id)}
-                    style={[styles.productChip, { backgroundColor: selected ? c.primary : c.card, borderColor: selected ? c.primary : c.border }]}
+                    style={[styles.productChip, { backgroundColor: selected ? c.primaryDark : c.card, borderColor: selected ? c.primary : c.border }]}
                   >
                     <Text numberOfLines={1} maxFontSizeMultiplier={1.15} style={[styles.productChipText, { color: selected ? c.white : c.text }]}>{getName(item) || `#${item.id}`}</Text>
                   </TouchableOpacity>

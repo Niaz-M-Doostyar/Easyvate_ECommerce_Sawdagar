@@ -212,12 +212,6 @@ export default function ProductDetailScreen({ navigation, route }) {
             </TouchableOpacity>
           </View>
 
-          <View style={styles.overlayBadges}>
-            <View style={[styles.overlayPill, { backgroundColor: 'rgba(17, 19, 23, 0.62)' }]}>
-              <Text style={[styles.overlayPillText, { color: c.white }]}>{categoryName}</Text>
-            </View>
-            {discount > 0 ? <View style={[styles.discBadge, { backgroundColor: c.error }]}><Text style={[styles.discText, { color: c.white }]}>-{discount}%</Text></View> : null}
-          </View>
 
           {images.length > 1 ? (
             <View style={styles.dots}>
@@ -229,6 +223,12 @@ export default function ProductDetailScreen({ navigation, route }) {
 
         <View style={[styles.body, isTablet && { width: contentWidth, alignSelf: 'center' }]}>
           <View style={[styles.infoCard, { backgroundColor: c.card, borderColor: c.border }]}>
+            <View style={styles.overlayBadges}>
+              <View style={[styles.overlayPill, { backgroundColor: c.brandSurface }]}>
+                <Text style={[styles.overlayPillText, { color: c.text }]}>{categoryName}</Text>
+              </View>
+              {discount > 0 ? <View style={[styles.discBadge, { backgroundColor: c.primaryDark }]}><Text style={[styles.discText, { color: c.white }]}>-{discount}%</Text></View> : null}
+            </View>
             <View style={styles.headingRow}>
                 <View style={{ flex: 1, marginRight: spacing.md }}>
                 <Text style={[styles.name, { color: c.text }]}>{getName(product)}</Text>
@@ -367,7 +367,7 @@ const styles = StyleSheet.create({
   topActions: { position: 'absolute', top: 12, left: 16, right: 16, flexDirection: 'row', alignItems: 'center', gap: 10, zIndex: 4, elevation: 4 },
   topActionsSpacer: { flex: 1 },
   floatBtn: { width: 44, height: 44, borderRadius: borderRadius.full, justifyContent: 'center', alignItems: 'center' },
-  overlayBadges: { position: 'absolute', left: 16, right: 16, bottom: 44, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  overlayBadges: { marginBottom: 12, gap: 8, flexWrap: 'wrap', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   overlayPill: { paddingHorizontal: 12, paddingVertical: 8, borderRadius: borderRadius.full },
   overlayPillText: { fontSize: fontSize.xs, fontWeight: fontWeight.bold },
   dots: { position: 'absolute', bottom: 12, alignSelf: 'center', flexDirection: 'row', gap: 6 },

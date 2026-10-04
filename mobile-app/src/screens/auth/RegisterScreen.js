@@ -159,7 +159,7 @@ export default function RegisterScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  step: {fontSize:11,fontWeight:'700',letterSpacing:1.1,marginBottom:10},
+  step: {fontSize: 12,fontWeight:'700',letterSpacing:1.1,marginBottom:10},
   heading:{fontSize:28,fontWeight:'700',letterSpacing:-0.6,marginBottom:8},
   subtitle:{fontSize:14,lineHeight:22,marginBottom:24},
   safe: { flex: 1 },

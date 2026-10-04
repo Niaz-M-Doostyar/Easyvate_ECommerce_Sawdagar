@@ -185,7 +185,7 @@ export function getAllThemes() {
 }
 
 export const spacing = { xs:4, sm:8, md:12, base:16, lg:20, xl:24, xxl:32, xxxl:48 };
-export const fontSize = { xs:11, sm:13, base:15, md:17, lg:20, xl:24, xxl:30, xxxl:36, hero:42 };
+export const fontSize = { xs:12, sm:14, base:16, md:17, lg:20, xl:24, xxl:30, xxxl:36, hero:42 };
 export const fontWeight = { regular:'400', medium:'500', semibold:'600', bold:'700', heavy:'800' };
 export const borderRadius = { xs:4, sm:8, md:12, lg:18, xl:24, xxl:30, full:999 };
 export const shadows = {

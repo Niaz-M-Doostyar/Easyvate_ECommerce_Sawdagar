@@ -112,7 +112,7 @@ export default function SupplierAddProductScreen({ navigation, route }) {
             <View style={styles.catGrid}>
               {categories.map(cat => (
                 <TouchableOpacity key={cat.id} onPress={() => set('categoryId', String(cat.id))} accessibilityRole="button" accessibilityState={{ selected: form.categoryId === String(cat.id) }}
-                  style={[styles.catChip, { backgroundColor: form.categoryId === String(cat.id) ? c.primary : c.card, borderColor: form.categoryId === String(cat.id) ? c.primary : c.border }]}>
+                  style={[styles.catChip, { backgroundColor: form.categoryId === String(cat.id) ? c.primaryDark : c.card, borderColor: form.categoryId === String(cat.id) ? c.primary : c.border }]}>
                   <Text numberOfLines={1} maxFontSizeMultiplier={1.15} style={[styles.catChipText, { color: form.categoryId === String(cat.id) ? c.white : c.text }]}>{cat.nameEn}</Text>
                 </TouchableOpacity>
               ))}

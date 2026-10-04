@@ -3,6 +3,7 @@ import { FlatList, Modal, StyleSheet, Text, TouchableOpacity, View } from 'react
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../contexts/ThemeContext';
+import IconButton from './IconButton';
 import { AFGHANISTAN_PROVINCES } from '../data/afghanistanProvinces';
 import { borderRadius, fontSize, fontWeight, spacing } from '../theme';
 
@@ -23,7 +24,7 @@ export default function ProvincePicker({ value, onChange, error }) {
         <SafeAreaView style={[styles.modal, { backgroundColor: c.background }]}>
           <View style={[styles.header, { borderBottomColor: c.border }]}>
             <Text style={[styles.title, { color: c.text }]}>Select province</Text>
-            <TouchableOpacity onPress={() => setOpen(false)} accessibilityRole="button" accessibilityLabel="Close province picker" style={styles.close}><MaterialCommunityIcons name="close" size={26} color={c.text} /></TouchableOpacity>
+            <IconButton icon="close" onPress={() => setOpen(false)} accessibilityLabel="Close province picker" style={{ flexShrink: 0 }} />
           </View>
           <FlatList data={AFGHANISTAN_PROVINCES} keyExtractor={item => item} contentContainerStyle={styles.list} renderItem={({ item }) => (
             <TouchableOpacity onPress={() => { onChange(item); setOpen(false); }} accessibilityRole="button" accessibilityState={{ selected: item === value }} style={[styles.option, { backgroundColor: item === value ? c.brandSurface : c.card, borderColor: item === value ? c.primary : c.border }]}>
@@ -42,7 +43,7 @@ const styles = StyleSheet.create({
   field: { minHeight: 50, borderWidth: 1, borderRadius: borderRadius.md, flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: spacing.md },
   value: { flex: 1, fontSize: fontSize.base, lineHeight: 20, includeFontPadding: false, textAlignVertical: 'center' }, error: { fontSize: fontSize.xs, marginTop: 5 }, modal: { flex: 1 },
   header: { minHeight: 64, borderBottomWidth: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: spacing.base },
-  title: { fontSize: fontSize.lg, fontWeight: fontWeight.bold }, close: { width: 48, height: 48, justifyContent: 'center', alignItems: 'center' }, list: { padding: spacing.base },
+  title: { flex: 1, marginEnd: 12, fontSize: fontSize.lg, fontWeight: fontWeight.bold }, close: { width: 48, height: 48, justifyContent: 'center', alignItems: 'center' }, list: { padding: spacing.base },
   option: { minHeight: 52, borderWidth: 1, borderRadius: borderRadius.md, paddingHorizontal: spacing.md, marginBottom: 8, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   optionText: { fontSize: fontSize.base, lineHeight: 20, fontWeight: fontWeight.medium, includeFontPadding: false, textAlignVertical: 'center' },
 });

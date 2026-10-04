@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, ScrollView, KeyboardAvoidingView, Platform, StyleSheet, TouchableOpacity, Modal } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import IconButton from '../../components/IconButton';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useLanguage } from '../../contexts/LanguageContext';
@@ -117,7 +118,7 @@ export default function CheckoutScreen({ navigation }) {
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: c.background }]} edges={['top']}>
       <ScreenHeader title={t.checkout} onBack={() => navigation.goBack()} />
-      <Modal visible={provinceOpen} transparent animationType="slide" onRequestClose={() => setProvinceOpen(false)}><View style={{ flex: 1, backgroundColor: '#0008', justifyContent: 'flex-end' }}><View style={{ backgroundColor: c.card, borderTopLeftRadius: 24, borderTopRightRadius: 24, maxHeight: '75%', padding: 20 }}><Text style={{ color: c.text, fontSize: 20, marginBottom: 12 }}>Choose province</Text><ScrollView>{PROVINCES.map(p => <TouchableOpacity key={p} onPress={() => { set('province', p); setProvinceOpen(false); }} style={{ paddingVertical: 12, borderBottomWidth: 1, borderColor: c.border }}><Text style={{ color: c.text }}>{p}{p === 'Kandahar' ? ' · Free delivery' : ' · ؋150 delivery'}</Text></TouchableOpacity>)}</ScrollView><Button title="Close" onPress={() => setProvinceOpen(false)} variant="outline" /></View></View></Modal>
+      <Modal visible={provinceOpen} transparent animationType="slide" onRequestClose={() => setProvinceOpen(false)}><View style={{ flex: 1, backgroundColor: '#0008', justifyContent: 'flex-end' }}><View style={{ backgroundColor: c.card, borderTopLeftRadius: 24, borderTopRightRadius: 24, maxHeight: '75%', padding: 20 }}><View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12, gap: 12 }}><Text style={{ flex: 1, color: c.text, fontSize: fontSize.lg, fontWeight: fontWeight.bold }}>Choose province</Text><IconButton icon="close" onPress={() => setProvinceOpen(false)} accessibilityLabel="Close province picker" style={{ flexShrink: 0 }} /></View><ScrollView>{PROVINCES.map(p => <TouchableOpacity key={p} onPress={() => { set('province', p); setProvinceOpen(false); }} style={{ paddingVertical: 12, borderBottomWidth: 1, borderColor: c.border }}><Text style={{ color: c.text, fontSize: fontSize.base, lineHeight: 24 }}>{p}{p === 'Kandahar' ? ' · Free delivery' : ' · ؋150 delivery'}</Text></TouchableOpacity>)}</ScrollView><Button title="Close" onPress={() => setProvinceOpen(false)} variant="outline" /></View></View></Modal>
 
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" showsVerticalScrollIndicator={false}>
