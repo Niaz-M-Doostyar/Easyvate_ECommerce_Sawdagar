@@ -63,10 +63,10 @@ export default function SettingsScreen({ navigation }) {
 
 const styles = StyleSheet.create({
   safe: { flex: 1 },
-  scroll: { padding: spacing.base, paddingBottom: 120 },
-  sectionTitle: { fontSize: fontSize.xs, fontWeight: fontWeight.semibold, textTransform: 'uppercase', letterSpacing: 1, marginTop: spacing.lg, marginBottom: spacing.sm },
+  scroll: { width: '100%', maxWidth: 720, alignSelf: 'center', padding: spacing.base, paddingBottom: 120 },
+  sectionTitle: { fontSize: fontSize.sm, fontWeight: fontWeight.semibold, letterSpacing: 0.2, marginTop: spacing.lg, marginBottom: spacing.sm },
   card: { borderRadius: borderRadius.xl, borderWidth: 1, overflow: 'hidden' },
   row: { minHeight: 56, flexDirection: 'row', alignItems: 'center', paddingHorizontal: spacing.base, paddingVertical: spacing.md },
-  rowLabel: { fontSize: fontSize.base, lineHeight: 20, fontWeight: fontWeight.medium, includeFontPadding: false, textAlignVertical: 'center' },
+  rowLabel: { fontSize: fontSize.base, lineHeight: 24, fontWeight: fontWeight.medium, includeFontPadding: false, textAlignVertical: 'center' },
   colorDot: { width: 24, height: 24, borderRadius: 12, marginRight: 12 },
 });

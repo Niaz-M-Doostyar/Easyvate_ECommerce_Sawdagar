@@ -33,7 +33,7 @@ export default function ContactScreen({ navigation }) {
       <ScreenHeader title={t.contact} onBack={() => navigation.goBack()} />
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
-          <Ionicons name="chatbubbles-outline" size={48} color={c.primary} style={{ alignSelf: 'center', marginBottom: spacing.base }} />
+          <Ionicons name="chatbubbles-outline" size={32} color={c.primary} style={{ alignSelf: 'flex-start', marginBottom: spacing.base }} />
           <Text style={[styles.subTitle, { color: c.textSecondary }]}>We'd love to hear from you</Text>
           <View style={[styles.formCard, { backgroundColor: c.card, borderColor: c.border }]}>
             <Input label={t.fullName} icon="person-outline" value={form.name} onChangeText={v => set('name', v)} />
@@ -50,6 +50,6 @@ export default function ContactScreen({ navigation }) {
 const styles = StyleSheet.create({
   safe: { flex: 1 },
   scroll: { width: '100%', maxWidth: 620, alignSelf: 'center', padding: spacing.lg, paddingBottom: 120 },
-  subTitle: { fontSize: fontSize.base, textAlign: 'center', marginBottom: spacing.xl },
+  subTitle: { fontSize: fontSize.base, textAlign: 'left', lineHeight: 24, marginBottom: spacing.lg },
   formCard: { borderRadius: borderRadius.xl, borderWidth: 1, padding: spacing.lg },
 });

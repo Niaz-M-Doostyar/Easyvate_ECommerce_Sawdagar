@@ -33,5 +33,5 @@ const styles = StyleSheet.create({
   title: { flexShrink: 1, fontSize: fontSize.lg, lineHeight: 26, fontWeight: fontWeight.heavy },
   actionWrap: { maxWidth: '44%', minHeight: 44, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 5 },
   arrow: { width: 26, height: 26, borderRadius: borderRadius.full, alignItems: 'center', justifyContent: 'center' },
-  action: { flexShrink: 1, fontSize: fontSize.xs, lineHeight: 18, fontWeight: fontWeight.bold, includeFontPadding: false, textAlignVertical: 'center' },
+  action: { flexShrink: 1, fontSize: fontSize.sm, lineHeight: 20, fontWeight: fontWeight.bold, includeFontPadding: false, textAlignVertical: 'center' },
 });

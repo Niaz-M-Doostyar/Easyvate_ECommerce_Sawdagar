@@ -130,9 +130,9 @@ const styles = StyleSheet.create({
   subtitle: { fontSize: fontSize.sm, lineHeight: 21, marginBottom: spacing.lg },
   form: { marginBottom: spacing.sm },
   forgotRow: { minHeight: 44, alignSelf: 'flex-end', justifyContent: 'center', marginTop: -8, marginBottom: spacing.sm, paddingHorizontal: spacing.xs },
-  forgotText: { fontSize: fontSize.sm, lineHeight: 18, fontWeight: fontWeight.semibold, includeFontPadding: false, textAlignVertical: 'center' },
+  forgotText: { fontSize: fontSize.sm, lineHeight: 20, fontWeight: fontWeight.semibold, includeFontPadding: false, textAlignVertical: 'center' },
   footer: { minHeight: 44, flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', alignItems: 'center', marginTop: 'auto', paddingVertical: spacing.lg },
   footerText: { fontSize: fontSize.base },
   footerLinkButton: { minHeight: 44, justifyContent: 'center', paddingHorizontal: spacing.xs },
-  footerLink: { fontSize: fontSize.base, lineHeight: 20, fontWeight: fontWeight.semibold, includeFontPadding: false, textAlignVertical: 'center' },
+  footerLink: { fontSize: fontSize.base, lineHeight: 24, fontWeight: fontWeight.semibold, includeFontPadding: false, textAlignVertical: 'center' },
 });

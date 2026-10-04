@@ -141,6 +141,6 @@ const styles = StyleSheet.create({
   sectionLabel: { fontSize: fontSize.xs, fontWeight: fontWeight.bold, textTransform: 'uppercase', letterSpacing: 1, marginBottom: spacing.sm },
   catGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   catChip: { minHeight: 44, justifyContent: 'center', paddingHorizontal: 14, paddingVertical: 8, borderRadius: borderRadius.full, borderWidth: 1 },
-  catChipText: { fontSize: fontSize.sm, lineHeight: 18, fontWeight: fontWeight.medium, includeFontPadding: false, textAlign: 'center', textAlignVertical: 'center' },
+  catChipText: { fontSize: fontSize.sm, lineHeight: 20, fontWeight: fontWeight.medium, includeFontPadding: false, textAlign: 'center', textAlignVertical: 'center' },
   fieldError: { fontSize: fontSize.xs, marginTop: spacing.sm },
 });

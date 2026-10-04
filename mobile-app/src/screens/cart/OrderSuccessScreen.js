@@ -54,7 +54,7 @@ export default function OrderSuccessScreen({ navigation, route }) {
 const styles = StyleSheet.create({
   safe: { flex: 1 },
   center: { flexGrow: 1, justifyContent: 'center', alignItems: 'center', padding: spacing.xl },
-  card: { width: '100%', borderWidth: 1, borderRadius: borderRadius.xxl, padding: spacing.xl, alignItems: 'center' },
+  card: { width: '100%', borderWidth: 1, borderRadius: borderRadius.xl, padding: spacing.xl, alignItems: 'center' },
   logo: { marginBottom: spacing.base },
   iconWrap: { width: 120, height: 120, borderRadius: 60, justifyContent: 'center', alignItems: 'center', marginBottom: spacing.lg },
   eyebrow: { fontSize: fontSize.xs, fontWeight: fontWeight.bold, textTransform: 'uppercase', letterSpacing: 1.1, marginBottom: spacing.sm },

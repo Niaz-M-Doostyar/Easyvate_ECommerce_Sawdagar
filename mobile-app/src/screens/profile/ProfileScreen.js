@@ -231,7 +231,7 @@ function MenuCard({ items, c }) {
 const styles = StyleSheet.create({
   safe: { flex: 1 },
   scroll: { width: '100%', maxWidth: 720, alignSelf: 'center', padding: spacing.base, paddingBottom: spacing.xxxl },
-  profileHero: { padding: spacing.lg, borderRadius: borderRadius.xxl, overflow: 'hidden', marginBottom: spacing.base },
+  profileHero: { padding: spacing.lg, borderRadius: borderRadius.xl, overflow: 'hidden', marginBottom: spacing.base },
   heroGradient: { position: 'absolute', top: 0, left: 0 },
   heroGlow: { position: 'absolute', top: -76, right: -78, width: 260, height: 260, borderRadius: 130, borderWidth: 1 },
   heroHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
@@ -246,8 +246,8 @@ const styles = StyleSheet.create({
   summaryRow: { flexDirection: 'row', gap: 10, marginTop: spacing.xl },
   summaryPill: { flex: 1, minWidth: 0, borderRadius: borderRadius.lg, borderWidth: 1, padding: spacing.md },
   summaryHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  summaryLabel: { fontSize: fontSize.xs, marginTop: 8 },
-  summaryValue: { fontSize: fontSize.sm, fontWeight: fontWeight.bold, marginTop: 4, textTransform: 'capitalize' },
+  summaryLabel: { fontSize: fontSize.sm, marginTop: 8 },
+  summaryValue: { fontSize: fontSize.base, fontWeight: fontWeight.bold, marginTop: 4, textTransform: 'capitalize' },
   roleRow: { flexDirection: 'row', gap: spacing.sm, alignItems: 'center', marginTop: spacing.base },
   roleLabel: { flex: 1, fontSize: fontSize.xs, fontWeight: fontWeight.semibold },
   sectionLabel: { fontSize: fontSize.xs, fontWeight: fontWeight.bold, textTransform: 'uppercase', letterSpacing: 1, marginBottom: spacing.sm, marginTop: spacing.sm },
@@ -255,9 +255,9 @@ const styles = StyleSheet.create({
   menuCard: { borderRadius: borderRadius.xl, borderWidth: 1, overflow: 'hidden' },
   menuItem: { minHeight: 64, flexDirection: 'row', alignItems: 'center', paddingHorizontal: spacing.base, paddingVertical: spacing.md },
   menuIcon: { width: 40, height: 40, borderRadius: 14, justifyContent: 'center', alignItems: 'center', marginEnd: 14 },
-  menuLabel: { flex: 1, minWidth: 0, fontSize: fontSize.base, lineHeight: 20, fontWeight: fontWeight.medium, includeFontPadding: false, textAlignVertical: 'center' },
+  menuLabel: { flex: 1, minWidth: 0, fontSize: fontSize.base, lineHeight: 24, fontWeight: fontWeight.medium, includeFontPadding: false, textAlignVertical: 'center' },
   logoutBtn: { minHeight: 54, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', paddingHorizontal: spacing.base, paddingVertical: spacing.md, borderRadius: borderRadius.lg, borderWidth: 1 },
-  logoutText: { fontSize: fontSize.base, lineHeight: 20, fontWeight: fontWeight.semibold, includeFontPadding: false, textAlignVertical: 'center' },
+  logoutText: { fontSize: fontSize.base, lineHeight: 24, fontWeight: fontWeight.semibold, includeFontPadding: false, textAlignVertical: 'center' },
   deleteBtn: {
     minHeight: 48,
     flexDirection: 'row',
@@ -267,5 +267,5 @@ const styles = StyleSheet.create({
     borderRadius: borderRadius.lg,
     marginTop: spacing.sm,
   },
-  deleteText: { flexShrink: 1, fontSize: fontSize.base, lineHeight: 20, fontWeight: fontWeight.semibold, includeFontPadding: false, textAlign: 'center', textAlignVertical: 'center' },
+  deleteText: { flexShrink: 1, fontSize: fontSize.base, lineHeight: 24, fontWeight: fontWeight.semibold, includeFontPadding: false, textAlign: 'center', textAlignVertical: 'center' },
 });

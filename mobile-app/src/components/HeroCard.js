@@ -1,6 +1,5 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import LinearGradient from 'react-native-linear-gradient';
 import { useTheme } from '../contexts/ThemeContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { spacing, fontSize, fontWeight, borderRadius } from '../theme';
@@ -20,9 +19,6 @@ export default function HeroCard({ eyebrow, title, subtitle, right, children, st
 
   return (
     <View style={[styles.hero, { backgroundColor: c.secondary, borderColor: c.heroBorder }, style]}>
-      <LinearGradient pointerEvents="none" colors={[c.secondary, c.primaryDark]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFillObject} />
-      <View pointerEvents="none" style={[styles.glow, { borderColor: c.heroBorder }]} />
-      <View pointerEvents="none" style={[styles.innerGlow, { backgroundColor: c.heroSurface }]} />
       {(hasHeading || right) ? <View style={styles.headingRow}>
         <View style={styles.heading}>
           {eyebrow ? <Text style={[styles.eyebrow, textAlignment, { color: c.heroTextMuted }]}>{eyebrow}</Text> : null}
@@ -40,19 +36,9 @@ const styles = StyleSheet.create({
   hero: {
     borderRadius: borderRadius.xl,
     overflow: 'hidden',
-    padding: spacing.xl,
+    padding: spacing.lg,
     borderWidth: 1,
   },
-  glow: {
-    position: 'absolute',
-    width: 230,
-    height: 230,
-    borderRadius: 115,
-    borderWidth: 1,
-    top: -74,
-    end: -90,
-  },
-  innerGlow: { position: 'absolute', width: 164, height: 164, borderRadius: 82, top: -40, end: -56 },
   headingRow: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.md },
   heading: { flex: 1, minWidth: 0 },
   right: {
@@ -68,11 +54,11 @@ const styles = StyleSheet.create({
   title: {
     fontSize: fontSize.xl,
     fontWeight: fontWeight.heavy,
-    lineHeight: 31,
+    lineHeight: 30,
   },
   subtitle: {
-    fontSize: fontSize.sm,
-    lineHeight: 21,
+    fontSize: fontSize.base,
+    lineHeight: 24,
     marginTop: spacing.sm,
   },
   content: {

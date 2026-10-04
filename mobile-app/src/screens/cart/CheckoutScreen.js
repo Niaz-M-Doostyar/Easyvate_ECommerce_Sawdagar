@@ -245,7 +245,7 @@ const styles = StyleSheet.create({
   sectionHeading: { flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: spacing.lg, marginBottom: spacing.sm },
   sectionIcon: { width: 38, height: 38, borderRadius: 19, justifyContent: 'center', alignItems: 'center' },
   sectionTitle: { fontSize: fontSize.md, fontWeight: fontWeight.bold },
-  sectionSubtitle: { fontSize: fontSize.sm, lineHeight: 20, marginTop: 2 },
+  sectionSubtitle: { fontSize: fontSize.sm, lineHeight: 22, marginTop: 2 },
   section: { borderRadius: borderRadius.xl, borderWidth: 1, padding: spacing.base },
   payMethod: { flexDirection: 'row', alignItems: 'center', padding: spacing.base, borderRadius: borderRadius.xl, borderWidth: 1 },
   payIcon: { width: 46, height: 46, borderRadius: 23, justifyContent: 'center', alignItems: 'center' },

@@ -144,7 +144,7 @@ const styles = StyleSheet.create({
   productSection: { paddingHorizontal: spacing.base, paddingTop: spacing.base },
   productLabel: { fontSize: fontSize.xs, fontWeight: fontWeight.bold, marginBottom: 8, letterSpacing: 0.8, textTransform: 'uppercase' },
   productChip: { minHeight: 44, justifyContent: 'center', borderWidth: 1, borderRadius: borderRadius.full, paddingHorizontal: 12, paddingVertical: 8 },
-  productChipText: { maxWidth: 160, fontSize: fontSize.sm, lineHeight: 18, fontWeight: fontWeight.medium, includeFontPadding: false, textAlign: 'center', textAlignVertical: 'center' },
+  productChipText: { maxWidth: 160, fontSize: fontSize.sm, lineHeight: 20, fontWeight: fontWeight.medium, includeFontPadding: false, textAlign: 'center', textAlignVertical: 'center' },
   card: { borderRadius: borderRadius.lg, borderWidth: 1, padding: spacing.base, marginBottom: spacing.base },
   pkgName: { fontSize: fontSize.md, fontWeight: fontWeight.bold, marginBottom: 4 },
   pkgDesc: { fontSize: fontSize.sm, lineHeight: 20, marginBottom: 8 },

@@ -18,7 +18,7 @@ export default function ScreenHeader({ title, subtitle, onBack, right, showBack 
 
   return (
     <View style={[styles.header, { backgroundColor: c.headerBg }, style]}>
-      <View style={[styles.leftWrap, { width: sideWidth }]}>
+      <View style={[styles.leftWrap, { width: sideWidth, display: showBack ? 'flex' : 'none' }]}>
         {showBack ? (
           <PressableScale
             onPress={onBack}
@@ -33,9 +33,9 @@ export default function ScreenHeader({ title, subtitle, onBack, right, showBack 
           </PressableScale>
         ) : null}
       </View>
-      <View style={styles.titleWrap}>
-        <Text accessibilityRole="header" numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.86} maxFontSizeMultiplier={1.2} style={[styles.title, { color: c.text }]}>{title}</Text>
-        {subtitle ? <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.86} maxFontSizeMultiplier={1.15} style={[styles.subtitle, { color: c.textSecondary }]}>{subtitle}</Text> : null}
+      <View style={[styles.titleWrap, !showBack && { paddingStart: 0 }]}>
+        <Text accessibilityRole="header" numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.86} maxFontSizeMultiplier={1.2} style={[styles.title, { color: c.text, textAlign: isRTL ? 'right' : 'left' }]}>{title}</Text>
+        {subtitle ? <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.86} maxFontSizeMultiplier={1.15} style={[styles.subtitle, { color: c.textSecondary, textAlign: isRTL ? 'right' : 'left' }]}>{subtitle}</Text> : null}
       </View>
       {right ? <View onLayout={syncSideWidth} style={styles.rightWrap}>{right}</View> : <View onLayout={syncSideWidth} style={styles.sidePlaceholder} />}
     </View>
@@ -48,7 +48,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: spacing.base,
     paddingVertical: spacing.md,
-    minHeight: 68,
+    minHeight: 72,
   },
   iconBtn: {
     width: 44,
@@ -70,20 +70,20 @@ const styles = StyleSheet.create({
   titleWrap: {
     flex: 1,
     minWidth: 0,
-    alignItems: 'center',
-    paddingHorizontal: spacing.sm,
+    alignItems: 'stretch',
+    paddingHorizontal: spacing.md,
   },
   title: {
-    fontSize: fontSize.lg,
-    lineHeight: 26,
+    fontSize: fontSize.xl,
+    lineHeight: 30,
     fontWeight: fontWeight.heavy,
     includeFontPadding: false,
     textAlign: 'center',
     textAlignVertical: 'center',
   },
   subtitle: {
-    fontSize: fontSize.xs,
-    lineHeight: 16,
+    fontSize: fontSize.sm,
+    lineHeight: 20,
     fontWeight: fontWeight.medium,
     marginTop: 2,
     includeFontPadding: false,

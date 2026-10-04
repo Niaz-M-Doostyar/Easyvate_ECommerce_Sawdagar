@@ -15,7 +15,7 @@ export default function Button({ title, onPress, variant = 'primary', size = 'md
   const textColor = isPrimary ? c.white : isGhost ? c.textSecondary : theme.dark ? c.primary : c.primaryDark;
   const height = size === 'sm' ? 44 : size === 'lg' ? 54 : 50;
   const fs = size === 'sm' ? fontSize.sm : fontSize.base;
-  const radius = size === 'sm' ? 12 : 16;
+  const radius = size === 'sm' ? 10 : 12;
   const externalStyle = StyleSheet.flatten(style) || {};
   const externallySized = externalStyle.flex != null || externalStyle.width != null || externalStyle.minWidth != null || externalStyle.alignSelf === 'stretch';
   const flexSized = externalStyle.flex != null || externalStyle.flexGrow != null;
@@ -88,5 +88,5 @@ export default function Button({ title, onPress, variant = 'primary', size = 'md
 const styles = StyleSheet.create({
   base: { alignSelf: 'stretch', minWidth: 0 },
   face: { flex: 1, width: '100%', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', borderWidth: 1, gap: 8, overflow: 'hidden' },
-  text: { flexShrink: 1, textAlign: 'center', textAlignVertical: 'center', fontWeight: fontWeight.bold, letterSpacing: 0.1, includeFontPadding: false },
+  text: { flexShrink: 1, textAlign: 'center', textAlignVertical: 'center', fontWeight: fontWeight.semibold, letterSpacing: 0, includeFontPadding: false },
 });

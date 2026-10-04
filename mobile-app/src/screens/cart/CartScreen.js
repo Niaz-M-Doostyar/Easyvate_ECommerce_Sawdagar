@@ -160,7 +160,7 @@ export default function CartScreen({ navigation }) {
 const styles = StyleSheet.create({
   safe: { flex: 1 },
   clearBtn: { minHeight: 44, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, borderRadius: borderRadius.full, paddingHorizontal: 12, paddingVertical: 8 },
-  clearLabel: { fontSize: fontSize.xs, lineHeight: 16, fontWeight: fontWeight.bold, includeFontPadding: false, textAlignVertical: 'center' },
+  clearLabel: { fontSize: fontSize.xs, lineHeight: 18, fontWeight: fontWeight.bold, includeFontPadding: false, textAlignVertical: 'center' },
   listContent: { width: '100%', maxWidth: 720, alignSelf: 'center', paddingHorizontal: spacing.base, paddingTop: spacing.lg, paddingBottom: spacing.lg },
   sectionTitle: { fontSize: fontSize.md, fontWeight: fontWeight.bold, marginBottom: spacing.md },
   cartItem: { borderRadius: borderRadius.xl, borderWidth: 1, marginBottom: spacing.base, overflow: 'hidden', ...shadows.sm },
@@ -175,7 +175,7 @@ const styles = StyleSheet.create({
   cartPrice: { fontSize: fontSize.md, fontWeight: fontWeight.bold },
   cartActions: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, justifyContent: 'space-between', alignItems: 'center', padding: spacing.md, borderTopWidth: StyleSheet.hairlineWidth },
   removeBtn: { minHeight: 44, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, borderRadius: borderRadius.full, paddingHorizontal: 12, paddingVertical: 8 },
-  removeLabel: { fontSize: fontSize.xs, lineHeight: 16, fontWeight: fontWeight.bold, includeFontPadding: false, textAlignVertical: 'center' },
+  removeLabel: { fontSize: fontSize.xs, lineHeight: 18, fontWeight: fontWeight.bold, includeFontPadding: false, textAlignVertical: 'center' },
   bottomBar: { gap: spacing.md, padding: spacing.base, borderTopWidth: 1, borderTopLeftRadius: borderRadius.xl, borderTopRightRadius: borderRadius.xl, ...shadows.lg },
   totalRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, alignItems: 'center', justifyContent: 'space-between', width: '100%', maxWidth: 688, alignSelf: 'center' },
   totalCol: { flex: 1, minWidth: 0 },

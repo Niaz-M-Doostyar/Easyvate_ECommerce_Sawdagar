@@ -70,8 +70,8 @@ const styles = StyleSheet.create({
   safe: { flex: 1 },
   card: { borderRadius: borderRadius.xl, borderWidth: 1, overflow: 'hidden', marginBottom: spacing.base },
   cardImg: { width: '100%', height: 180 },
-  cardBody: { padding: spacing.base },
-  cardTitle: { fontSize: fontSize.md, fontWeight: fontWeight.bold, marginBottom: 4, lineHeight: 22 },
+  cardBody: { padding: spacing.lg },
+  cardTitle: { fontSize: fontSize.lg, fontWeight: fontWeight.bold, marginBottom: 8, lineHeight: 26 },
   cardExcerpt: { fontSize: fontSize.sm, lineHeight: 20, marginBottom: 6 },
   cardDate: { fontSize: fontSize.xs },
 });

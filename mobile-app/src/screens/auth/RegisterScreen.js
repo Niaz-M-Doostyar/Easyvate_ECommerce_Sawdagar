@@ -175,5 +175,5 @@ const styles = StyleSheet.create({
   footer: { minHeight: 44, flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', alignItems: 'center', paddingVertical: spacing.lg },
   footerText: { fontSize: fontSize.base },
   footerLinkButton: { minHeight: 44, justifyContent: 'center', paddingHorizontal: spacing.xs },
-  footerLink: { fontSize: fontSize.base, lineHeight: 20, fontWeight: fontWeight.semibold, includeFontPadding: false, textAlignVertical: 'center' },
+  footerLink: { fontSize: fontSize.base, lineHeight: 24, fontWeight: fontWeight.semibold, includeFontPadding: false, textAlignVertical: 'center' },
 });

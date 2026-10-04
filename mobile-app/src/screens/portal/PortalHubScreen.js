@@ -154,7 +154,7 @@ const styles = StyleSheet.create({
   portalCard: { flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderRadius: borderRadius.xl, padding: spacing.base, marginBottom: spacing.md },
   portalIcon: { width: 46, height: 46, borderRadius: borderRadius.full, justifyContent: 'center', alignItems: 'center', marginRight: spacing.base },
   portalCopy: { flex: 1, paddingRight: spacing.base },
-  portalTitle: { fontSize: fontSize.base, lineHeight: 20, fontWeight: fontWeight.heavy, includeFontPadding: false },
+  portalTitle: { fontSize: fontSize.base, lineHeight: 24, fontWeight: fontWeight.heavy, includeFontPadding: false },
   portalBody: { fontSize: fontSize.sm, lineHeight: 20, marginTop: 4 },
   portalHint: { fontSize: fontSize.xs, fontWeight: fontWeight.bold, marginTop: 8 },
 });

@@ -176,7 +176,7 @@ function InfoRow({ icon, value, c }) {
 
 const styles = StyleSheet.create({
   safe: { flex: 1 },
-  scroll: { padding: spacing.base, paddingBottom: 120 },
+  scroll: { width: '100%', maxWidth: 720, alignSelf: 'center', padding: spacing.base, paddingBottom: 120 },
   heroSpacing: { marginBottom: spacing.md },
   heroTotal: { fontSize: fontSize.xxl, fontWeight: fontWeight.heavy },
   heroMeta: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginTop: spacing.md },

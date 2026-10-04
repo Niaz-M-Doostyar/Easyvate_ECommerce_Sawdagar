@@ -196,7 +196,7 @@ const styles = StyleSheet.create({
   quickIcon: { width: 44, height: 44, borderRadius: borderRadius.md, alignItems: 'center', justifyContent: 'center' },
   quickCopy: { flex: 1, minWidth: 0, marginHorizontal: spacing.md },
   quickTitle: { fontSize: fontSize.base, fontWeight: fontWeight.bold },
-  quickSubtitle: { fontSize: fontSize.xs, lineHeight: 16, marginTop: 3 },
+  quickSubtitle: { fontSize: fontSize.xs, lineHeight: 18, marginTop: 3 },
   categoryHeading: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginHorizontal: 4 },
   categoryTitle: { marginHorizontal: 0, marginBottom: spacing.md },
   categoryCount: { fontSize: fontSize.sm, fontWeight: fontWeight.bold },
@@ -208,7 +208,7 @@ const styles = StyleSheet.create({
   categoryCopy: { padding: spacing.md },
   categoryName: { minHeight: 38, fontSize: fontSize.base, lineHeight: 19, fontWeight: fontWeight.bold },
   categoryLink: { flexDirection: 'row', alignItems: 'center', marginTop: spacing.sm, gap: 4 },
-  categoryLinkText: { fontSize: fontSize.xs, lineHeight: 16, fontWeight: fontWeight.bold, includeFontPadding: false, textAlignVertical: 'center' },
+  categoryLinkText: { fontSize: fontSize.xs, lineHeight: 18, fontWeight: fontWeight.bold, includeFontPadding: false, textAlignVertical: 'center' },
   loadingWrap: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   loadingText: { fontSize: fontSize.sm, marginTop: spacing.md },
 });

@@ -119,7 +119,7 @@ const styles = StyleSheet.create({
   suggestionLabel: { fontSize: fontSize.base, fontWeight: fontWeight.bold, marginTop: spacing.lg, marginBottom: spacing.sm },
   suggestionWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
   suggestionChip: { minHeight: 44, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, borderRadius: borderRadius.full, borderWidth: 1, paddingHorizontal: 14, paddingVertical: 8 },
-  suggestionText: { fontSize: fontSize.sm, lineHeight: 18, fontWeight: fontWeight.bold, includeFontPadding: false, textAlignVertical: 'center' },
+  suggestionText: { fontSize: fontSize.sm, lineHeight: 20, fontWeight: fontWeight.bold, includeFontPadding: false, textAlignVertical: 'center' },
   resultBar: { paddingHorizontal: spacing.base, paddingTop: spacing.base },
   resultTitle: { fontSize: fontSize.md, fontWeight: fontWeight.bold },
   resultSubtitle: { fontSize: fontSize.sm, marginTop: 4 },

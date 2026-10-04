@@ -79,5 +79,5 @@ const styles = StyleSheet.create({
   body: { width: '100%', maxWidth: 760, alignSelf: 'center', padding: spacing.lg },
   title: { fontSize: fontSize.xxl, fontWeight: fontWeight.bold, lineHeight: 32, marginBottom: 8 },
   date: { fontSize: fontSize.sm, marginBottom: spacing.lg },
-  content: { fontSize: fontSize.base, lineHeight: 26, marginBottom: spacing.md },
+  content: { fontSize: fontSize.md, lineHeight: 28, marginBottom: spacing.md },
 });

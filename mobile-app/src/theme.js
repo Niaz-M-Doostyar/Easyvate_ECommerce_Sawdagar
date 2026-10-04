@@ -8,10 +8,10 @@ const BRAND = {
   cobalt: '#2144C8',
   cobaltLight: '#3288F5',
   cobaltDark: '#17339B',
-  ink: '#111317',
+  ink: '#263438',
   slate: '#5F7984',
-  paper: '#F4F7FB',
-  cloud: '#D6E1E9',
+  paper: '#F5F7F8',
+  cloud: '#DFE6E8',
   navy: '#0B1220',
   navySoft: '#121B2D',
 };
@@ -35,10 +35,10 @@ function makeLightTheme(name, overrides = {}) {
       surfaceElevated: overrides.surfaceElevated || '#FCFDFF',
       card: overrides.card || '#FFFFFF',
       text: overrides.text || BRAND.ink,
-      textSecondary: overrides.textSecondary || '#44515D',
-      textMuted: overrides.textMuted || '#64748B',
+      textSecondary: overrides.textSecondary || '#526369',
+      textMuted: overrides.textMuted || '#687B82',
       border: overrides.border || BRAND.cloud,
-      borderLight: overrides.borderLight || '#EBF1F6',
+      borderLight: overrides.borderLight || '#EBEFF0',
       success: '#14B86A',
       warning: '#E8A33B',
       error: '#E35B5B',
@@ -54,7 +54,7 @@ function makeLightTheme(name, overrides = {}) {
       star: '#E8A33B',
       inputBg: overrides.inputBg || '#FFFFFF',
       inputBorder: overrides.inputBorder || '#D2DDE6',
-      placeholder: overrides.placeholder || '#64748B',
+      placeholder: overrides.placeholder || '#687B82',
       headerBg: overrides.headerBg || (overrides.background || BRAND.paper),
       brandSurface: overrides.brandSurface || '#EAF0FF',
       brandSurfaceStrong: overrides.brandSurfaceStrong || '#DCE5FF',
@@ -186,8 +186,8 @@ export function getAllThemes() {
 
 export const spacing = { xs:4, sm:8, md:12, base:16, lg:20, xl:24, xxl:32, xxxl:48 };
 export const fontSize = { xs:12, sm:14, base:16, md:17, lg:20, xl:24, xxl:30, xxxl:36, hero:42 };
-export const fontWeight = { regular:'400', medium:'500', semibold:'600', bold:'700', heavy:'800' };
-export const borderRadius = { xs:4, sm:8, md:12, lg:18, xl:24, xxl:30, full:999 };
+export const fontWeight = { regular:'400', medium:'500', semibold:'600', bold:'700', heavy:'700' };
+export const borderRadius = { xs:4, sm:8, md:12, lg:16, xl:20, xxl:24, full:999 };
 export const shadows = {
   sm: { shadowColor:'#0B1220', shadowOffset:{width:0,height:1}, shadowOpacity:0.04, shadowRadius:4, elevation:1 },
   md: { shadowColor:'#0B1220', shadowOffset:{width:0,height:4}, shadowOpacity:0.06, shadowRadius:12, elevation:3 },

@@ -234,14 +234,14 @@ function MainTabs() {
           paddingTop: 8,
           marginHorizontal: isTablet ? 24 : 12,
           marginBottom: tabBarMarginBottom,
-          borderRadius: 26,
+          borderRadius: 20,
           width: tabBarWidth,
           alignSelf: isTablet ? 'center' : undefined,
           shadowColor: c.black,
           shadowOffset: { width: 0, height: 4 },
-          shadowOpacity: theme.dark ? 0.24 : 0.09,
+          shadowOpacity: theme.dark ? 0.16 : 0.04,
           shadowRadius: 18,
-          elevation: 8,
+          elevation: 3,
         },
         tabBarItemStyle: {
           paddingTop: 0,
@@ -255,7 +255,7 @@ function MainTabs() {
             adjustsFontSizeToFit
             minimumFontScale={0.85}
             maxFontSizeMultiplier={1.2}
-            style={{ fontSize: isTablet ? 12 : 10, lineHeight: isTablet ? 17 : 15, fontWeight: focused ? fontWeight.bold : fontWeight.medium, textAlign: 'center', marginTop: 3, color }}
+            style={{ fontSize: isTablet ? 13 : 11, lineHeight: isTablet ? 18 : 16, fontWeight: focused ? fontWeight.bold : fontWeight.medium, textAlign: 'center', marginTop: 3, color }}
           >
             {labelByTab[route.name]}
           </Text>
