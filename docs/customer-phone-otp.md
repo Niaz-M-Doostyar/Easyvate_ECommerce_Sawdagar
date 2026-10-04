@@ -58,3 +58,9 @@ key, and verify `/api/ready` after a restart. SMS and WhatsApp delivery failures
 now log safe diagnostic categories; provider bodies, phone numbers, keys, and
 OTP values are never logged by that diagnostic. Existing validation, expiry,
 resend limits, and account verification requirements are preserved.
+
+The repaired service was tested through the production registration endpoint.
+One user-approved SMS was accepted and the user confirmed receipt. No account
+was created and no password was changed. Customer signup, supplier signup, and
+phone-password recovery tests pass. The deployed backend readiness check passed
+after the final release, and the provider key was verified in that release.
