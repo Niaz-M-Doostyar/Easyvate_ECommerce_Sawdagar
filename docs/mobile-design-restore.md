@@ -66,3 +66,20 @@ git push
 
 Rebuild and distribute the mobile app to apply a restore to installed release
 versions. These commands do not modify production accounts, orders, or databases.
+
+## Featured Products redesign restore point
+
+The home design before the compact Featured Products update is saved on GitHub
+at `fef95e9c`, branch `backup/mobile-home-before-featured-2026-10-04`.
+
+To undo this update while retaining later work:
+
+```sh
+git log --oneline --grep='Redesign featured products and preserve admin home content'
+git revert <featured-redesign-commit-hash>
+git push
+```
+
+The update retains the admin-controlled slider, offers, announcement, campaign
+banner, and sponsored ad. It removes static introductory copy, service tiles,
+and an unused action carousel, and introduces a compact three-row product grid.

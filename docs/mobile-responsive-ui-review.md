@@ -41,3 +41,23 @@
 
 See `mobile-design-restore.md`. The pre-redesign GitHub branch is
 `backup/mobile-ui-before-responsive-2026-10-04` at `ceb90d86`.
+
+## Featured Products follow-up
+
+- Dedicated compact cards with contained images, two-line names, prices, optional
+  discount/verification metadata below images, and one readable Add action.
+- Featured Products uses three columns and three rows (nine items) on ordinary
+  phone widths. Narrow windows and larger text reduce columns; iPads use four
+  to six columns. See All still opens the full catalog.
+- Recommended and New Arrivals use the same compact card and remain distinct.
+- Admin content remains connected to the existing content API: slider, button
+  destinations, offers, announcement, main campaign banner, and sponsored ad.
+  Offer and campaign captions now use normal card layout for readable content.
+- Removed static marketplace introductory copy, service tiles, header tagline,
+  and the unused action carousel. No admin settings or content were deleted.
+- All 76 source files parsed; all 16 mobile Node tests passed. Visually inspected
+  the featured grid on iPhone 17 Pro Max and iPad Pro 11-inch M5, and checked
+  that the restored admin sections appear. Large text and narrow windows are
+  additionally covered by layout tests.
+- Restore point: `fef95e9c`, GitHub branch
+  `backup/mobile-home-before-featured-2026-10-04`.
