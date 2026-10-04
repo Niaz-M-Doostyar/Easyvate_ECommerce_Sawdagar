@@ -136,3 +136,23 @@ test('signup requires verification, enforces limits, expires codes and consumes 
     if (originalEmailModule) require.cache[emailPath] = originalEmailModule; else delete require.cache[emailPath];
   }
 });
+
+test('missing configuration and malformed provider replies have safe diagnostic codes', async () => {
+  const originalFetch = global.fetch;
+  const originalKey = process.env.GHONCHA_API_KEY;
+  try {
+    delete process.env.GHONCHA_API_KEY;
+    global.fetch = async () => { throw new Error('Must not contact provider without a key'); };
+    await assert.rejects(sendCode('+93700123456', '123456', 'sms'), { code: 'OTP_NOT_CONFIGURED' });
+    process.env.GHONCHA_API_KEY = 'test-key';
+    global.fetch = async () => ({ ok: false, status: 401 });
+    await assert.rejects(sendCode('+93700123456', '123456', 'sms'), { code: 'OTP_PROVIDER_HTTP_401' });
+    global.fetch = async () => ({ ok: true, json: async () => { throw new Error('non-JSON response'); } });
+    await assert.rejects(sendCode('+93700123456', '123456', 'sms'), { code: 'OTP_PROVIDER_INVALID_RESPONSE' });
+    global.fetch = async () => ({ ok: true, json: async () => ({ status: 'failed' }) });
+    await assert.rejects(sendCode('+93700123456', '123456', 'sms'), { code: 'OTP_PROVIDER_REJECTED' });
+  } finally {
+    global.fetch = originalFetch;
+    if (originalKey === undefined) delete process.env.GHONCHA_API_KEY; else process.env.GHONCHA_API_KEY = originalKey;
+  }
+});

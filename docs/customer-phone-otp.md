@@ -1,6 +1,6 @@
 # Customer phone signup
 
-Website and mobile customer signup collect first name, last name, Afghanistan mobile number, password and confirmation. Account creation happens only after verification. Supplier email signup is unchanged. Existing email accounts can still sign in using email; new customers sign in using phone and password.
+Website and mobile customer signup collect first name, last name, Afghanistan mobile number, password and confirmation. Account creation happens only after verification. Supplier signup also verifies the phone number; supplier email is optional. Existing email accounts can still sign in using email; new customers sign in using phone and password.
 
 Ghoncha documentation: https://sms.ghoncha.com/docs
 
@@ -42,3 +42,19 @@ Signup keeps Afghanistan's +93 prefix visible and normalizes local, internationa
 ## Automatic verification
 
 Signup submits verification once the sixth digit is typed, pasted or autofilled. During checking the code field is disabled, and errors are displayed without creating an account. Editing an incorrect code allows another attempt; rerenders and network failures never automatically repeat the same attempt. Resending creates a new challenge. Phone recovery also submits automatically when the six-digit code and matching new password are ready. Server expiry, attempt limits and one-use verification remain unchanged.
+
+## OTP environment repair (2026-10-04)
+
+The production release was missing `GHONCHA_API_KEY` because the deployment
+script copies `backend/.env` from `/var/www/sawdagar`, while the key had only
+been configured in an earlier release. The key was restored to both the active
+release and `/var/www/sawdagar/backend/.env`, without storing it in Git. Secured
+environment backups were taken on the VPS before this repair. The backend was
+restarted and provider authentication/balance was checked without sending SMS.
+
+Future configuration updates must include the deployment source environment,
+not only the active release. Check configuration presence without printing the
+key, and verify `/api/ready` after a restart. SMS and WhatsApp delivery failures
+now log safe diagnostic categories; provider bodies, phone numbers, keys, and
+OTP values are never logged by that diagnostic. Existing validation, expiry,
+resend limits, and account verification requirements are preserved.

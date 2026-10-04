@@ -119,7 +119,9 @@ router.post('/customer-otp', async (req, res) => {
       if (!reserved.count) return res.status(429).json({ error: 'Another code request is in progress' });
     } else await prisma.phoneRegistration.create({ data: { ...data, phone } });
     try { await sendCode(phone, code, channel); }
-    catch {
+    catch (deliveryFailure) {
+      const reason = /^OTP_[A-Z0-9_]+$/.test(deliveryFailure.code || '') ? deliveryFailure.code : 'OTP_PROVIDER_NETWORK_ERROR';
+      console.error(`Phone OTP delivery failed: ${reason}`);
       await prisma.phoneRegistration.updateMany({ where: { id }, data: { expiresAt: now } });
       return res.status(503).json({ error: 'Could not send the code. Wait 60 seconds and try again or choose the other method.' });
     }
