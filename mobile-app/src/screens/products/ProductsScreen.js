@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, FlatList, TouchableOpacity, StyleSheet, RefreshControl, Image } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, RefreshControl, Image, ActivityIndicator, Modal, Pressable, ScrollView } from 'react-native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import useResponsiveLayout from '../../hooks/useResponsiveLayout';
 import { useTheme } from '../../contexts/ThemeContext';
@@ -11,15 +11,13 @@ import CategoryIcon3D from '../../components/CategoryIcon3D';
 import EmptyState from '../../components/EmptyState';
 import ScreenHeader from '../../components/ScreenHeader';
 import { productsApi, categoriesApi } from '../../services/api';
-import { spacing, fontSize, fontWeight, borderRadius, shadows } from '../../theme';
 import { optimizedImageUri } from '../../config';
 
-const SORT_OPTIONS = [
-  { key: 'newest', label: 'Newest' },
-  { key: 'price_asc', label: 'Price: Low → High' },
-  { key: 'price_desc', label: 'Price: High → Low' },
-  { key: 'name_asc', label: 'Name: A → Z' },
-];
+const catalogCopy = {
+  en: { loading: 'Loading products…', product: 'product', products: 'products', nameSort: 'Name: A → Z', anyPrice: 'Any price', underPrice: 'Under \u20661,000 ؋\u2069', clearCategory: 'Clear category', closeSort: 'Close sorting' },
+  ps: { loading: 'محصولات بارېږي…', product: 'محصول', products: 'محصولات', nameSort: 'د نوم له مخې', anyPrice: 'هر قیمت', underPrice: 'له ؋۱٬۰۰۰ کم', clearCategory: 'کټګوري پاکه کړئ', closeSort: 'د ترتیب تړل' },
+  dr: { loading: 'در حال بارگذاری محصولات…', product: 'محصول', products: 'محصولات', nameSort: 'بر اساس نام', anyPrice: 'هر قیمت', underPrice: 'کمتر از ؋۱٬۰۰۰', clearCategory: 'پاک کردن دسته‌بندی', closeSort: 'بستن مرتب‌سازی' },
+};
 
 const getProductSupplierId = (product) => product?.supplierId ?? product?.supplier?.id;
 
@@ -28,10 +26,20 @@ const belongsToSupplier = (product, supplierId) => (
 );
 
 export default function ProductsScreen({ navigation, route }) {
-  const { width, columns: numColumns, cardWidth: gridCardWidth } = useResponsiveLayout();
+  const { columns: numColumns, cardWidth: gridCardWidth, gutter, height } = useResponsiveLayout();
+  const insets = useSafeAreaInsets();
   const { theme } = useTheme();
-  const { t, getName } = useLanguage();
+  const { t, getName, lang, isRTL } = useLanguage();
   const c = theme.colors;
+  const copy = catalogCopy[lang] || catalogCopy.en;
+  const rowDirection = { flexDirection: isRTL ? 'row-reverse' : 'row' };
+  const alignment = { textAlign: isRTL ? 'right' : 'left' };
+  const sortOptions = [
+    { key: 'newest', label: t.newest },
+    { key: 'price_asc', label: `${t.price}: ${t.lowToHigh}` },
+    { key: 'price_desc', label: `${t.price}: ${t.highToLow}` },
+    { key: 'name_asc', label: copy.nameSort },
+  ];
   const initCategoryId = route.params?.categoryId;
   const initSort = route.params?.sort || 'newest';
   const supplierId = route.params?.supplierId;
@@ -40,6 +48,9 @@ export default function ProductsScreen({ navigation, route }) {
   const [categories, setCategories] = useState([]);
   const [categoryId, setCategoryId] = useState(initCategoryId || null);
   const [sort, setSort] = useState(initSort);
+  const sortButtonLabel = sort === 'price_asc' ? t.lowToHigh
+    : sort === 'price_desc' ? t.highToLow
+      : sort === 'name_asc' ? copy.nameSort : t.newest;
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const [loading, setLoading] = useState(true);
@@ -115,7 +126,7 @@ export default function ProductsScreen({ navigation, route }) {
         onBack={() => navigation.goBack()}
         showBack={navigation.canGoBack()}
         right={
-          <TouchableOpacity onPress={() => navigation.navigate('Search')} accessibilityRole="button" accessibilityLabel="Search products" style={[styles.backBtn, { backgroundColor: c.surface, borderColor: c.border }]}>
+          <TouchableOpacity onPress={() => navigation.navigate('Search')} accessibilityRole="button" accessibilityLabel={t.search} style={[styles.backBtn, { backgroundColor: c.surfaceElevated, borderColor: c.border }]}>
             <MaterialCommunityIcons name="magnify" size={22} color={c.text} />
           </TouchableOpacity>
         }
@@ -128,76 +139,89 @@ export default function ProductsScreen({ navigation, route }) {
           <TouchableOpacity activeOpacity={0.85} onPress={() => setCategoryId(item.id)}
             accessibilityRole="button"
             accessibilityState={{ selected: String(categoryId ?? '') === String(item.id ?? '') }}
-            style={[styles.chip, { backgroundColor: String(categoryId ?? '') === String(item.id ?? '') ? c.primaryDark : c.card, borderColor: String(categoryId ?? '') === String(item.id ?? '') ? c.primary : c.border }]}>
+            style={[styles.chip, rowDirection, { backgroundColor: String(categoryId ?? '') === String(item.id ?? '') ? c.brandSurface : c.card, borderColor: String(categoryId ?? '') === String(item.id ?? '') ? c.primary : c.border }]}>
             {item.image ? (
               <Image source={{ uri: optimizedImageUri(item.image, { width: 80 }) }} style={[styles.chipImg, { backgroundColor: c.skeleton }]} />
             ) : item.id == null ? (
-	              <View style={[styles.chipFallback, { backgroundColor: String(categoryId ?? '') === String(item.id ?? '') ? c.heroSurface : c.brandSurface }]}>
-	                <MaterialCommunityIcons name="view-grid-outline" size={14} color={String(categoryId ?? '') === String(item.id ?? '') ? c.white : c.primary} />
+              <View style={[styles.chipFallback, { backgroundColor: c.surfaceElevated }]}>
+                <MaterialCommunityIcons name="view-grid-outline" size={14} color={c.primary} />
               </View>
             ) : (
-	              <View style={[styles.chipFallback, { backgroundColor: String(categoryId ?? '') === String(item.id ?? '') ? c.heroSurface : c.brandSurface }]}>
-	                <CategoryIcon3D category={item} size={22} />
+              <View style={[styles.chipFallback, { backgroundColor: c.surfaceElevated }]}>
+                <CategoryIcon3D category={item} size={22} />
               </View>
             )}
-            <Text numberOfLines={1} maxFontSizeMultiplier={1.15} style={[styles.chipText, { color: String(categoryId ?? '') === String(item.id ?? '') ? c.white : c.text }]}>{getName(item) || t.all}</Text>
+            <Text style={[styles.chipText, { color: String(categoryId ?? '') === String(item.id ?? '') ? (theme.dark ? c.primary : c.primaryDark) : c.text }]}>{getName(item) || t.all}</Text>
           </TouchableOpacity>
         )}
-        contentContainerStyle={styles.chipListContent}
+        contentContainerStyle={[styles.chipListContent, { paddingHorizontal: gutter }]}
       />
 
       {route.params?.categoriesMode ? (
-        <View style={[styles.filterPanel, { borderColor: c.border }]}>
-          <Text style={[styles.filterTitle, { color: c.text }]}>Filters</Text>
+        <View style={[styles.filterPanel, { paddingHorizontal: gutter }]}>
+          <Text style={[styles.filterTitle, alignment, { color: c.text }]}>{t.filter}</Text>
           <FlatList
             horizontal
             showsHorizontalScrollIndicator={false}
             data={[
-              { key: 'stock', label: 'In stock', selected: inStockOnly, onPress: () => setInStockOnly(value => !value) },
-              { key: 'all', label: 'Any price', selected: priceFilter === 'all', onPress: () => setPriceFilter('all') },
-              { key: 'under1000', label: 'Under ؋1,000', selected: priceFilter === 'under1000', onPress: () => setPriceFilter('under1000') },
-              { key: '1000to5000', label: '؋1,000–5,000', selected: priceFilter === '1000to5000', onPress: () => setPriceFilter('1000to5000') },
-              { key: 'over5000', label: '؋5,000+', selected: priceFilter === 'over5000', onPress: () => setPriceFilter('over5000') },
+              { key: 'stock', label: t.inStock, selected: inStockOnly, onPress: () => setInStockOnly(value => !value) },
+              { key: 'all', label: copy.anyPrice, selected: priceFilter === 'all', onPress: () => setPriceFilter('all') },
+              { key: 'under1000', label: copy.underPrice, selected: priceFilter === 'under1000', onPress: () => setPriceFilter('under1000') },
+              { key: '1000to5000', label: '\u20661,000–5,000 ؋\u2069', selected: priceFilter === '1000to5000', onPress: () => setPriceFilter('1000to5000') },
+              { key: 'over5000', label: '\u20665,000+ ؋\u2069', selected: priceFilter === 'over5000', onPress: () => setPriceFilter('over5000') },
             ]}
             keyExtractor={item => item.key}
             renderItem={({ item }) => (
-              <TouchableOpacity onPress={item.onPress} style={[styles.filterOption, { backgroundColor: item.selected ? c.primaryDark : c.card, borderColor: item.selected ? c.primary : c.border }]}>
-                <Text numberOfLines={1} maxFontSizeMultiplier={1.15} style={[styles.filterOptionText, { color: item.selected ? c.white : c.text }]}>{item.label}</Text>
+              <TouchableOpacity onPress={item.onPress} accessibilityRole="button" accessibilityState={{ selected: item.selected }} style={[styles.filterOption, { backgroundColor: item.selected ? c.brandSurface : c.card, borderColor: item.selected ? c.primary : c.border }]}>
+                <Text style={[styles.filterOptionText, { color: item.selected ? (theme.dark ? c.primary : c.primaryDark) : c.text }]}>{item.label}</Text>
               </TouchableOpacity>
             )}
           />
         </View>
       ) : null}
 
-      <View style={styles.sortRow}>
+      <View style={[styles.sortRow, rowDirection, { paddingHorizontal: gutter }]}>
         <View style={styles.resultCopy}>
-          <Text numberOfLines={1} style={[styles.resultTitle, { color: c.text }]}>{loading ? 'Loading products…' : `${products.length} ${products.length === 1 ? 'product' : 'products'}`} </Text>
-          <Text numberOfLines={1} style={[styles.resultSubtitle, { color: c.textSecondary }]}>{selectedCategory ? `${getName(selectedCategory)} selected` : 'Showing every category'}</Text>
+          <Text style={[styles.resultTitle, alignment, { color: c.text }]}>{loading ? copy.loading : `${products.length} ${products.length === 1 ? copy.product : copy.products}`}</Text>
+          {selectedCategory ? <Text numberOfLines={2} style={[styles.resultSubtitle, alignment, { color: c.textSecondary }]}>{getName(selectedCategory)}</Text> : null}
         </View>
-        <View style={styles.sortActions}>
+        <View style={[styles.sortActions, rowDirection]}>
           {categoryId != null && (
-            <TouchableOpacity onPress={() => setCategoryId(null)} style={[styles.clearBtn, { backgroundColor: c.brandSurface }]}>
-              <MaterialCommunityIcons name="close-circle-outline" size={16} color={c.primary} />
-              <Text numberOfLines={1} maxFontSizeMultiplier={1.15} style={[styles.clearLabel, { color: c.primary }]}>Clear</Text>
+            <TouchableOpacity onPress={() => setCategoryId(null)} accessibilityRole="button" accessibilityLabel={copy.clearCategory} style={[styles.clearBtn, { backgroundColor: c.surfaceElevated, borderColor: c.border }]}>
+              <MaterialCommunityIcons name="close" size={20} color={c.textSecondary} />
             </TouchableOpacity>
           )}
-          <TouchableOpacity onPress={() => setShowSort(!showSort)} style={[styles.sortBtn, { backgroundColor: c.card, borderColor: c.border }]}>
-            <MaterialCommunityIcons name="tune-variant" size={16} color={c.primary} />
-            <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.84} maxFontSizeMultiplier={1.15} style={[styles.sortLabel, { color: c.primary }]}>{SORT_OPTIONS.find(s => s.key === sort)?.label}</Text>
+          <TouchableOpacity onPress={() => setShowSort(!showSort)} accessibilityRole="button" accessibilityLabel={`${t.sort}: ${sortOptions.find(s => s.key === sort)?.label}`} accessibilityState={{ expanded: showSort }} style={[styles.sortBtn, rowDirection, { backgroundColor: c.card, borderColor: showSort ? c.primary : c.border }]}>
+            <MaterialCommunityIcons name="tune-variant" size={18} color={c.textSecondary} />
+            <Text style={[styles.sortLabel, { color: c.text }]}>{sortButtonLabel}</Text>
+            <MaterialCommunityIcons name={showSort ? 'chevron-up' : 'chevron-down'} size={18} color={c.textSecondary} />
           </TouchableOpacity>
         </View>
       </View>
 
-      {showSort && (
-        <View style={[styles.sortDrop, { backgroundColor: c.card, borderColor: c.border }]}>
-          {SORT_OPTIONS.map(s => (
-            <TouchableOpacity key={s.key} onPress={() => { setSort(s.key); setShowSort(false); }}
-              style={[styles.sortItem, sort === s.key && { backgroundColor: c.primary + '15' }]}>
-              <Text maxFontSizeMultiplier={1.2} style={[styles.sortItemText, { color: sort === s.key ? c.primary : c.text }]}>{s.label}</Text>
-            </TouchableOpacity>
-          ))}
+      <Modal visible={showSort} transparent animationType="fade" statusBarTranslucent onRequestClose={() => setShowSort(false)}>
+        <View style={[styles.sortOverlay, { paddingHorizontal: gutter, paddingTop: insets.top + 16, paddingBottom: insets.bottom + 16 }]} accessibilityViewIsModal onAccessibilityEscape={() => setShowSort(false)}>
+          <Pressable onPress={() => setShowSort(false)} accessibilityRole="button" accessibilityLabel={copy.closeSort} style={[StyleSheet.absoluteFill, { backgroundColor: c.overlay }]} />
+          <View style={[styles.sortDrop, { maxHeight: Math.max(0, height - insets.top - insets.bottom - 32), backgroundColor: c.card, borderColor: c.border }]}>
+            <View style={[styles.sortHeading, rowDirection, { borderBottomColor: c.borderLight }]}>
+              <Text accessibilityRole="header" style={[styles.sortHeadingText, alignment, { color: c.text }]}>{t.sort}</Text>
+              <TouchableOpacity onPress={() => setShowSort(false)} accessibilityRole="button" accessibilityLabel={copy.closeSort} style={[styles.closeSort, { backgroundColor: c.surfaceElevated }]}>
+                <MaterialCommunityIcons name="close" size={21} color={c.textSecondary} />
+              </TouchableOpacity>
+            </View>
+            <ScrollView style={styles.sortOptions} contentContainerStyle={styles.sortOptionsContent} keyboardShouldPersistTaps="handled">
+              {sortOptions.map(s => (
+                <TouchableOpacity key={s.key} onPress={() => { setSort(s.key); setShowSort(false); }}
+                  accessibilityRole="button" accessibilityState={{ selected: sort === s.key }}
+                  style={[styles.sortItem, rowDirection, sort === s.key && { backgroundColor: c.brandSurface }]}>
+                  <Text style={[styles.sortItemText, alignment, { color: sort === s.key ? (theme.dark ? c.primary : c.primaryDark) : c.text }]}>{s.label}</Text>
+                  {sort === s.key ? <MaterialCommunityIcons name="check" size={20} color={c.primary} /> : null}
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
         </View>
-      )}
+      </Modal>
 
       {loading ? (
         <CatalogSkeleton />
@@ -207,7 +231,7 @@ export default function ProductsScreen({ navigation, route }) {
         <FlatList
           key={`grid-${numColumns}`}
           data={products} numColumns={numColumns} keyExtractor={i => String(i.id)}
-          contentContainerStyle={styles.grid}
+          contentContainerStyle={[styles.grid, { paddingHorizontal: gutter }]}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={c.primary} />}
           renderItem={({ item }) => (
             <View style={[styles.gridItem, { width: `${100 / numColumns}%` }]}>
@@ -224,29 +248,34 @@ export default function ProductsScreen({ navigation, route }) {
 
 const styles = StyleSheet.create({
   safe: { flex: 1, width: '100%', maxWidth: 1200, alignSelf: 'center' },
-  backBtn: { width: 44, height: 44, borderRadius: borderRadius.full, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
-  chipList: { maxHeight: 74, paddingVertical: spacing.sm },
-  chipListContent: { paddingLeft: spacing.base, paddingRight: spacing.base / 2, alignItems: 'center' },
-  chip: { minHeight: 44, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingHorizontal: 14, paddingVertical: 8, borderRadius: borderRadius.full, borderWidth: 1, marginRight: 10 },
-  chipImg: { width: 24, height: 24, borderRadius: 12, marginRight: 8 },
-  chipFallback: { width: 24, height: 24, borderRadius: 12, marginRight: 8, alignItems: 'center', justifyContent: 'center' },
-  chipText: { fontSize: fontSize.sm, lineHeight: 20, fontWeight: fontWeight.medium, includeFontPadding: false, textAlignVertical: 'center' },
-  filterPanel: { borderTopWidth: 1, borderBottomWidth: 1, paddingVertical: spacing.sm, paddingLeft: spacing.base },
-  filterTitle: { fontSize: fontSize.sm, fontWeight: fontWeight.bold, marginBottom: 8 },
-  filterOption: { minHeight: 44, justifyContent: 'center', borderWidth: 1, borderRadius: borderRadius.full, paddingHorizontal: 12, paddingVertical: 8, marginRight: 8 },
-  filterOptionText: { fontSize: fontSize.xs, lineHeight: 18, fontWeight: fontWeight.semibold, includeFontPadding: false, textAlign: 'center', textAlignVertical: 'center' },
-  sortRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 8, paddingHorizontal: spacing.base, paddingVertical: spacing.sm },
-  resultCopy: { flex: 1, minWidth: 0 },
-  resultTitle: { fontSize: fontSize.md, fontWeight: fontWeight.bold },
-  resultSubtitle: { fontSize: fontSize.sm, marginTop: 4 },
-  sortActions: { flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', flexShrink: 1, gap: 6 },
-  clearBtn: { minHeight: 44, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 4, paddingHorizontal: 12, paddingVertical: 7, borderRadius: borderRadius.full },
-  clearLabel: { fontSize: fontSize.xs, lineHeight: 18, fontWeight: fontWeight.bold, includeFontPadding: false, textAlignVertical: 'center' },
-  sortBtn: { minHeight: 44, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', flexShrink: 1, gap: 5, borderWidth: 1, paddingHorizontal: 10, paddingVertical: 7, borderRadius: borderRadius.full },
-  sortLabel: { maxWidth: 102, flexShrink: 1, fontSize: fontSize.xs, lineHeight: 18, fontWeight: fontWeight.semibold, includeFontPadding: false, textAlignVertical: 'center' },
-  sortDrop: { marginHorizontal: spacing.base, borderRadius: borderRadius.lg, borderWidth: 1, overflow: 'hidden', marginBottom: 4, ...shadows.md },
-  sortItem: { minHeight: 48, justifyContent: 'center', paddingVertical: 12, paddingHorizontal: spacing.base },
-  sortItemText: { fontSize: fontSize.base, lineHeight: 24, fontWeight: fontWeight.medium, includeFontPadding: false, textAlignVertical: 'center' },
-  grid: { paddingHorizontal: spacing.base, paddingTop: 4, paddingBottom: 120 },
+  backBtn: { width: 44, height: 44, borderRadius: 12, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
+  chipList: { flexGrow: 0, flexShrink: 0 },
+  chipListContent: { paddingVertical: 8, alignItems: 'center', gap: 8 },
+  chip: { minHeight: 44, alignItems: 'center', justifyContent: 'center', gap: 7, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 12, borderWidth: 1 },
+  chipImg: { width: 24, height: 24, borderRadius: 8 },
+  chipFallback: { width: 24, height: 24, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
+  chipText: { fontSize: 14, lineHeight: 20, fontWeight: '500' },
+  filterPanel: { paddingVertical: 8 },
+  filterTitle: { fontSize: 14, lineHeight: 20, fontWeight: '600', marginBottom: 8 },
+  filterOption: { minHeight: 44, justifyContent: 'center', borderWidth: 1, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 8, marginRight: 8 },
+  filterOptionText: { fontSize: 13, lineHeight: 19, fontWeight: '500', textAlign: 'center' },
+  sortRow: { flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: 8, paddingVertical: 10 },
+  resultCopy: { flexGrow: 1, flexShrink: 1, flexBasis: 110, minWidth: 110 },
+  resultTitle: { fontSize: 16, lineHeight: 23, fontWeight: '600' },
+  resultSubtitle: { fontSize: 13, lineHeight: 19, marginTop: 2 },
+  sortActions: { alignItems: 'center', justifyContent: 'flex-end', gap: 6 },
+  clearBtn: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center', borderRadius: 10, borderWidth: 1 },
+  sortBtn: { minHeight: 44, alignItems: 'center', justifyContent: 'center', gap: 6, borderWidth: 1, paddingHorizontal: 10, paddingVertical: 8, borderRadius: 10 },
+  sortLabel: { flexShrink: 1, maxWidth: 140, fontSize: 14, lineHeight: 20, fontWeight: '500' },
+  sortOverlay: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  sortDrop: { width: '100%', maxWidth: 560, borderRadius: 16, borderWidth: 1, overflow: 'hidden' },
+  sortHeading: { minHeight: 60, alignItems: 'center', justifyContent: 'space-between', gap: 12, paddingStart: 14, paddingEnd: 8, paddingVertical: 8, borderBottomWidth: 1, flexShrink: 0 },
+  sortHeadingText: { fontSize: 15, lineHeight: 22, fontWeight: '600', flex: 1 },
+  closeSort: { width: 44, height: 44, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
+  sortOptions: { flexGrow: 0, flexShrink: 1 },
+  sortOptionsContent: { paddingVertical: 4 },
+  sortItem: { minHeight: 48, alignItems: 'center', gap: 10, paddingVertical: 12, paddingHorizontal: 14 },
+  sortItemText: { flex: 1, fontSize: 15, lineHeight: 22, fontWeight: '500' },
+  grid: { paddingTop: 2, paddingBottom: 120 },
   gridItem: { paddingHorizontal: 6, alignItems: 'center' },
 });

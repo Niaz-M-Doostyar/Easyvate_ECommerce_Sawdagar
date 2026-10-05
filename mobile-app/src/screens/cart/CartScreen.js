@@ -1,6 +1,6 @@
 import React from 'react';
-import { View, Text, FlatList, TouchableOpacity, StyleSheet, Alert } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, Alert, useWindowDimensions } from 'react-native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useLanguage } from '../../contexts/LanguageContext';
@@ -13,17 +13,29 @@ import QuantityInput from '../../components/QuantityInput';
 import RemoteImage from '../../components/RemoteImage';
 import ScreenHeader from '../../components/ScreenHeader';
 import { formatPrice } from '../../config';
-import { spacing, fontSize, fontWeight, borderRadius, shadows } from '../../theme';
+import { spacing, fontSize, fontWeight, borderRadius } from '../../theme';
+
+const cartCopy = {
+  en: { clearMessage: 'Remove all items from your cart?' },
+  ps: { clearMessage: 'له کارټ څخه ټول توکي لرې کړئ؟' },
+  dr: { clearMessage: 'تمام اقلام از سبد حذف شوند؟' },
+};
 
 export default function CartScreen({ navigation }) {
   const { theme } = useTheme();
-  const { t, getName } = useLanguage();
+  const { t, getName, isRTL, lang } = useLanguage();
   const { user } = useAuth();
   const { items, total, updateQty, removeItem, clearCart, count } = useCart();
   const c = theme.colors;
+  const insets = useSafeAreaInsets();
+  const { width, fontScale } = useWindowDimensions();
+  const copy = cartCopy[lang] || cartCopy.en;
+  const rowDirection = { flexDirection: isRTL ? 'row-reverse' : 'row' };
+  const alignment = { textAlign: isRTL ? 'right' : 'left' };
+  const imageSize = width < 375 || fontScale > 1.3 ? 76 : 92;
 
   const confirmClear = () => {
-    Alert.alert(`${t.clear} ${t.cart}`, 'Remove all items from your cart?', [
+    Alert.alert(`${t.clear} ${t.cart}`, copy.clearMessage, [
       { text: t.cancel, style: 'cancel' },
       { text: t.clear, style: 'destructive', onPress: clearCart },
     ]);
@@ -46,7 +58,6 @@ export default function CartScreen({ navigation }) {
         <EmptyState
           icon="cart-outline"
           title={t.emptyCart}
-          subtitle="Add a few favorites and come back when you're ready to check out."
           actionLabel={t.startShopping}
           onAction={() => openTab('ShopTab')}
         />
@@ -61,7 +72,7 @@ export default function CartScreen({ navigation }) {
         subtitle={`${count} ${t.items}`}
         showBack={false}
         right={(
-          <PressableScale onPress={confirmClear} accessibilityLabel={`${t.clear} ${t.cart}`} style={[styles.clearBtn, { backgroundColor: c.error + '10' }]}>
+          <PressableScale onPress={confirmClear} accessibilityLabel={`${t.clear} ${t.cart}`} style={[styles.clearBtn, rowDirection, { backgroundColor: c.surfaceElevated }]}>
             <MaterialCommunityIcons name="trash-can-outline" size={16} color={c.error} />
             <Text style={[styles.clearLabel, { color: c.error }]}>{t.clear}</Text>
           </PressableScale>
@@ -72,7 +83,6 @@ export default function CartScreen({ navigation }) {
         keyExtractor={i => String(i.id || i.productId)}
         contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}
-        ListHeaderComponent={<Text accessibilityRole="header" style={[styles.sectionTitle, { color: c.text }]}>{t.orderSummary}</Text>}
         renderItem={({ item }) => {
           const product = item.product || item;
           const img = product.images?.[0]?.url || product.image || product.thumbnail || null;
@@ -81,38 +91,38 @@ export default function CartScreen({ navigation }) {
           const lineTotal = price * (item.quantity || 1);
           const itemId = item.id || item.productId;
           const stockLimited = Number.isFinite(product.stock) && product.stock > 0;
-          const categoryLabel = product.category ? getName(product.category) : product.unit;
 
           return (
-            <View style={[styles.cartItem, { backgroundColor: c.card, borderColor: c.border }]}>
+            <View style={[styles.cartItem, { backgroundColor: c.card, borderColor: c.borderLight }]}>
               <TouchableOpacity
                 activeOpacity={0.9}
                 accessibilityRole="button"
                 accessibilityLabel={`${getName(product)}, ${formatPrice(lineTotal)}`}
                 onPress={() => navigation.navigate('ProductDetail', { id: product.id || item.productId, product })}
-                style={styles.itemMain}
+                style={[styles.itemMain, rowDirection]}
               >
-                <View style={[styles.imageFrame, { backgroundColor: c.surfaceElevated, borderColor: c.borderLight }]}>
+                <View style={[styles.imageFrame, { width: imageSize, height: imageSize, backgroundColor: c.surfaceElevated }]}>
                   <RemoteImage
                     source={img}
                     fallbackSource={fallbackImage}
+                    width={180}
+                    quality={76}
                     style={styles.cartImg}
                     resizeMode="contain"
                     fallback={<MaterialCommunityIcons name="image-outline" size={30} color={c.textMuted} />}
                   />
                 </View>
                 <View style={styles.cartInfo}>
-                  {categoryLabel ? <Text style={[styles.cartCategory, { color: c.textMuted }]}>{categoryLabel}</Text> : null}
-                  <Text numberOfLines={2} style={[styles.cartName, { color: c.text }]}>{getName(product)}</Text>
-                  <Text style={[styles.cartMeta, { color: c.textSecondary }]}>{t.qty} {item.quantity} × {formatPrice(price)}</Text>
-                  <View style={styles.lineRow}>
-                    <Text style={[styles.cartPrice, { color: c.primary }]}>{formatPrice(lineTotal)}</Text>
-                    <MaterialCommunityIcons name="chevron-right" size={18} color={c.textMuted} />
+                  <Text numberOfLines={fontScale > 1.3 ? 3 : 2} style={[styles.cartName, alignment, { color: c.text }]}>{getName(product)}</Text>
+                  <Text style={[styles.cartMeta, alignment, { color: c.textSecondary }]}>{t.qty} {item.quantity} × {formatPrice(price)}</Text>
+                  <View style={[styles.lineRow, rowDirection]}>
+                    <Text style={[styles.cartPrice, { color: c.text }]}>{formatPrice(lineTotal)}</Text>
+                    <MaterialCommunityIcons name={isRTL ? 'chevron-left' : 'chevron-right'} size={18} color={c.textMuted} />
                   </View>
                 </View>
               </TouchableOpacity>
 
-              <View style={[styles.cartActions, { borderTopColor: c.borderLight }]}>
+              <View style={[styles.cartActions, rowDirection, { borderTopColor: c.borderLight }]}>
                 <QuantityInput
                   value={item.quantity}
                   onChange={(next) => updateQty(itemId, next)}
@@ -120,7 +130,7 @@ export default function CartScreen({ navigation }) {
                   size="sm"
                 />
 
-                <PressableScale accessibilityLabel={`${t.remove} ${getName(product)}`} onPress={() => removeItem(itemId)} style={[styles.removeBtn, { backgroundColor: c.error + '10' }]}>
+                <PressableScale accessibilityLabel={`${t.remove} ${getName(product)}`} onPress={() => removeItem(itemId)} style={[styles.removeBtn, rowDirection]}>
                   <MaterialCommunityIcons name="trash-can-outline" size={16} color={c.error} />
                   <Text style={[styles.removeLabel, { color: c.error }]}>{t.remove}</Text>
                 </PressableScale>
@@ -130,11 +140,10 @@ export default function CartScreen({ navigation }) {
         }}
       />
 
-      <View style={[styles.bottomBar, { backgroundColor: c.card, borderTopColor: c.border }]}>
-        <View style={styles.totalRow}>
+      <View style={[styles.bottomBar, { backgroundColor: c.card, borderTopColor: c.borderLight, paddingBottom: Math.max(insets.bottom, spacing.base) }]}>
+        <View style={[styles.totalRow, rowDirection]}>
           <View style={styles.totalCol}>
-            <Text style={[styles.totalLabel, { color: c.textSecondary }]}>{t.subtotal}</Text>
-            <Text style={[styles.totalNote, { color: c.textSecondary }]}>{count} {t.items}</Text>
+            <Text style={[styles.totalLabel, alignment, { color: c.textSecondary }]}>{t.subtotal}</Text>
           </View>
           <Text style={[styles.totalVal, { color: c.text }]}>{formatPrice(total)}</Text>
         </View>
@@ -150,7 +159,7 @@ export default function CartScreen({ navigation }) {
             },
           })}
           style={styles.checkoutBtn}
-          icon={<MaterialCommunityIcons name={user ? 'arrow-right' : 'account-arrow-right-outline'} size={20} color={c.white} />}
+          icon={<MaterialCommunityIcons name={user ? (isRTL ? 'arrow-left' : 'arrow-right') : 'account-arrow-right-outline'} size={20} color={c.white} />}
         />
       </View>
     </SafeAreaView>
@@ -161,26 +170,23 @@ const styles = StyleSheet.create({
   safe: { flex: 1, width: '100%', maxWidth: 1200, alignSelf: 'center' },
   clearBtn: { minHeight: 44, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, borderRadius: borderRadius.full, paddingHorizontal: 12, paddingVertical: 8 },
   clearLabel: { fontSize: fontSize.xs, lineHeight: 18, fontWeight: fontWeight.bold, includeFontPadding: false, textAlignVertical: 'center' },
-  listContent: { width: '100%', maxWidth: 720, alignSelf: 'center', paddingHorizontal: spacing.base, paddingTop: spacing.lg, paddingBottom: spacing.lg },
-  sectionTitle: { fontSize: fontSize.md, fontWeight: fontWeight.bold, marginBottom: spacing.md },
-  cartItem: { borderRadius: borderRadius.xl, borderWidth: 1, marginBottom: spacing.base, overflow: 'hidden', ...shadows.sm },
-  itemMain: { flexDirection: 'row', padding: spacing.md },
-  imageFrame: { width: 96, height: 108, borderRadius: borderRadius.lg, borderWidth: 1, alignItems: 'center', justifyContent: 'center', overflow: 'hidden', padding: spacing.sm },
+  listContent: { width: '100%', maxWidth: 720, alignSelf: 'center', paddingHorizontal: spacing.base, paddingTop: spacing.base, paddingBottom: spacing.lg },
+  cartItem: { borderRadius: 16, borderWidth: 1, marginBottom: 12, overflow: 'hidden' },
+  itemMain: { flexDirection: 'row', padding: 12, gap: 12 },
+  imageFrame: { borderRadius: 11, alignItems: 'center', justifyContent: 'center', overflow: 'hidden', padding: 7, flexShrink: 0 },
   cartImg: { width: '100%', height: '100%' },
-  cartInfo: { flex: 1, minWidth: 0, marginStart: spacing.md, justifyContent: 'center' },
-  cartCategory: { fontSize: fontSize.xs, fontWeight: fontWeight.semibold, textTransform: 'uppercase', letterSpacing: 0.9, marginBottom: 6 },
-  cartName: { fontSize: fontSize.base, fontWeight: fontWeight.semibold, lineHeight: 21 },
-  cartMeta: { fontSize: fontSize.sm, marginTop: 8 },
+  cartInfo: { flex: 1, minWidth: 0, justifyContent: 'center' },
+  cartName: { fontSize: 15, fontWeight: fontWeight.semibold, lineHeight: 22 },
+  cartMeta: { fontSize: 13, lineHeight: 20, marginTop: 5 },
   lineRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: spacing.sm },
-  cartPrice: { fontSize: fontSize.md, fontWeight: fontWeight.bold },
-  cartActions: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, justifyContent: 'space-between', alignItems: 'center', padding: spacing.md, borderTopWidth: StyleSheet.hairlineWidth },
+  cartPrice: { flex: 1, minWidth: 0, fontSize: 16, lineHeight: 24, fontWeight: fontWeight.bold },
+  cartActions: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 12, paddingVertical: 8, borderTopWidth: StyleSheet.hairlineWidth },
   removeBtn: { minHeight: 44, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, borderRadius: borderRadius.full, paddingHorizontal: 12, paddingVertical: 8 },
   removeLabel: { fontSize: fontSize.xs, lineHeight: 18, fontWeight: fontWeight.bold, includeFontPadding: false, textAlignVertical: 'center' },
-  bottomBar: { gap: spacing.md, padding: spacing.base, borderTopWidth: 1, borderTopLeftRadius: borderRadius.xl, borderTopRightRadius: borderRadius.xl, ...shadows.lg },
+  bottomBar: { gap: spacing.md, padding: spacing.base, borderTopWidth: 1 },
   totalRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, alignItems: 'center', justifyContent: 'space-between', width: '100%', maxWidth: 688, alignSelf: 'center' },
   totalCol: { flex: 1, minWidth: 0 },
   totalLabel: { fontSize: fontSize.sm },
-  totalVal: { fontSize: fontSize.xl, fontWeight: fontWeight.heavy },
-  totalNote: { fontSize: fontSize.xs, marginTop: 4 },
+  totalVal: { flexShrink: 1, fontSize: 22, lineHeight: 30, fontWeight: fontWeight.bold },
   checkoutBtn: { width: '100%', maxWidth: 688, alignSelf: 'center' },
 });

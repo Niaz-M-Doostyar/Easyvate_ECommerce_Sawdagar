@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, TextInput, FlatList, TouchableOpacity, ActivityIndicator, StyleSheet, Keyboard } from 'react-native';
+import { View, Text, TextInput, FlatList, TouchableOpacity, ActivityIndicator, StyleSheet, Keyboard, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import useResponsiveLayout from '../../hooks/useResponsiveLayout';
@@ -9,14 +9,21 @@ import ProductCard from '../../components/ProductCard';
 import EmptyState from '../../components/EmptyState';
 import ScreenHeader from '../../components/ScreenHeader';
 import { productsApi } from '../../services/api';
-import { spacing, fontSize, fontWeight, borderRadius } from '../../theme';
+
+const searchCopy = {
+  en: { hint: 'Type at least 2 letters to find products.', suggestions: ['Rice', 'Cooking oil', 'Fresh arrivals', 'Electronics'], result: 'result', results: 'results', clear: 'Clear search', noMatches: 'No products found for' },
+  ps: { hint: 'د محصولاتو موندلو لپاره لږ تر لږه ۲ توري ولیکئ.', suggestions: ['وریجې', 'غوړي', 'نوي محصولات', 'برېښنايي وسایل'], result: 'پایله', results: 'پایلې', clear: 'لټون پاک کړئ', noMatches: 'محصولات ونه موندل شول:' },
+  dr: { hint: 'برای یافتن محصولات حداقل ۲ حرف بنویسید.', suggestions: ['برنج', 'روغن', 'محصولات جدید', 'لوازم الکترونیکی'], result: 'نتیجه', results: 'نتایج', clear: 'پاک کردن جستجو', noMatches: 'محصولی یافت نشد برای' },
+};
 
 export default function SearchScreen({ navigation }) {
-  const { width, columns: numColumns, cardWidth: gridCardWidth } = useResponsiveLayout();
+  const { columns: numColumns, cardWidth: gridCardWidth, gutter } = useResponsiveLayout();
   const { theme } = useTheme();
-  const { t } = useLanguage();
+  const { t, lang, isRTL } = useLanguage();
   const c = theme.colors;
-  const quickSuggestions = ['Rice', 'Cooking oil', 'Fresh arrivals', 'Electronics'];
+  const copy = searchCopy[lang] || searchCopy.en;
+  const rowDirection = { flexDirection: isRTL ? 'row-reverse' : 'row' };
+  const alignment = { textAlign: isRTL ? 'right' : 'left' };
   const inputRef = useRef();
   const [query, setQuery] = useState('');
   const [results, setResults] = useState([]);
@@ -46,15 +53,15 @@ export default function SearchScreen({ navigation }) {
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: c.background }]} edges={['top', 'left', 'right']}>
       <ScreenHeader title={t.searchTitle || 'Search'} onBack={() => navigation.goBack()} />
-      <View style={[styles.searchWrap, { borderBottomColor: c.border }]}>
-        <View style={[styles.searchRow, { backgroundColor: c.inputBg, borderColor: c.inputBorder }]}>
-          <MaterialCommunityIcons name="magnify" size={20} color={c.textMuted} />
+      <View style={[styles.searchWrap, { paddingHorizontal: gutter }]}>
+        <View style={[styles.searchRow, rowDirection, { backgroundColor: c.card, borderColor: c.inputBorder }]}>
+          <MaterialCommunityIcons name="magnify" size={22} color={c.textSecondary} />
           <TextInput ref={inputRef} value={query} onChangeText={setQuery} placeholder={t.search}
-            placeholderTextColor={c.placeholder} style={[styles.input, { color: c.text }]}
+            accessibilityLabel={t.search} placeholderTextColor={c.placeholder} style={[styles.input, alignment, { color: c.text }]}
             returnKeyType="search" autoCapitalize="none" />
           {query.length > 0 && (
-            <TouchableOpacity onPress={() => { setQuery(''); setResults([]); setSearched(false); }} accessibilityRole="button" accessibilityLabel="Clear search" style={styles.clearButton}>
-              <MaterialCommunityIcons name="close-circle" size={18} color={c.textMuted} />
+            <TouchableOpacity onPress={() => { setQuery(''); setResults([]); setSearched(false); }} accessibilityRole="button" accessibilityLabel={copy.clear} style={styles.clearButton}>
+              <MaterialCommunityIcons name="close" size={20} color={c.textSecondary} />
             </TouchableOpacity>
           )}
         </View>
@@ -63,34 +70,28 @@ export default function SearchScreen({ navigation }) {
       {loading ? (
         <ActivityIndicator size="large" color={c.primary} style={{ marginTop: 60 }} />
       ) : showPrompt ? (
-        <View style={styles.promptWrap}>
-          <View style={[styles.promptCard, { backgroundColor: c.card, borderColor: c.border }]}>
-            <Text style={[styles.promptEyebrow, { color: c.primary }]}>Search the catalog</Text>
-            <Text style={[styles.promptTitle, { color: c.text }]}>Find groceries, fashion, electronics, and new arrivals faster.</Text>
-            <Text style={[styles.promptBody, { color: c.textSecondary }]}>Type at least two letters, or start with one of the quick suggestions below.</Text>
-          </View>
-          <Text style={[styles.suggestionLabel, { color: c.text }]}>Popular searches</Text>
-          <View style={styles.suggestionWrap}>
-            {quickSuggestions.map((item) => (
-              <TouchableOpacity key={item} onPress={() => setQuery(item)} style={[styles.suggestionChip, { backgroundColor: c.brandSurface, borderColor: c.borderLight }]}>
-                <MaterialCommunityIcons name="magnify" size={16} color={c.primary} />
-                <Text numberOfLines={1} maxFontSizeMultiplier={1.15} style={[styles.suggestionText, { color: c.primary }]}>{item}</Text>
+        <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={[styles.promptWrap, { paddingHorizontal: gutter }]}>
+          <Text style={[styles.promptBody, alignment, { color: c.textSecondary }]}>{copy.hint}</Text>
+          <View style={[styles.suggestionWrap, rowDirection]}>
+            {copy.suggestions.map((item) => (
+              <TouchableOpacity key={item} onPress={() => setQuery(item)} accessibilityRole="button" accessibilityLabel={`${t.searchTitle}: ${item}`} style={[styles.suggestionChip, rowDirection, { backgroundColor: c.card, borderColor: c.border }]}>
+                <MaterialCommunityIcons name="magnify" size={17} color={c.textSecondary} />
+                <Text style={[styles.suggestionText, { color: c.text }]}>{item}</Text>
               </TouchableOpacity>
             ))}
           </View>
-        </View>
+        </ScrollView>
       ) : searched && results.length === 0 ? (
-        <EmptyState icon="search-outline" title={t.noResults} subtitle={`No products found for "${query}"`} />
+        <EmptyState icon="search-outline" title={t.noResults} subtitle={`${copy.noMatches} “${query}”`} />
       ) : (
         <>
-          <View style={styles.resultBar}>
-            <Text style={[styles.resultTitle, { color: c.text }]}>{results.length} {results.length === 1 ? 'result' : 'results'}</Text>
-            <Text style={[styles.resultSubtitle, { color: c.textSecondary }]}>Showing matches for "{query}"</Text>
+          <View style={[styles.resultBar, { paddingHorizontal: gutter }]}>
+            <Text style={[styles.resultTitle, alignment, { color: c.text }]}>{results.length} {results.length === 1 ? copy.result : copy.results}</Text>
           </View>
           <FlatList
             key={`grid-${numColumns}`}
             data={results} numColumns={numColumns} keyExtractor={i => String(i.id)}
-            contentContainerStyle={styles.grid}
+            contentContainerStyle={[styles.grid, { paddingHorizontal: gutter }]}
             renderItem={({ item }) => (
               <View style={[styles.gridItem, { width: `${100 / numColumns}%` }]}>
                 <ProductCard product={item} onPress={() => { Keyboard.dismiss(); navigation.navigate('ProductDetail', { id: item.id, product: item }); }} style={{ width: gridCardWidth }} />
@@ -106,22 +107,17 @@ export default function SearchScreen({ navigation }) {
 
 const styles = StyleSheet.create({
   safe: { flex: 1, width: '100%', maxWidth: 1200, alignSelf: 'center' },
-  searchWrap: { paddingHorizontal: spacing.base, paddingBottom: spacing.sm, borderBottomWidth: 1 },
-  searchRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, height: 54, borderRadius: borderRadius.xl, borderWidth: 1, gap: 8 },
-  input: { flex: 1, fontSize: fontSize.base, padding: 0 },
-  clearButton: { width: 44, height: 44, marginRight: -10, alignItems: 'center', justifyContent: 'center' },
-  promptWrap: { padding: spacing.base },
-  promptCard: { borderWidth: 1, borderRadius: borderRadius.xl, padding: spacing.lg },
-  promptEyebrow: { fontSize: fontSize.xs, fontWeight: fontWeight.bold, textTransform: 'uppercase', letterSpacing: 1 },
-  promptTitle: { fontSize: fontSize.xl, fontWeight: fontWeight.bold, lineHeight: 30, marginTop: spacing.sm },
-  promptBody: { fontSize: fontSize.base, lineHeight: 22, marginTop: spacing.sm },
-  suggestionLabel: { fontSize: fontSize.base, fontWeight: fontWeight.bold, marginTop: spacing.lg, marginBottom: spacing.sm },
-  suggestionWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
-  suggestionChip: { minHeight: 44, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, borderRadius: borderRadius.full, borderWidth: 1, paddingHorizontal: 14, paddingVertical: 8 },
-  suggestionText: { fontSize: fontSize.sm, lineHeight: 20, fontWeight: fontWeight.bold, includeFontPadding: false, textAlignVertical: 'center' },
-  resultBar: { paddingHorizontal: spacing.base, paddingTop: spacing.base },
-  resultTitle: { fontSize: fontSize.md, fontWeight: fontWeight.bold },
-  resultSubtitle: { fontSize: fontSize.sm, marginTop: 4 },
-  grid: { paddingHorizontal: spacing.base, paddingTop: spacing.md, paddingBottom: 120 },
+  searchWrap: { paddingBottom: 10 },
+  searchRow: { alignItems: 'center', paddingHorizontal: 12, minHeight: 54, borderRadius: 14, borderWidth: 1, gap: 8 },
+  input: { flex: 1, minWidth: 0, fontSize: 16, lineHeight: 24, paddingVertical: 12, paddingHorizontal: 0 },
+  clearButton: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
+  promptWrap: { paddingTop: 10, paddingBottom: 24 },
+  promptBody: { fontSize: 14, lineHeight: 21, marginBottom: 16 },
+  suggestionWrap: { flexWrap: 'wrap', gap: 8 },
+  suggestionChip: { minHeight: 44, maxWidth: '100%', alignItems: 'center', justifyContent: 'center', gap: 7, borderRadius: 12, borderWidth: 1, paddingHorizontal: 12, paddingVertical: 9 },
+  suggestionText: { flexShrink: 1, fontSize: 14, lineHeight: 20, fontWeight: '500' },
+  resultBar: { paddingTop: 4, paddingBottom: 12 },
+  resultTitle: { fontSize: 16, lineHeight: 23, fontWeight: '600' },
+  grid: { paddingTop: 2, paddingBottom: 120 },
   gridItem: { paddingHorizontal: 6, alignItems: 'center' },
 });

@@ -83,3 +83,29 @@ git push
 The update retains the admin-controlled slider, offers, announcement, campaign
 banner, and sponsored ad. It removes static introductory copy, service tiles,
 and an unused action carousel, and introduces a compact three-row product grid.
+
+## Product pages restore point — October 5, 2026
+
+The source before the product pages update is saved on GitHub at `325117c4`,
+branch `backup/mobile-products-before-related-pages-2026-10-05`.
+
+To undo this update while retaining later work:
+
+```sh
+git log --oneline --grep='Unify product-focused mobile shopping pages'
+git revert <product-pages-commit-hash>
+git push
+```
+
+The exact earlier source can also be restored with:
+
+```sh
+git restore --source=backup/mobile-products-before-related-pages-2026-10-05 -- mobile-app/src
+git add mobile-app/src
+git commit -m 'Restore mobile product pages before October 5 refresh'
+git push
+```
+
+The exact-source option replaces subsequent mobile source edits too. Rebuild
+the app to apply either restore to installed releases. Customer data, orders,
+and the database are unaffected.

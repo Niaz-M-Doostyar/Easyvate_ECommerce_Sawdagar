@@ -20,7 +20,7 @@ export const previewCopy = {
 // Mounted only while requested: off-screen cards do not allocate native modals.
 export default function ProductQuickView({ product, onClose, onDetails }) {
   const { theme } = useTheme();
-  const { t, lang, getName, isRTL } = useLanguage();
+  const { t, lang, getName, getDesc, isRTL } = useLanguage();
   const { addItem } = useCart();
   const toast = useToast();
   const insets = useSafeAreaInsets();
@@ -37,7 +37,7 @@ export default function ProductQuickView({ product, onClose, onDetails }) {
   const [index, setIndex] = useState(0);
   const images = [...new Set([...(Array.isArray(product.images) ? product.images : []).map(item => item?.url), product.image, product.thumbnail].filter(Boolean))];
   const available = product.stock == null || product.stock > 0;
-  const description = String(getName(product, 'description') || '').replace(/<[^>]*>/g, '').trim();
+  const description = String(getDesc(product) || '').replace(/<[^>]*>/g, '').trim();
   const align = { textAlign: isRTL ? 'right' : 'left' };
 
   useEffect(() => {
@@ -90,12 +90,12 @@ export default function ProductQuickView({ product, onClose, onDetails }) {
                 <RemoteImage key={`thumbnail-${images[index] || 'empty'}`} source={images[index]} width={400} quality={72} resizeMode="contain" style={StyleSheet.absoluteFill} fallback={<MaterialCommunityIcons name="image-outline" size={48} color={c.textMuted} />} />
                 <RemoteImage key={images[index] || 'empty'} source={images[index]} width={800} resizeMode="contain" style={StyleSheet.absoluteFill} />
               </View>
-              {images.length > 1 && <View style={styles.galleryControls}>
+            </View>
+            {images.length > 1 && <View style={styles.galleryControls}>
                 <PressableScale accessibilityLabel={copy.previous} onPress={() => setIndex((index + images.length - 1) % images.length)} style={[styles.icon, { backgroundColor: c.card }]}><MaterialCommunityIcons name="chevron-left" size={24} color={c.text} /></PressableScale>
                 <Text style={[styles.counter, { color: c.text, backgroundColor: c.card }]}>{index + 1} / {images.length}</Text>
                 <PressableScale accessibilityLabel={copy.next} onPress={() => setIndex((index + 1) % images.length)} style={[styles.icon, { backgroundColor: c.card }]}><MaterialCommunityIcons name="chevron-right" size={24} color={c.text} /></PressableScale>
-              </View>}
-            </View>
+            </View>}
             {!!product.category && <Text style={[styles.category, align, { color: c.textSecondary }]}>{getName(product.category)}</Text>}
             <Text style={[styles.title, align, { color: c.text }]}>{getName(product)}</Text>
             <View style={styles.priceRow}><Text style={[styles.price, { color: c.text }]}>{formatPrice(product.retailPrice)}</Text><Text style={[styles.stock, { color: available ? c.success : c.error }]}>{available ? t.inStock : t.outOfStock}</Text></View>
@@ -113,22 +113,22 @@ export default function ProductQuickView({ product, onClose, onDetails }) {
 
 const styles = StyleSheet.create({
   overlay: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 16 },
-  sheet: { width: '100%', maxWidth: 640, borderRadius: 28, overflow: 'hidden' },
+  sheet: { width: '100%', maxWidth: 640, borderRadius: 20, overflow: 'hidden' },
   handle: { width: 36, height: 4, borderRadius: 2, alignSelf: 'center', marginTop: 10 },
-  heading: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingVertical: 8 },
+  heading: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 8 },
   headingLabel: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 8 },
   eyebrow: { flexShrink: 1, fontSize: 14, fontWeight: '700' },
-  icon: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
-  body: { paddingHorizontal: 20, paddingBottom: 16 },
-  media: { borderRadius: 24, padding: 16, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
+  icon: { width: 44, height: 44, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
+  body: { paddingHorizontal: 16, paddingBottom: 16 },
+  media: { borderRadius: 16, padding: 16, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
   imageFrame: { alignSelf: 'stretch', flex: 1, alignItems: 'center', justifyContent: 'center' },
-  galleryControls: { position: 'absolute', bottom: 10, left: 10, right: 10, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  counter: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 14, fontSize: 13, fontWeight: '600' },
+  galleryControls: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 8 },
+  counter: { paddingHorizontal: 12, paddingVertical: 6, fontSize: 13, fontWeight: '600' },
   category: { marginTop: 16, fontSize: 13, fontWeight: '600' },
-  title: { marginTop: 6, fontSize: 23, lineHeight: 30, fontWeight: '700' },
+  title: { marginTop: 6, fontSize: 24, lineHeight: 30, fontWeight: '600' },
   priceRow: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 14, marginTop: 12 },
-  price: { fontSize: 24, fontWeight: '800' },
+  price: { fontSize: 28, lineHeight: 36, fontWeight: '700' },
   stock: { fontSize: 13, fontWeight: '600' },
   description: { marginTop: 12, fontSize: 14, lineHeight: 22 },
-  actions: { borderTopWidth: 1, paddingHorizontal: 20, paddingTop: 12, gap: 4 },
+  actions: { borderTopWidth: 1, paddingHorizontal: 16, paddingTop: 12, gap: 4 },
 });

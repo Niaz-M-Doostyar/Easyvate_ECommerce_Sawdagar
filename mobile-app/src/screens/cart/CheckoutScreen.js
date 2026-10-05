@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, ScrollView, KeyboardAvoidingView, Platform, StyleSheet, TouchableOpacity, Modal } from 'react-native';
+import { View, Text, ScrollView, KeyboardAvoidingView, Platform, StyleSheet, TouchableOpacity, Modal, useWindowDimensions } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import IconButton from '../../components/IconButton';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
@@ -11,20 +11,31 @@ import { ordersApi, subscribeApi } from '../../services/api';
 import Input from '../../components/Input';
 import Button from '../../components/Button';
 import EmptyState from '../../components/EmptyState';
-import HeroCard from '../../components/HeroCard';
+import RemoteImage from '../../components/RemoteImage';
 import ScreenHeader from '../../components/ScreenHeader';
 import { formatPrice } from '../../config';
-import { spacing, fontSize, fontWeight, borderRadius, shadows } from '../../theme';
+import { spacing, fontSize, fontWeight } from '../../theme';
 
 const PROVINCES = "Badakhshan,Badghis,Baghlan,Balkh,Bamyan,Daykundi,Farah,Faryab,Ghazni,Ghor,Helmand,Herat,Jowzjan,Kabul,Kandahar,Kapisa,Khost,Kunar,Kunduz,Laghman,Logar,Nangarhar,Nimroz,Nuristan,Paktia,Paktika,Panjshir,Parwan,Samangan,Sar-e Pol,Takhar,Uruzgan,Wardak,Zabul".split(",");
 
+const checkoutCopy = {
+  en: { selectProvince: 'Select province', chooseProvince: 'Choose province', close: 'Close', freeDelivery: 'Free delivery', delivery: 'delivery', free: 'Free', payOnArrival: 'Pay when you receive your order', enterCode: 'Enter code', discount: 'Discount' },
+  ps: { selectProvince: 'ولایت وټاکئ', chooseProvince: 'ولایت وټاکئ', close: 'بندول', freeDelivery: 'وړیا تحویلي', delivery: 'تحویلي', free: 'وړیا', payOnArrival: 'د سفارښت د ترلاسه کولو پر وخت پیسې ورکړئ', enterCode: 'کوډ ولیکئ', discount: 'تخفیف' },
+  dr: { selectProvince: 'ولایت را انتخاب کنید', chooseProvince: 'انتخاب ولایت', close: 'بستن', freeDelivery: 'تحویل رایگان', delivery: 'تحویل', free: 'رایگان', payOnArrival: 'هنگام دریافت سفارش پرداخت کنید', enterCode: 'کد را وارد کنید', discount: 'تخفیف' },
+};
+
 export default function CheckoutScreen({ navigation }) {
   const { theme } = useTheme();
-  const { t } = useLanguage();
+  const { t, getName, isRTL, lang } = useLanguage();
   const { items, total, clearCart } = useCart();
   const toast = useToast();
   const insets = useSafeAreaInsets();
   const c = theme.colors;
+  const { width, fontScale } = useWindowDimensions();
+  const copy = checkoutCopy[lang] || checkoutCopy.en;
+  const rowDirection = { flexDirection: isRTL ? 'row-reverse' : 'row' };
+  const alignment = { textAlign: isRTL ? 'right' : 'left' };
+  const stackCoupon = width < 375 || fontScale > 1.2;
 
   const [form, setForm] = useState({ province: '', district: '', village: '', landmark: '', phone: '', notes: '' });
   const [provinceOpen, setProvinceOpen] = useState(false);
@@ -89,7 +100,7 @@ export default function CheckoutScreen({ navigation }) {
 
       const data = await ordersApi.create(body);
       await clearCart();
-      navigation.replace('OrderSuccess', { order: data.order || data });
+      navigation.replace('OrderSuccess', { order: data.order || data, products: items });
     } catch (err) {
       toast.error(err.message || 'Failed to place order');
     }
@@ -107,7 +118,6 @@ export default function CheckoutScreen({ navigation }) {
         <EmptyState
           icon="cart-outline"
           title={t.emptyCart}
-          subtitle="Add products before opening checkout."
           actionLabel={t.startShopping}
           onAction={() => openTab('ShopTab')}
         />
@@ -118,72 +128,105 @@ export default function CheckoutScreen({ navigation }) {
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: c.background }]} edges={['top', 'left', 'right']}>
       <ScreenHeader title={t.checkout} onBack={() => navigation.goBack()} />
-      <Modal visible={provinceOpen} transparent animationType="slide" onRequestClose={() => setProvinceOpen(false)}><View style={{ flex: 1, backgroundColor: '#0008', justifyContent: 'center', alignItems: 'center', padding: 16, paddingTop: Math.max(insets.top, 16), paddingBottom: Math.max(insets.bottom, 16) }}><View style={{ backgroundColor: c.card, width: '100%', maxWidth: 640, borderRadius: 24, maxHeight: '85%', padding: 20 }}><View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12, gap: 12 }}><Text style={{ flex: 1, color: c.text, fontSize: fontSize.lg, fontWeight: fontWeight.bold }}>Choose province</Text><IconButton icon="close" onPress={() => setProvinceOpen(false)} accessibilityLabel="Close province picker" style={{ flexShrink: 0 }} /></View><ScrollView>{PROVINCES.map(p => <TouchableOpacity key={p} onPress={() => { set('province', p); setProvinceOpen(false); }} style={{ paddingVertical: 12, borderBottomWidth: 1, borderColor: c.border }}><Text style={{ color: c.text, fontSize: fontSize.base, lineHeight: 24 }}>{p}{p === 'Kandahar' ? ' · Free delivery' : ' · ؋150 delivery'}</Text></TouchableOpacity>)}</ScrollView><Button title="Close" onPress={() => setProvinceOpen(false)} variant="outline" /></View></View></Modal>
+      <Modal visible={provinceOpen} transparent animationType="slide" onRequestClose={() => setProvinceOpen(false)}>
+        <View style={[styles.pickerBackdrop, { paddingTop: Math.max(insets.top, 16), paddingBottom: Math.max(insets.bottom, 16) }]}>
+          <View style={[styles.picker, { backgroundColor: c.card }]}>
+            <View style={[styles.pickerHeading, rowDirection]}>
+              <Text accessibilityRole="header" style={[styles.pickerTitle, alignment, { color: c.text }]}>{copy.chooseProvince}</Text>
+              <IconButton icon="close" onPress={() => setProvinceOpen(false)} accessibilityLabel={copy.close} style={{ flexShrink: 0 }} />
+            </View>
+            <ScrollView showsVerticalScrollIndicator={false}>
+              {PROVINCES.map(p => (
+                <TouchableOpacity
+                  key={p}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: form.province === p }}
+                  onPress={() => { set('province', p); setProvinceOpen(false); }}
+                  style={[styles.provinceOption, rowDirection, { borderBottomColor: c.borderLight }]}
+                >
+                  <View style={{ flex: 1, minWidth: 0 }}>
+                    <Text style={[styles.provinceName, alignment, { color: c.text }]}>{p}</Text>
+                    <Text style={[styles.provinceFee, alignment, { color: c.textSecondary }]}>{p === 'Kandahar' ? copy.freeDelivery : `${formatPrice(150)} · ${copy.delivery}`}</Text>
+                  </View>
+                  {form.province === p ? <MaterialCommunityIcons name="check" size={20} color={c.primary} /> : null}
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+            <Button title={copy.close} onPress={() => setProvinceOpen(false)} variant="outline" style={{ marginTop: 12 }} />
+          </View>
+        </View>
+      </Modal>
 
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" showsVerticalScrollIndicator={false}>
-          <HeroCard
-            eyebrow="Secure checkout"
-            title="Confirm delivery details and place your order with cash on delivery."
-            subtitle="Review the address carefully so the driver reaches you without extra calls."
-            style={[styles.heroSpacing, shadows.lg]}
-          >
-            <View style={styles.heroStats}>
-              <CheckoutPill icon="shopping-outline" label={`${items.length} ${items.length === 1 ? 'product' : 'products'}`} />
-              <CheckoutPill icon="cash-fast" label={t.cashOnDelivery} />
-              <CheckoutPill icon="truck-fast-outline" label="Fast dispatch" />
-            </View>
-          </HeroCard>
-
-          <SectionHeading c={c} icon="map-marker-radius-outline" title={t.deliveryAddress} subtitle="Use the clearest location details you can provide." />
-          <View style={[styles.section, { backgroundColor: c.card, borderColor: c.border }]}>
-            <Text style={{ color: c.text, marginBottom: 8 }}>{t.province} *</Text>
-            <TouchableOpacity accessibilityRole="button" onPress={() => setProvinceOpen(true)} style={{ borderWidth: 1, borderColor: c.border, borderRadius: 12, padding: 14, marginBottom: 12 }}><Text style={{ color: c.text }}>{form.province || 'Select province ▾'}</Text></TouchableOpacity>
-            {errors.province ? <Text style={{ color: c.error }}>{errors.province}</Text> : null}
-            <Input label={t.district} value={form.district} onChangeText={(value) => set('district', value)} error={errors.district} placeholder="e.g. District 10" />
-            <Input label={t.village} value={form.village} onChangeText={(value) => set('village', value)} error={errors.village} placeholder="e.g. Qala-e-Fatullah" />
-            <Input label={`${t.landmark} (${t.optional})`} value={form.landmark} onChangeText={(value) => set('landmark', value)} placeholder="Near mosque..." />
-            <Input label={t.phone} value={form.phone} onChangeText={(value) => set('phone', value)} error={errors.phone} keyboardType="phone-pad" placeholder="+93 7XX XXX XXX" />
-            <Input label={`${t.notes} (${t.optional})`} value={form.notes} onChangeText={(value) => set('notes', value)} placeholder="Any special instructions" multiline numberOfLines={2} />
+          <SectionHeading c={c} title={t.orderSummary} alignment={alignment} first />
+          <View style={[styles.section, { backgroundColor: c.card, borderColor: c.borderLight }]}>
+            {items.map((item, index) => {
+              const product = item.product || item;
+              const price = product.retailPrice || product.suggestedPrice || 0;
+              const image = product.images?.[0]?.url || product.image || product.thumbnail;
+              return (
+                <View key={String(item.id || item.productId || index)} style={[styles.productRow, rowDirection, index > 0 && { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: c.borderLight, marginTop: 12, paddingTop: 12 }]}>
+                  <View style={[styles.productImageFrame, { backgroundColor: c.surfaceElevated }]}>
+                    <RemoteImage source={image} fallbackSource={product.images?.[1]?.url} width={180} quality={76} resizeMode="contain" style={styles.productImage} fallback={<MaterialCommunityIcons name="image-outline" size={24} color={c.textMuted} />} />
+                  </View>
+                  <View style={styles.productInfo}>
+                    <Text numberOfLines={fontScale > 1.3 ? 3 : 2} style={[styles.productName, alignment, { color: c.text }]}>{getName(product)}</Text>
+                    <Text style={[styles.productMeta, alignment, { color: c.textSecondary }]}>{t.qty} {item.quantity} × {formatPrice(price)}</Text>
+                    <Text style={[styles.productTotal, alignment, { color: c.text }]}>{formatPrice(price * (item.quantity || 1))}</Text>
+                  </View>
+                </View>
+              );
+            })}
           </View>
 
-          <SectionHeading c={c} icon="wallet-outline" title={t.paymentMethod} subtitle="One payment method is active right now." />
-          <View style={[styles.payMethod, { backgroundColor: c.card, borderColor: c.primary }]}>
-            <View style={[styles.payIcon, { backgroundColor: c.brandSurface }]}>
+          <SectionHeading c={c} title={t.deliveryAddress} alignment={alignment} />
+          <View style={[styles.section, { backgroundColor: c.card, borderColor: c.borderLight }]}>
+            <Text style={[styles.fieldLabel, alignment, { color: c.textSecondary }]}>{t.province} *</Text>
+            <TouchableOpacity accessibilityRole="button" accessibilityLabel={`${t.province}: ${form.province || copy.selectProvince}`} onPress={() => setProvinceOpen(true)} style={[styles.provinceControl, rowDirection, { backgroundColor: c.inputBg, borderColor: errors.province ? c.error : c.inputBorder }]}>
+              <Text style={[styles.provinceValue, alignment, { color: form.province ? c.text : c.placeholder }]}>{form.province || copy.selectProvince}</Text>
+              <MaterialCommunityIcons name="chevron-down" size={20} color={c.textSecondary} />
+            </TouchableOpacity>
+            {errors.province ? <Text accessibilityRole="alert" style={[styles.fieldError, alignment, { color: c.error }]}>{errors.province}</Text> : null}
+            <Input label={t.district} value={form.district} onChangeText={(value) => set('district', value)} error={errors.district} inputStyle={alignment} />
+            <Input label={t.village} value={form.village} onChangeText={(value) => set('village', value)} error={errors.village} inputStyle={alignment} />
+            <Input label={`${t.landmark} (${t.optional})`} value={form.landmark} onChangeText={(value) => set('landmark', value)} inputStyle={alignment} />
+            <Input label={t.phone} value={form.phone} onChangeText={(value) => set('phone', value)} error={errors.phone} keyboardType="phone-pad" placeholder="+93 7XX XXX XXX" />
+            <Input label={`${t.notes} (${t.optional})`} value={form.notes} onChangeText={(value) => set('notes', value)} multiline numberOfLines={2} inputStyle={alignment} style={{ marginBottom: 0 }} />
+          </View>
+
+          <SectionHeading c={c} title={t.paymentMethod} alignment={alignment} />
+          <View style={[styles.payMethod, rowDirection, { backgroundColor: c.card, borderColor: c.borderLight }]}>
+            <View style={[styles.payIcon, { backgroundColor: c.surfaceElevated }]}>
               <MaterialCommunityIcons name="cash-fast" size={24} color={c.primary} />
             </View>
-            <View style={{ marginLeft: 12, flex: 1 }}>
-              <Text style={[styles.payLabel, { color: c.text }]}>{t.cashOnDelivery}</Text>
-              <Text style={{ color: c.textSecondary, fontSize: fontSize.sm }}>Pay when you receive the order</Text>
+            <View style={{ flex: 1, minWidth: 0 }}>
+              <Text style={[styles.payLabel, alignment, { color: c.text }]}>{t.cashOnDelivery}</Text>
+              <Text style={[styles.payDescription, alignment, { color: c.textSecondary }]}>{copy.payOnArrival}</Text>
             </View>
-            <MaterialCommunityIcons name="check-circle" size={22} color={c.primary} style={{ marginLeft: 'auto' }} />
+            <MaterialCommunityIcons name="check-circle" size={22} color={c.success} />
           </View>
 
-          <SectionHeading c={c} icon="ticket-percent-outline" title={t.couponCode} subtitle="Apply a valid discount before placing the order." />
-          <View style={[styles.section, { backgroundColor: c.card, borderColor: c.border }]}>
-            <View style={styles.couponRow}>
-              <Input value={coupon} onChangeText={setCoupon} placeholder="Enter code" style={styles.couponInput} />
-              <Button title={t.apply} onPress={applyCoupon} size="sm" variant="outline" />
+          <SectionHeading c={c} title={t.couponCode} alignment={alignment} />
+          <View style={[styles.section, { backgroundColor: c.card, borderColor: c.borderLight }]}>
+            <View style={[styles.couponRow, stackCoupon ? { flexDirection: 'column', alignItems: 'stretch' } : rowDirection]}>
+              <Input value={coupon} onChangeText={setCoupon} placeholder={copy.enterCode} inputStyle={alignment} style={[styles.couponInput, stackCoupon && { flex: 0, width: '100%' }]} />
+              <Button title={t.apply} onPress={applyCoupon} size="sm" variant="outline" style={!stackCoupon ? { minWidth: 92, alignSelf: 'center' } : undefined} />
             </View>
           </View>
 
-          <SectionHeading c={c} icon="receipt-text-check-outline" title={t.orderSummary} subtitle="Totals update instantly before you place the order." />
-          <View style={[styles.section, { backgroundColor: c.card, borderColor: c.border }]}>
-            <SumRow label={`${t.items} (${items.length})`} value={formatPrice(total)} c={c} />
-            {discount > 0 ? <SumRow label={`Discount (${discount}%)`} value={`-${formatPrice(discountAmount)}`} c={c} valueColor={c.success} /> : null}
-            <SumRow label={t.deliveryFee} value={deliveryFee > 0 ? formatPrice(deliveryFee) : 'Free'} c={c} valueColor={c.success} />
-            <View style={[styles.divider, { borderColor: c.border }]} />
-            <SumRow label={t.total} value={formatPrice(grandTotal)} c={c} bold />
-          </View>
-
-          <View style={[styles.noteCard, { backgroundColor: c.brandSurfaceStrong }]}>
-            <MaterialCommunityIcons name="shield-lock-outline" size={18} color={c.primary} />
-            <Text style={[styles.noteText, { color: c.textSecondary }]}>Your order details are confirmed before dispatch, and you can track the status after placing it.</Text>
+          <SectionHeading c={c} title={t.total} alignment={alignment} />
+          <View style={[styles.section, { backgroundColor: c.card, borderColor: c.borderLight }]}>
+            <SumRow label={t.subtotal} value={formatPrice(total)} c={c} isRTL={isRTL} />
+            {discount > 0 ? <SumRow label={`${copy.discount} (${discount}%)`} value={`-${formatPrice(discountAmount)}`} c={c} valueColor={c.success} isRTL={isRTL} /> : null}
+            <SumRow label={t.deliveryFee} value={form.province ? (deliveryFee > 0 ? formatPrice(deliveryFee) : copy.free) : '—'} c={c} valueColor={form.province && deliveryFee === 0 ? c.success : c.text} isRTL={isRTL} />
+            <View style={[styles.divider, { borderColor: c.borderLight }]} />
+            <SumRow label={t.total} value={formatPrice(grandTotal)} c={c} bold isRTL={isRTL} />
           </View>
         </ScrollView>
 
-        <View style={[styles.bottomBar, { backgroundColor: c.card, borderTopColor: c.border, paddingBottom: Math.max(insets.bottom, spacing.md) }]}>
-          <View style={styles.bottomSummary}>
+        <View style={[styles.bottomBar, { backgroundColor: c.card, borderTopColor: c.borderLight, paddingBottom: Math.max(insets.bottom, spacing.md) }]}>
+          <View style={[styles.bottomSummary, rowDirection]}>
             <Text style={[styles.bottomLabel, { color: c.textSecondary }]}>{t.total}</Text>
             <Text style={[styles.bottomValue, { color: c.text }]}>{formatPrice(grandTotal)}</Text>
           </View>
@@ -201,36 +244,17 @@ export default function CheckoutScreen({ navigation }) {
   );
 }
 
-function CheckoutPill({ icon, label }) {
-  const { theme } = useTheme();
-  const c = theme.colors;
+function SectionHeading({ c, title, alignment, first }) {
   return (
-    <View style={[styles.heroPill, { backgroundColor: c.heroSurface }]}>
-      <MaterialCommunityIcons name={icon} size={16} color={c.heroTextMuted} />
-      <Text style={[styles.heroPillText, { color: c.heroTextMuted }]}>{label}</Text>
-    </View>
+    <Text accessibilityRole="header" style={[styles.sectionTitle, alignment, first && { marginTop: 0 }, { color: c.text }]}>{title}</Text>
   );
 }
 
-function SectionHeading({ c, icon, title, subtitle }) {
+function SumRow({ label, value, c, bold, valueColor, isRTL }) {
   return (
-    <View style={styles.sectionHeading}>
-      <View style={[styles.sectionIcon, { backgroundColor: c.brandSurface }]}>
-        <MaterialCommunityIcons name={icon} size={18} color={c.primary} />
-      </View>
-      <View style={{ flex: 1 }}>
-        <Text style={[styles.sectionTitle, { color: c.text }]}>{title}</Text>
-        <Text style={[styles.sectionSubtitle, { color: c.textSecondary }]}>{subtitle}</Text>
-      </View>
-    </View>
-  );
-}
-
-function SumRow({ label, value, c, bold, valueColor }) {
-  return (
-    <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 6 }}>
-      <Text style={{ color: c.textSecondary, fontSize: fontSize.base, fontWeight: bold ? fontWeight.bold : fontWeight.regular }}>{label}</Text>
-      <Text style={{ color: valueColor || c.text, fontSize: bold ? fontSize.lg : fontSize.base, fontWeight: bold ? fontWeight.bold : fontWeight.medium }}>{value}</Text>
+    <View style={[styles.sumRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+      <Text style={[styles.sumLabel, { textAlign: isRTL ? 'right' : 'left', color: bold ? c.text : c.textSecondary, fontWeight: bold ? fontWeight.semibold : fontWeight.regular }]}>{label}</Text>
+      <Text style={[styles.sumValue, { textAlign: isRTL ? 'left' : 'right', color: valueColor || c.text, fontSize: bold ? 20 : 15, fontWeight: bold ? fontWeight.bold : fontWeight.medium }]}>{value}</Text>
     </View>
   );
 }
@@ -238,26 +262,39 @@ function SumRow({ label, value, c, bold, valueColor }) {
 const styles = StyleSheet.create({
   safe: { flex: 1, width: '100%', maxWidth: 1200, alignSelf: 'center' },
   scroll: { width: '100%', maxWidth: 720, alignSelf: 'center', padding: spacing.base, paddingBottom: spacing.xl },
-  heroSpacing: { marginBottom: spacing.lg },
-  heroStats: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
-  heroPill: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 12, paddingVertical: 9, borderRadius: borderRadius.full },
-  heroPillText: { fontSize: fontSize.xs, fontWeight: fontWeight.bold },
-  sectionHeading: { flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: spacing.lg, marginBottom: spacing.sm },
-  sectionIcon: { width: 38, height: 38, borderRadius: 19, justifyContent: 'center', alignItems: 'center' },
-  sectionTitle: { fontSize: fontSize.md, fontWeight: fontWeight.bold },
-  sectionSubtitle: { fontSize: fontSize.sm, lineHeight: 22, marginTop: 2 },
-  section: { borderRadius: borderRadius.xl, borderWidth: 1, padding: spacing.base },
-  payMethod: { flexDirection: 'row', alignItems: 'center', padding: spacing.base, borderRadius: borderRadius.xl, borderWidth: 1 },
-  payIcon: { width: 46, height: 46, borderRadius: 23, justifyContent: 'center', alignItems: 'center' },
-  payLabel: { fontSize: fontSize.base, fontWeight: fontWeight.semibold },
-  couponRow: { flexDirection: 'row', alignItems: 'flex-end' },
-  couponInput: { flex: 1, marginBottom: 0, marginRight: 8 },
-  divider: { borderTopWidth: 1, marginVertical: 8 },
-  noteCard: { flexDirection: 'row', alignItems: 'center', gap: 10, borderRadius: borderRadius.xl, padding: spacing.base, marginTop: spacing.base },
-  noteText: { flex: 1, fontSize: fontSize.sm, lineHeight: 21 },
-  bottomBar: { gap: spacing.md, padding: spacing.base, borderTopWidth: 1, borderTopLeftRadius: borderRadius.xl, borderTopRightRadius: borderRadius.xl, ...shadows.lg },
+  sectionTitle: { fontSize: 17, lineHeight: 25, fontWeight: fontWeight.semibold, marginTop: 24, marginBottom: 10 },
+  section: { borderRadius: 16, borderWidth: 1, padding: 14 },
+  productRow: { alignItems: 'center', gap: 12 },
+  productImageFrame: { width: 72, height: 72, flexShrink: 0, borderRadius: 11, padding: 7, overflow: 'hidden', alignItems: 'center', justifyContent: 'center' },
+  productImage: { width: '100%', height: '100%' },
+  productInfo: { flex: 1, minWidth: 0 },
+  productName: { fontSize: 15, lineHeight: 22, fontWeight: fontWeight.semibold },
+  productMeta: { fontSize: 13, lineHeight: 20, marginTop: 4 },
+  productTotal: { fontSize: 15, lineHeight: 22, fontWeight: fontWeight.bold, marginTop: 4 },
+  fieldLabel: { fontSize: 14, lineHeight: 21, fontWeight: fontWeight.semibold, marginBottom: 8 },
+  provinceControl: { minHeight: 56, alignItems: 'center', gap: 10, borderWidth: 1, borderRadius: 16, paddingHorizontal: 14, paddingVertical: 12, marginBottom: 16 },
+  provinceValue: { flex: 1, minWidth: 0, fontSize: 15, lineHeight: 22 },
+  fieldError: { fontSize: 14, lineHeight: 21, marginBottom: 12 },
+  pickerBackdrop: { flex: 1, backgroundColor: '#0008', justifyContent: 'center', alignItems: 'center', padding: 16 },
+  picker: { width: '100%', maxWidth: 640, borderRadius: 20, maxHeight: '85%', padding: 16 },
+  pickerHeading: { alignItems: 'center', marginBottom: 12, gap: 12 },
+  pickerTitle: { flex: 1, fontSize: 20, lineHeight: 28, fontWeight: fontWeight.semibold },
+  provinceOption: { minHeight: 56, alignItems: 'center', gap: 12, paddingVertical: 12, borderBottomWidth: StyleSheet.hairlineWidth },
+  provinceName: { fontSize: 15, lineHeight: 22, fontWeight: fontWeight.medium },
+  provinceFee: { fontSize: 13, lineHeight: 20, marginTop: 3 },
+  payMethod: { alignItems: 'center', gap: 12, padding: 14, borderRadius: 16, borderWidth: 1 },
+  payIcon: { width: 44, height: 44, flexShrink: 0, borderRadius: 11, justifyContent: 'center', alignItems: 'center' },
+  payLabel: { fontSize: 15, lineHeight: 22, fontWeight: fontWeight.semibold },
+  payDescription: { fontSize: 13, lineHeight: 20, marginTop: 3 },
+  couponRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  couponInput: { flex: 1, minWidth: 0, marginBottom: 0 },
+  sumRow: { justifyContent: 'space-between', flexWrap: 'wrap', gap: 10, paddingVertical: 7 },
+  sumLabel: { flexGrow: 1, flexShrink: 1, fontSize: 15, lineHeight: 24 },
+  sumValue: { flexShrink: 1, lineHeight: 28 },
+  divider: { borderTopWidth: StyleSheet.hairlineWidth, marginVertical: 8 },
+  bottomBar: { gap: spacing.md, padding: spacing.base, borderTopWidth: 1 },
   bottomSummary: { width: '100%', maxWidth: 688, alignSelf: 'center', flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: spacing.sm },
   bottomLabel: { fontSize: fontSize.sm },
-  bottomValue: { fontSize: fontSize.xl, fontWeight: fontWeight.heavy },
+  bottomValue: { flexShrink: 1, fontSize: 22, lineHeight: 30, fontWeight: fontWeight.bold },
   placeOrderBtn: { width: '100%', maxWidth: 688, alignSelf: 'center' },
 });

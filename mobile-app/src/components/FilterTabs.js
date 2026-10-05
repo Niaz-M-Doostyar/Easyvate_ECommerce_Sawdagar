@@ -1,5 +1,5 @@
 import React from 'react';
-import { ScrollView, Text, StyleSheet, View } from 'react-native';
+import { ScrollView, Text, StyleSheet, View, useWindowDimensions } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useTheme } from '../contexts/ThemeContext';
 import { spacing, fontSize, fontWeight, borderRadius } from '../theme';
@@ -11,15 +11,17 @@ import PressableScale from './PressableScale';
  */
 export default function FilterTabs({ tabs, activeKey, onChange, style }) {
   const { theme } = useTheme();
+  const { fontScale } = useWindowDimensions();
   const c = theme.colors;
+  const chipHeight = Math.max(44, Math.ceil(20 * fontScale) + 20);
 
   return (
     <ScrollView
       horizontal
       showsHorizontalScrollIndicator={false}
       keyboardShouldPersistTaps="handled"
-      style={[styles.scroll, style]}
-      contentContainerStyle={styles.content}
+      style={[styles.scroll, { minHeight: chipHeight + 10 }, style]}
+      contentContainerStyle={[styles.content, { minHeight: chipHeight + 10 }]}
     >
       {tabs.map((tab) => {
         const active = tab.key === activeKey;
@@ -32,6 +34,7 @@ export default function FilterTabs({ tabs, activeKey, onChange, style }) {
               styles.chip,
               {
                 backgroundColor: active ? c.primaryDark : pressed ? c.brandSurface : c.surface,
+                minHeight: chipHeight,
                 borderColor: active ? c.primaryDark : c.borderLight,
                 borderBottomColor: active ? c.primaryDark : c.border,
                 shadowColor: c.primaryDark,
@@ -69,7 +72,7 @@ export default function FilterTabs({ tabs, activeKey, onChange, style }) {
 }
 
 const styles = StyleSheet.create({
-  scroll: { flexGrow: 0 },
+  scroll: { flexGrow: 0, flexShrink: 0 },
   content: { gap: spacing.sm, paddingHorizontal: spacing.base, paddingVertical: 5 },
   chip: {
     minHeight: 44,
