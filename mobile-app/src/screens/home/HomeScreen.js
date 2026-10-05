@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, FlatList, Image, RefreshControl, StyleSheet, Animated, Modal } from 'react-native';
+import { View, Text, TouchableOpacity, FlatList, Image, RefreshControl, StyleSheet, Animated, Modal, ActivityIndicator } from 'react-native';
 import { WebView } from 'react-native-webview';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
@@ -10,6 +10,7 @@ import { useLanguage } from '../../contexts/LanguageContext';
 import { useCart } from '../../contexts/CartContext';
 import FeaturedProductCard from '../../components/FeaturedProductCard';
 import { featuredLayout } from '../../utils/featuredLayout';
+import { readProductPage, appendProducts } from '../../utils/productPagination';
 import HomeHeroCarousel from '../../components/HomeHeroCarousel';
 import RemoteImage from '../../components/RemoteImage';
 import SectionHeader from '../../components/SectionHeader';
@@ -33,12 +34,14 @@ function normalizeBannerImage(src) {
   return src;
 }
 const homeCopy = {
-  en: { recommended: 'Recommended for you', featured: 'Featured Products', loadMore: 'Load more products' },
-  ps: { recommended: 'ستاسو لپاره وړاندیز شوي', featured: 'ځانګړي محصولات', loadMore: 'نور محصولات وګورئ' },
-  dr: { recommended: 'پیشنهاد برای شما', featured: 'محصولات ویژه', loadMore: 'نمایش محصولات بیشتر' },
+  en: { recommended: 'Recommended for you', featured: 'Featured Products', loadingProducts: 'Loading products…', loadFailed: 'Could not load products. Pull down to refresh.' },
+  ps: { recommended: 'ستاسو لپاره وړاندیز شوي', featured: 'ځانګړي محصولات', loadingProducts: 'محصولات بارېږي…', loadFailed: 'محصولات ونه بارېدل. د تازه کولو لپاره ښکته کش کړئ.' },
+  dr: { recommended: 'پیشنهاد برای شما', featured: 'محصولات ویژه', loadingProducts: 'در حال بارگذاری محصولات…', loadFailed: 'محصولات بارگذاری نشد. برای تازه‌سازی به پایین بکشید.' },
 };
+const PRODUCT_PAGE_SIZE = 75;
 export default function HomeScreen({ navigation }) {
   const scrollRef = useRef(null);
+  const catalog = useRef({ generation: 0, page: 0, hasMore: false, busy: false, ids: new Set() });
   const { width, height, isTablet, fontScale } = useResponsiveLayout();
   const layout = featuredLayout(width, fontScale);
   const { theme } = useTheme();
@@ -51,7 +54,15 @@ export default function HomeScreen({ navigation }) {
   const newArrivalCardWidth = Math.min(240, Math.max(144, 152 * Math.min(fontScale, 1.6)));
   const [categories, setCategories] = useState([]);
   const [featured, setFeatured] = useState([]);
-  const [featuredDisplayCount, setFeaturedDisplayCount] = useState(50);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [catalogError, setCatalogError] = useState(false);
+  const productRows = useMemo(() => {
+    const rows = [];
+    for (let index = 0; index < featured.length; index += layout.columns) {
+      rows.push(featured.slice(index, index + layout.columns));
+    }
+    return rows;
+  }, [featured, layout.columns]);
   const [recommended, setRecommended] = useState([]);
   const [sponsored, setSponsored] = useState([]);
   const [adVisible, setAdVisible] = useState(false);
@@ -104,24 +115,33 @@ export default function HomeScreen({ navigation }) {
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(true);
   const load = useCallback(async () => {
+    const generation = ++catalog.current.generation;
+    catalog.current.busy = true;
+    setLoadingMore(false);
+    setCatalogError(false);
     try {
       const [cats, prod, spon, siteData] = await Promise.all([
         categoriesApi.list(),
-        productsApi.list({ limit: 75 }),
+        productsApi.list({ page: 1, limit: PRODUCT_PAGE_SIZE }),
         productsApi.sponsored().catch(() => []),
         siteApi.content().then(data => {
           // Display promotions without waiting for the larger catalog requests.
           const hero = (data?.content?.home || data?.home || {}).hero;
-          setHeroContent(hero || null);
+          if (generation === catalog.current.generation) setHeroContent(hero || null);
           (hero?.slides || []).slice(0, 2).forEach(slide => {
             if (slide.image) Image.prefetch(optimizedImageUri(slide.image, { width: 400, quality: 72 })).catch(() => {});
           });
           return data;
         }).catch(() => null),
       ]);
+      if (generation !== catalog.current.generation) return;
       setCategories(cats.categories || cats || []);
-      const products = prod.products || prod || [];
+      const result = readProductPage(prod, 1, PRODUCT_PAGE_SIZE);
+      const products = appendProducts([], result.products);
       setFeatured(products);
+      catalog.current.page = result.page;
+      catalog.current.hasMore = result.hasMore;
+      catalog.current.ids = new Set(products.map(product => String(product.id)));
       // The catalog is newest first. Keep these shelves distinct so a product
       // does not appear in both New Arrivals and Recommended for you.
       setNewArrivals(products.slice(0, 8));
@@ -145,20 +165,56 @@ export default function HomeScreen({ navigation }) {
             }
           : null
       );
-    } catch {}
-    setLoading(false);
+    } catch {
+      if (generation === catalog.current.generation) setCatalogError(true);
+    } finally {
+      if (generation === catalog.current.generation) {
+        catalog.current.busy = false;
+        setLoading(false);
+      }
+    }
   }, []);
-  useFocusEffect(useCallback(() => { load(); }, [load]));
+  // Keep the loaded catalog and scroll position when returning from a product.
+  useFocusEffect(useCallback(() => {
+    if (!catalog.current.page && !catalog.current.busy) load();
+  }, [load]));
+  const loadMore = useCallback(async () => {
+    const state = catalog.current;
+    if (!state.page || state.busy || !state.hasMore) return;
+    const generation = state.generation;
+    const requestedPage = state.page + 1;
+    state.busy = true;
+    setLoadingMore(true);
+    setCatalogError(false);
+    try {
+      const response = await productsApi.list({ page: requestedPage, limit: PRODUCT_PAGE_SIZE });
+      if (generation !== catalog.current.generation) return;
+      const result = readProductPage(response, requestedPage, PRODUCT_PAGE_SIZE);
+      const hasNewProducts = result.products.some(product => !state.ids.has(String(product.id)));
+      result.products.forEach(product => state.ids.add(String(product.id)));
+      state.page = result.page;
+      state.hasMore = result.hasMore && hasNewProducts;
+      setFeatured(current => appendProducts(current, result.products));
+    } catch {
+      if (generation === catalog.current.generation) setCatalogError(true);
+    } finally {
+      if (generation === catalog.current.generation) {
+        catalog.current.busy = false;
+        setLoadingMore(false);
+      }
+    }
+  }, []);
   useEffect(() => {
     if (loading) return undefined;
-    const resetTimer = setTimeout(() => scrollRef.current?.scrollTo({ y: 0, animated: false }), 60);
+    const resetTimer = setTimeout(() => scrollRef.current?.scrollToOffset({ offset: 0, animated: false }), 60);
     return () => clearTimeout(resetTimer);
   }, [loading]);
   const onRefresh = async () => {
     setRefreshing(true);
-    setFeaturedDisplayCount(50);
-    await load();
-    setRefreshing(false);
+    const pending = load();
+    const generation = catalog.current.generation;
+    await pending;
+    if (generation === catalog.current.generation) setRefreshing(false);
   };
   const openTab = (tabName) => {
     const parent = navigation.getParent();
@@ -270,11 +326,24 @@ export default function HomeScreen({ navigation }) {
           </TouchableOpacity>
         </View>
       </View>
-      <ScrollView
+      <FlatList
         ref={scrollRef}
+        data={productRows}
+        keyExtractor={row => String(row[0].id)}
+        renderItem={({ item: row }) => (
+          <View style={{ paddingHorizontal: layout.gutter, marginBottom: layout.gap, flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'stretch', gap: layout.gap }}>
+            {row.map(product => <FeaturedProductCard key={product.id} product={product} onPress={() => goProduct(product)} style={{ width: layout.cardWidth }} />)}
+          </View>
+        )}
+        onEndReached={loadMore}
+        onEndReachedThreshold={0.6}
+        initialNumToRender={3}
+        maxToRenderPerBatch={6}
+        windowSize={7}
+        removeClippedSubviews={false}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={c.primary} />}
         showsVerticalScrollIndicator={false}
-      >
+        ListHeaderComponent={<>
         <TouchableOpacity onPress={() => navigation.navigate('Search')} style={[styles.searchBar, { backgroundColor: c.card, borderColor: c.border }]}>
           <MaterialCommunityIcons name="magnify" size={20} color={c.textMuted} />
           <Text numberOfLines={1} maxFontSizeMultiplier={1.15} style={[styles.searchText, { color: c.placeholder }]}>{t.search}</Text>
@@ -383,26 +452,22 @@ export default function HomeScreen({ navigation }) {
           <FlatList horizontal inverted={isRTL} showsHorizontalScrollIndicator={false} data={recommended} keyExtractor={item => String(item.id)} contentContainerStyle={{ paddingHorizontal: spacing.base }} renderItem={({ item }) => <FeaturedProductCard product={item} onPress={() => goProduct(item)} style={{ width: newArrivalCardWidth, marginRight: spacing.md }} />} />
         </SectionReveal>}
         <SectionReveal delay={330}>
-          <SectionHeader title={copy.featured} actionLabel={t.seeAll} onAction={() => navigation.navigate('Products')} />
+          <SectionHeader title={copy.featured} />
+        </SectionReveal>
+        </>}
+        ListEmptyComponent={loading ? (
           <View style={{ paddingHorizontal: layout.gutter, flexDirection: isRTL ? 'row-reverse' : 'row', flexWrap: 'wrap', gap: layout.gap }}>
-            {loading ? Array.from({ length: layout.placeholderCount }, (_, index) => <View key={index} style={{ width: layout.cardWidth, padding: 8, borderRadius: 16, backgroundColor: c.card }}>
+            {Array.from({ length: layout.placeholderCount }, (_, index) => <View key={index} style={{ width: layout.cardWidth, padding: 8, borderRadius: 16, backgroundColor: c.card }}>
               <SkeletonLoader width="100%" height={layout.cardWidth - 16} radius={12} />
               <SkeletonLoader width="85%" height={14} style={{ marginTop: 12 }} />
               <SkeletonLoader width="55%" height={18} style={{ marginTop: 8 }} />
               <SkeletonLoader width="100%" height={40} style={{ marginTop: 10 }} />
-            </View>) : featured.slice(0, featuredDisplayCount).map(product => <FeaturedProductCard key={product.id} product={product} onPress={() => goProduct(product)} style={{ width: layout.cardWidth }} />)}
+            </View>)}
           </View>
-          {!loading && featuredDisplayCount < featured.length && (
-            <PressableScale
-              onPress={() => setFeaturedDisplayCount(count => Math.min(count + 25, featured.length, 75))}
-              accessibilityLabel={copy.loadMore}
-              style={[styles.loadMoreButton, { marginHorizontal: layout.gutter, backgroundColor: c.card, borderColor: c.border }]}
-            >
-              <Text style={[styles.loadMoreText, { color: c.primary }]}>{copy.loadMore}</Text>
-              <MaterialCommunityIcons name="chevron-down" size={20} color={c.primary} />
-            </PressableScale>
-          )}
-        </SectionReveal>
+        ) : null}
+        ListFooterComponent={<>
+        {loadingMore ? <ActivityIndicator accessibilityLabel={copy.loadingProducts} color={c.primary} style={{ marginVertical: 16 }} /> : null}
+        {catalogError ? <Text style={{ color: c.textSecondary, fontSize: 14, lineHeight: 21, textAlign: 'center', padding: 16 }}>{copy.loadFailed}</Text> : null}
         {newArrivals.length > 0 && (
           <SectionReveal delay={370}>
             <SectionHeader title={t.newArrivals} actionLabel={t.seeAll} onAction={() => navigation.navigate('Products', { sort: 'newest' })} />
@@ -417,7 +482,8 @@ export default function HomeScreen({ navigation }) {
           </SectionReveal>
         )}
         <View style={{ height: 32 }} />
-      </ScrollView>
+        </>}
+      />
     </SafeAreaView>
   );
 }
@@ -447,8 +513,6 @@ function SectionReveal({ children, delay = 0 }) {
   );
 }
 const styles = StyleSheet.create({
-  loadMoreButton: { minHeight: 48, marginTop: 16, borderWidth: 1, borderRadius: 14, paddingHorizontal: 16, paddingVertical: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
-  loadMoreText: { flexShrink: 1, fontSize: 14, lineHeight: 20, fontWeight: '600', textAlign: 'center' },
   offerImage: { width: '100%', height: 140 },
   offerContent: { padding: 14, gap: 6, flex: 1 },
   offerLabel: { fontSize: 12, lineHeight: 18, fontWeight: '500' },

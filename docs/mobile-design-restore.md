@@ -109,3 +109,13 @@ git push
 The exact-source option replaces subsequent mobile source edits too. Rebuild
 the app to apply either restore to installed releases. Customer data, orders,
 and the database are unaffected.
+
+## Automatic home catalog restore point
+
+The version before removing the Featured Products display limits and manual
+Load More button is saved at `e85bc901`, branch
+`backup/mobile-before-all-products-2026-10-05`.
+
+Find the update with `git log --oneline --grep='Show all home products with automatic pagination'`
+and revert that commit to retain other later changes. Rebuild installed releases
+to apply a restore. See [catalog verification](mobile-home-catalog-review.md).
