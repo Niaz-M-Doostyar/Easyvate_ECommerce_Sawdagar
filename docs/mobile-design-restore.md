@@ -119,3 +119,12 @@ Load More button is saved at `e85bc901`, branch
 Find the update with `git log --oneline --grep='Show all home products with automatic pagination'`
 and revert that commit to retain other later changes. Rebuild installed releases
 to apply a restore. See [catalog verification](mobile-home-catalog-review.md).
+
+## Previous slider restore point
+
+The version before restoring the pre-October-2 slider is saved at `dff79a89`,
+branch `backup/mobile-before-slider-restore-2026-10-05`.
+
+Find the update with `git log --oneline --grep='Restore mobile slider design from before October 2'`
+and revert it to retain later changes. Rebuild installed releases to apply the
+restore. See [slider verification](mobile-slider-restore-review.md).

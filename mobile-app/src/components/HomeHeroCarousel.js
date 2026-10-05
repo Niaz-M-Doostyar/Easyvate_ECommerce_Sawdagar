@@ -8,8 +8,8 @@ import Gradient from './Gradient';
 import Button from './Button';
 import RemoteImage from './RemoteImage';
 import { optimizedImageUri } from '../config';
-import useResponsiveLayout from '../hooks/useResponsiveLayout';
 import { shadows } from '../theme';
+import useResponsiveLayout from '../hooks/useResponsiveLayout';
 
 const AUTO_PLAY_MS = 6500;
 const GAP = 12;
@@ -28,7 +28,7 @@ export default function HomeHeroCarousel({ slides = [], primaryLabel, secondaryL
   const copy = COPY[lang] || COPY.en;
   const items = Array.isArray(slides) ? slides.filter(Boolean) : [];
   const count = items.length;
-  const cardWidth = Math.max(0, width - 32);
+  const cardWidth = Math.min(740, Math.max(0, width - 40));
   const inset = (width - cardWidth) / 2;
   const interval = cardWidth + GAP;
   const nativeRTL = I18nManager.isRTL;
@@ -151,28 +151,27 @@ export default function HomeHeroCarousel({ slides = [], primaryLabel, secondaryL
 
 function HeroSlide({ slide, width, minHeight, colors: c, dark, isRTL, primaryLabel, secondaryLabel, onPrimaryPress, onSecondaryPress, scale, active, copy }) {
   const { fontScale } = useWindowDimensions();
-  const wide = width >= 600;
-  const compactRow = width >= 340 && fontScale <= 1.3;
-  const horizontal = wide || compactRow;
+  const wide = width >= 600 && fontScale <= 1.5;
   return (
-    <Animated.View accessibilityElementsHidden={!active} importantForAccessibility={active ? 'auto' : 'no-hide-descendants'} style={[styles.card, shadows.md, { width, minHeight, backgroundColor: c.card, borderColor: c.borderLight, transform: [{ scale }], flexDirection: horizontal ? (isRTL ? 'row-reverse' : 'row') : 'column' }]}>
-      <Gradient colors={dark ? [c.secondary, '#182F60'] : ['#F0F4F2', '#E7EFEC']} style={[styles.media, { height: horizontal ? undefined : 150, minHeight: wide ? 340 : compactRow ? 240 : undefined, width: horizontal ? (wide ? '46%' : '38%') : '100%' }]}>
+    <Animated.View accessibilityElementsHidden={!active} importantForAccessibility={active ? 'auto' : 'no-hide-descendants'} style={[styles.card, shadows.md, { width, minHeight, backgroundColor: c.card, borderColor: c.borderLight, transform: [{ scale }], flexDirection: wide ? (isRTL ? 'row-reverse' : 'row') : 'column' }]}>
+      <Gradient colors={dark ? [c.secondary, '#182F60'] : ['#EAF0FF', '#DCE8FA']} style={[styles.media, { height: wide ? undefined : Math.min(240, Math.max(180, width * 0.53)), minHeight: wide ? 260 : undefined, width: wide ? '46%' : '100%' }]}>
         <View pointerEvents="none" style={styles.orbit} />
         <View pointerEvents="none" style={styles.orbitInner} />
         <View style={styles.imageFrame}>
-          <RemoteImage source={slide.image} width={800} quality={80} resizeMode="contain" style={StyleSheet.absoluteFill} />
+          <RemoteImage source={slide.image} width={400} quality={72} resizeMode="contain" style={StyleSheet.absoluteFill} fallback={<MaterialCommunityIcons name="shopping-outline" size={64} color={dark ? c.heroTextMuted : c.primaryDark} />} />
+          <RemoteImage source={slide.image} width={560} quality={75} resizeMode="contain" style={StyleSheet.absoluteFill} />
         </View>
       </Gradient>
-      <View style={[styles.copy, horizontal && { flex: 1 }, !wide && { padding: 16 }, { alignItems: isRTL ? 'flex-end' : 'flex-start' }]}>
+      <View style={[styles.copy, wide && { flex: 1 }, { alignItems: isRTL ? 'flex-end' : 'flex-start' }]}>
         <View style={[styles.productMeta, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-          {!!slide.subtitle && (wide || !compactRow) && <Text numberOfLines={1} style={[styles.category, { color: c.textSecondary }]}>{slide.subtitle}</Text>}
+          {!!slide.subtitle && <Text numberOfLines={1} style={[styles.category, { color: c.textSecondary }]}>{slide.subtitle}</Text>}
           {!!slide.priceValue && <Text numberOfLines={1} adjustsFontSizeToFit style={[styles.inlinePrice, { color: c.primary }]}>{slide.priceValue}</Text>}
         </View>
-        <Text numberOfLines={2} style={[styles.title, !wide && { fontSize: 22, lineHeight: 28 }, { color: c.text, textAlign: isRTL ? 'right' : 'left', writingDirection: isRTL ? 'rtl' : 'ltr' }]}>{slide.title}</Text>
+        <Text numberOfLines={2} style={[styles.title, { color: c.text, textAlign: isRTL ? 'right' : 'left', writingDirection: isRTL ? 'rtl' : 'ltr' }]}>{slide.title}</Text>
         {!!slide.description && <Text numberOfLines={2} style={[styles.description, { color: c.textSecondary, textAlign: isRTL ? 'right' : 'left' }]}>{slide.description}</Text>}
         <View style={[styles.actions, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
           {!!primaryLabel && <Button title={primaryLabel} onPress={() => onPrimaryPress?.(slide)} style={{ flex: 1 }} icon={<MaterialCommunityIcons name="shopping-outline" size={18} color="#FFFFFF" />} />}
-          {!!secondaryLabel && wide && <Pressable accessibilityRole="button" accessibilityLabel={secondaryLabel} onPress={onSecondaryPress} style={({ pressed }) => [styles.secondary, { backgroundColor: pressed ? c.brandSurfaceStrong : c.brandSurface }]}><MaterialCommunityIcons name={isRTL ? 'arrow-left' : 'arrow-right'} size={22} color={c.primary} /></Pressable>}
+          {!!secondaryLabel && <Pressable accessibilityRole="button" accessibilityLabel={secondaryLabel} onPress={onSecondaryPress} style={({ pressed }) => [styles.secondary, { backgroundColor: pressed ? c.brandSurfaceStrong : c.brandSurface }]}><MaterialCommunityIcons name={isRTL ? 'arrow-left' : 'arrow-right'} size={22} color={c.primary} /></Pressable>}
         </View>
       </View>
     </Animated.View>
@@ -188,23 +187,23 @@ const styles = StyleSheet.create({
   orbitInner: { position: 'absolute', width: 205, height: 205, backgroundColor: 'rgba(255,255,255,0.23)', borderRadius: 104 },
   imageFrame: { position: 'absolute', top: 12, bottom: 12, left: 16, right: 16, alignItems: 'center', justifyContent: 'center' },
   productMeta: { alignSelf: 'stretch', alignItems: 'center', gap: 12 },
-  category: { flex: 1, fontSize: 13, fontWeight: '600' },
+  category: { flex: 1, fontSize: 12, fontWeight: '600' },
   inlinePrice: { maxWidth: '60%', fontSize: 19, fontWeight: '800' },
   badge: { position: 'absolute', top: 14, maxWidth: '82%', backgroundColor: '#FFFFFF', borderRadius: 99, paddingHorizontal: 12, paddingVertical: 6 },
-  badgeText: { color: '#17339B', fontSize: 12, fontWeight: '700' },
+  badgeText: { color: '#17339B', fontSize: 11, fontWeight: '700' },
   price: { position: 'absolute', bottom: 12, maxWidth: '60%', backgroundColor: '#FFFFFF', paddingHorizontal: 14, paddingVertical: 9, borderRadius: 16 },
-  priceLabel: { color: '#44515D', fontSize: 12, fontWeight: '600' },
+  priceLabel: { color: '#44515D', fontSize: 10, fontWeight: '600' },
   priceValue: { color: '#17339B', fontSize: 19, fontWeight: '800', marginTop: 2 },
-  copy: { padding: 24, gap: 8 },
-  eyebrow: { fontSize: 12, fontWeight: '800', letterSpacing: 0.7 },
-  title: { fontSize: 28, lineHeight: 34, fontWeight: '700', letterSpacing: -0.3 },
-  description: { fontSize: 15, lineHeight: 23 },
+  copy: { padding: 16, gap: 6 },
+  eyebrow: { fontSize: 11, fontWeight: '800', letterSpacing: 0.7 },
+  title: { fontSize: 22, lineHeight: 28, fontWeight: '700', letterSpacing: -0.3 },
+  description: { fontSize: 13, lineHeight: 20 },
   actions: { alignSelf: 'stretch', alignItems: 'center', gap: 10, marginTop: 8 },
   secondary: { width: 52, height: 52, borderRadius: 17, alignItems: 'center', justifyContent: 'center' },
-  controls: { marginHorizontal: 16, marginTop: 2, alignItems: 'center', gap: 8 },
+  controls: { marginHorizontal: 24, marginTop: 2, alignItems: 'center', gap: 8 },
   control: { width: 44, height: 44, borderWidth: 1, borderRadius: 15, alignItems: 'center', justifyContent: 'center' },
   pagination: { flex: 1, gap: 5, alignItems: 'center' },
   dots: { alignItems: 'center', gap: 5 },
   dot: { height: 5, borderRadius: 4 },
-  counter: { fontSize: 12, fontWeight: '600', fontVariant: ['tabular-nums'] },
+  counter: { fontSize: 10, fontWeight: '600', fontVariant: ['tabular-nums'] },
 });

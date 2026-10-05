@@ -40,9 +40,9 @@ status filters and add/edit/delete navigation remain.
 This pass does not change the backend, OTP services, admin settings or stored
 customer/order data. `HomeScreen.js` and its slider are unchanged. Admin-managed
 slides, offers, announcement, campaign banner and sponsored ads remain, along
-with the existing Featured Products collection. Slider options A (clean campaign
-banner), B (product spotlight) and C (swipeable campaign cards) still await the
-user's choice.
+with the existing Featured Products collection. The later user selection was to
+restore the pre-October-2 slider. See
+[slider restoration](mobile-slider-restore-review.md) for the applied design.
 
 ## Verification
 
