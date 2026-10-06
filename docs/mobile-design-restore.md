@@ -128,3 +128,15 @@ branch `backup/mobile-before-slider-restore-2026-10-05`.
 Find the update with `git log --oneline --grep='Restore mobile slider design from before October 2'`
 and revert it to retain later changes. Rebuild installed releases to apply the
 restore. See [slider verification](mobile-slider-restore-review.md).
+
+## Fixed 60 products, offers and recovery restore point
+
+The version before the fixed Featured Products count, offer images and separate New Password
+screen is saved at `8a207232`, branch
+`backup/mobile-before-fixed60-offers-recovery-2026-10-06`.
+
+Find the change with `git log --oneline --grep='Fix home product count and separate phone password recovery'`
+and revert that commit to retain later work. Rebuild installed apps after a
+restore. The backend supports both the existing one-step recovery request and
+the new two-step request; restore the matching app and API version together.
+See [verification and deployment](mobile-fixed60-recovery-review.md).

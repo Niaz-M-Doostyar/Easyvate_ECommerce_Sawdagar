@@ -162,24 +162,56 @@ router.post('/verify-customer-otp', async (req, res) => {
   }
 });
 
+// Verify recovery before asking for a new password. Store only a hash of the
+// short-lived proof; the original OTP cannot be reused after this transition.
+router.post('/verify-phone-reset-otp', async (req, res) => {
+  try {
+    const { challengeId, code } = req.body;
+    if (typeof challengeId !== 'string' || typeof code !== 'string' || !/^\d{6}$/.test(code))
+      return res.status(400).json({ error: 'Enter the six-digit code' });
+    const resetToken = crypto.randomBytes(32).toString('hex');
+    const expiresIn = 600;
+    const valid = await prisma.$transaction(async tx => {
+      const now = new Date();
+      const reserved = await tx.phoneRegistration.updateMany({ where: { id: challengeId, purpose: 'password-reset', expiresAt: { gt: now }, attempts: { lt: 5 } }, data: { attempts: { increment: 1 } } });
+      if (!reserved.count) return false;
+      const challenge = await tx.phoneRegistration.findUnique({ where: { id: challengeId } });
+      if (codeHash(challengeId, code) !== challenge.codeHash) return false;
+      await tx.phoneRegistration.updateMany({ where: { id: challengeId, purpose: 'password-reset' }, data: {
+        purpose: 'password-reset-verified', codeHash: codeHash(challengeId, resetToken),
+        expiresAt: new Date(now.getTime() + expiresIn * 1000), attempts: 0,
+      } });
+      return true;
+    });
+    if (!valid) return res.status(400).json({ error: 'Invalid or expired code. Request a new code after 5 failed attempts.' });
+    return res.json({ challengeId, resetToken, expiresIn, message: 'Phone verified. Choose a new password.' });
+  } catch { return res.status(500).json({ error: 'Unable to verify code. Please try again later.' }); }
+});
+
 router.post('/reset-phone-password', async (req, res) => {
   try {
-    const { challengeId, code, password, confirmPassword } = req.body;
-    if (typeof challengeId !== 'string' || typeof code !== 'string' || !/^\d{6}$/.test(code)) return res.status(400).json({ error: 'Enter the six-digit code' });
+    const { challengeId, code, resetToken, password, confirmPassword } = req.body;
+    const hasProof = resetToken !== undefined;
+    const proofError = { error: 'Verification expired or is no longer valid. Request a new code.', code: 'RESET_PROOF_INVALID' };
+    if (hasProof && (typeof challengeId !== 'string' || typeof resetToken !== 'string' || !/^[a-f0-9]{64}$/.test(resetToken)))
+      return res.status(400).json(proofError);
+    // Retain the single-step request for existing website and installed clients.
+    if (!hasProof && (typeof challengeId !== 'string' || typeof code !== 'string' || !/^\d{6}$/.test(code)))
+      return res.status(400).json({ error: 'Enter the six-digit code' });
     if (typeof password !== 'string' || password.length < 6 || password.length > 72 || password !== confirmPassword)
       return res.status(400).json({ error: 'Passwords must match and contain 6–72 characters' });
     const hashed = await hashPassword(password);
     const valid = await prisma.$transaction(async tx => {
-      const reserved = await tx.phoneRegistration.updateMany({ where: { id: challengeId, purpose: 'password-reset', expiresAt: { gt: new Date() }, attempts: { lt: 5 } }, data: { attempts: { increment: 1 } } });
+      const reserved = await tx.phoneRegistration.updateMany({ where: { id: challengeId, purpose: hasProof ? 'password-reset-verified' : 'password-reset', expiresAt: { gt: new Date() }, attempts: { lt: 5 } }, data: { attempts: { increment: 1 } } });
       if (!reserved.count) return false;
       const challenge = await tx.phoneRegistration.findUnique({ where: { id: challengeId } });
-      if (codeHash(challengeId, code) !== challenge.codeHash) return false;
+      if (codeHash(challengeId, hasProof ? resetToken : code) !== challenge.codeHash) return false;
       const updated = await tx.user.updateMany({ where: { id: challenge.userId, customerPhone: challenge.phone, phoneVerified: true, isActive: true }, data: { password: hashed, resetToken: null, resetTokenExp: null } });
       if (!updated.count) return false;
       await tx.phoneRegistration.delete({ where: { id: challengeId } });
       return true;
     });
-    if (!valid) return res.status(400).json({ error: 'Invalid or expired code. Request a new code after 5 failed attempts.' });
+    if (!valid) return res.status(400).json(hasProof ? proofError : { error: 'Invalid or expired code. Request a new code after 5 failed attempts.' });
     return res.json({ message: 'Password updated. Sign in with your phone number and new password.' });
   } catch { return res.status(500).json({ error: 'Unable to reset password. Please try again later.' }); }
 });

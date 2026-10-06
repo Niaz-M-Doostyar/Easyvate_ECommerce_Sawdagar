@@ -47,8 +47,8 @@ jobs:
         run: npm run check:syntax
         working-directory: backend
 
-      - name: Verify product slider promotion behavior
-        run: node --test tests/sliderPromotions.test.js
+      - name: Verify backend behavior and phone recovery
+        run: node --test tests/*.test.js
         working-directory: backend
 
       - name: Install storefront dependencies

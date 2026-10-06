@@ -137,10 +137,9 @@ export default function RegisterScreen({ navigation }) {
             <Input editable={!challengeId && !loading} maxLength={72} returnKeyType="next" onSubmitEditing={() => confirmInput.current?.focus()} autoCapitalize="none" autoCorrect={false} label={t.password} icon="lock-closed-outline" value={form.password} onChangeText={v => set('password', v)} error={errors.password} secureTextEntry autoComplete="new-password" textContentType="newPassword" placeholder="Min 6 characters" />
             <Input editable={!challengeId && !loading} ref={confirmInput} maxLength={72} autoCapitalize="none" autoCorrect={false} label={t.confirmPassword} icon="lock-closed-outline" value={form.confirmPassword} onChangeText={v => set('confirmPassword', v)} error={errors.confirmPassword} secureTextEntry autoComplete="new-password" textContentType="newPassword" returnKeyType="done" onSubmitEditing={handleRegister} placeholder="Repeat password" />
             </>}
-              {challengeId && <OtpVerification code={code} onChange={setCode} phone={form.phone} sentChannel={sentChannel} channel={channel} retryAt={retryAt} expiresAt={expiresAt} onResend={resendCode} onEdit={() => { setChallengeId(''); setCode(''); setVerificationError(''); }} loading={loading} />}
+              {challengeId && <OtpVerification code={code} onChange={value => { setCode(value); setVerificationError(''); }} phone={form.phone} sentChannel={sentChannel} channel={channel} retryAt={retryAt} expiresAt={expiresAt} onResend={resendCode} onEdit={() => { setChallengeId(''); setCode(''); setVerificationError(''); }} loading={loading} error={verificationError} />}
               <OtpMethodPicker value={channel} onChange={setChannel} disabled={loading} verifying={!!challengeId} />
             {challengeId ? <View accessibilityLiveRegion="polite" style={{marginTop:16}}>
-              {verificationError ? <Text accessibilityRole="alert" style={{color:c.error,marginBottom:8}}>{verificationError}</Text> : null}
               <Text style={{color:c.textSecondary,textAlign:'center'}}>{loading ? 'Checking your code…' : verificationError ? 'Edit the code to try again.' : 'Your code will be checked automatically.'}</Text>
             </View> : <Button title="Send verification code" onPress={handleRegister} loading={loading} style={{ marginTop: spacing.base }} /> }
 

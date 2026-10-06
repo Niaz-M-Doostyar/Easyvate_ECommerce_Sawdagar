@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import { View, Text, TouchableOpacity, FlatList, Image, RefreshControl, StyleSheet, Animated, Modal, ActivityIndicator } from 'react-native';
+import { View, Text, TouchableOpacity, FlatList, Image, RefreshControl, StyleSheet, Animated, Modal } from 'react-native';
 import { WebView } from 'react-native-webview';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
@@ -10,7 +10,7 @@ import { useLanguage } from '../../contexts/LanguageContext';
 import { useCart } from '../../contexts/CartContext';
 import FeaturedProductCard from '../../components/FeaturedProductCard';
 import { featuredLayout } from '../../utils/featuredLayout';
-import { readProductPage, appendProducts } from '../../utils/productPagination';
+import { appendProducts } from '../../utils/productPagination';
 import HomeHeroCarousel from '../../components/HomeHeroCarousel';
 import RemoteImage from '../../components/RemoteImage';
 import SectionHeader from '../../components/SectionHeader';
@@ -27,6 +27,12 @@ const TEMPLATE_BANNER_IMAGES = new Set([
   '/assets/img/banner/mini-banner-3.jpg',
   '/assets/img/banner/big-banner.jpg',
 ]);
+const OFFER_IMAGE_FALLBACKS = [
+  require('../../../assets/home/offer-essentials-20261006.jpg'),
+  require('../../../assets/home/offer-discover-20261006.jpg'),
+  require('../../../assets/home/offer-latest-20261006.jpg'),
+];
+const CAMPAIGN_IMAGE_FALLBACK = require('../../../assets/home/campaign-marketplace-20261006.jpg');
 function normalizeBannerImage(src) {
   if (!src || TEMPLATE_BANNER_IMAGES.has(src)) {
     return null;
@@ -34,14 +40,14 @@ function normalizeBannerImage(src) {
   return src;
 }
 const homeCopy = {
-  en: { recommended: 'Recommended for you', featured: 'Featured Products', loadingProducts: 'Loading products…', loadFailed: 'Could not load products. Pull down to refresh.' },
-  ps: { recommended: 'ستاسو لپاره وړاندیز شوي', featured: 'ځانګړي محصولات', loadingProducts: 'محصولات بارېږي…', loadFailed: 'محصولات ونه بارېدل. د تازه کولو لپاره ښکته کش کړئ.' },
-  dr: { recommended: 'پیشنهاد برای شما', featured: 'محصولات ویژه', loadingProducts: 'در حال بارگذاری محصولات…', loadFailed: 'محصولات بارگذاری نشد. برای تازه‌سازی به پایین بکشید.' },
+  en: { recommended: 'Recommended for you', featured: 'Featured Products', loadFailed: 'Could not load products. Pull down to refresh.' },
+  ps: { recommended: 'ستاسو لپاره وړاندیز شوي', featured: 'ځانګړي محصولات', loadFailed: 'محصولات ونه بارېدل. د تازه کولو لپاره ښکته کش کړئ.' },
+  dr: { recommended: 'پیشنهاد برای شما', featured: 'محصولات ویژه', loadFailed: 'محصولات بارگذاری نشد. برای تازه‌سازی به پایین بکشید.' },
 };
-const PRODUCT_PAGE_SIZE = 75;
+const FEATURED_PRODUCT_LIMIT = 60;
 export default function HomeScreen({ navigation }) {
   const scrollRef = useRef(null);
-  const catalog = useRef({ generation: 0, page: 0, hasMore: false, busy: false, ids: new Set() });
+  const catalog = useRef({ generation: 0, loaded: false, busy: false });
   const { width, height, isTablet, fontScale } = useResponsiveLayout();
   const layout = featuredLayout(width, fontScale);
   const { theme } = useTheme();
@@ -51,10 +57,10 @@ export default function HomeScreen({ navigation }) {
   const copy = homeCopy[lang] || homeCopy.en;
   const adSize = Math.max(120, Math.min(width - 48, height - 200, 480));
   const promoCardWidth = Math.min(width * (isTablet ? 0.52 : 0.78), 560);
+  const campaignHorizontal = width >= 700 && width / Math.max(1, fontScale) >= 600;
   const newArrivalCardWidth = Math.min(240, Math.max(144, 152 * Math.min(fontScale, 1.6)));
   const [categories, setCategories] = useState([]);
   const [featured, setFeatured] = useState([]);
-  const [loadingMore, setLoadingMore] = useState(false);
   const [catalogError, setCatalogError] = useState(false);
   const productRows = useMemo(() => {
     const rows = [];
@@ -117,12 +123,11 @@ export default function HomeScreen({ navigation }) {
   const load = useCallback(async () => {
     const generation = ++catalog.current.generation;
     catalog.current.busy = true;
-    setLoadingMore(false);
     setCatalogError(false);
     try {
       const [cats, prod, spon, siteData] = await Promise.all([
         categoriesApi.list(),
-        productsApi.list({ page: 1, limit: PRODUCT_PAGE_SIZE }),
+        productsApi.list({ page: 1, limit: FEATURED_PRODUCT_LIMIT }),
         productsApi.sponsored().catch(() => []),
         siteApi.content().then(data => {
           // Display promotions without waiting for the larger catalog requests.
@@ -136,12 +141,10 @@ export default function HomeScreen({ navigation }) {
       ]);
       if (generation !== catalog.current.generation) return;
       setCategories(cats.categories || cats || []);
-      const result = readProductPage(prod, 1, PRODUCT_PAGE_SIZE);
-      const products = appendProducts([], result.products);
+      const products = appendProducts([], Array.isArray(prod) ? prod : prod?.products)
+        .slice(0, FEATURED_PRODUCT_LIMIT);
       setFeatured(products);
-      catalog.current.page = result.page;
-      catalog.current.hasMore = result.hasMore;
-      catalog.current.ids = new Set(products.map(product => String(product.id)));
+      catalog.current.loaded = true;
       // The catalog is newest first. Keep these shelves distinct so a product
       // does not appear in both New Arrivals and Recommended for you.
       setNewArrivals(products.slice(0, 8));
@@ -176,34 +179,8 @@ export default function HomeScreen({ navigation }) {
   }, []);
   // Keep the loaded catalog and scroll position when returning from a product.
   useFocusEffect(useCallback(() => {
-    if (!catalog.current.page && !catalog.current.busy) load();
+    if (!catalog.current.loaded && !catalog.current.busy) load();
   }, [load]));
-  const loadMore = useCallback(async () => {
-    const state = catalog.current;
-    if (!state.page || state.busy || !state.hasMore) return;
-    const generation = state.generation;
-    const requestedPage = state.page + 1;
-    state.busy = true;
-    setLoadingMore(true);
-    setCatalogError(false);
-    try {
-      const response = await productsApi.list({ page: requestedPage, limit: PRODUCT_PAGE_SIZE });
-      if (generation !== catalog.current.generation) return;
-      const result = readProductPage(response, requestedPage, PRODUCT_PAGE_SIZE);
-      const hasNewProducts = result.products.some(product => !state.ids.has(String(product.id)));
-      result.products.forEach(product => state.ids.add(String(product.id)));
-      state.page = result.page;
-      state.hasMore = result.hasMore && hasNewProducts;
-      setFeatured(current => appendProducts(current, result.products));
-    } catch {
-      if (generation === catalog.current.generation) setCatalogError(true);
-    } finally {
-      if (generation === catalog.current.generation) {
-        catalog.current.busy = false;
-        setLoadingMore(false);
-      }
-    }
-  }, []);
   useEffect(() => {
     if (loading) return undefined;
     const resetTimer = setTimeout(() => scrollRef.current?.scrollToOffset({ offset: 0, animated: false }), 60);
@@ -335,8 +312,6 @@ export default function HomeScreen({ navigation }) {
             {row.map(product => <FeaturedProductCard key={product.id} product={product} onPress={() => goProduct(product)} style={{ width: layout.cardWidth }} />)}
           </View>
         )}
-        onEndReached={loadMore}
-        onEndReachedThreshold={0.6}
         initialNumToRender={3}
         maxToRenderPerBatch={6}
         windowSize={7}
@@ -378,7 +353,6 @@ export default function HomeScreen({ navigation }) {
               contentContainerStyle={{ paddingHorizontal: spacing.base }}
               renderItem={({ item, index }) => {
                 const lines = getBannerTitle(item.title);
-                const accentSource = heroSlides[index % heroSlides.length]?.image;
                 return (
                   <PressableScale
                     scaleTo={0.97}
@@ -390,10 +364,17 @@ export default function HomeScreen({ navigation }) {
                       { backgroundColor: c.card, borderColor: c.borderLight || c.border },
                     ]}
                   >
-                    <RemoteImage source={item.image} fallbackSource={accentSource} style={styles.offerImage} resizeMode="cover" />
+                    <View style={[styles.promoImageFrame, { backgroundColor: c.surfaceElevated }]}>
+                      <RemoteImage
+                        source={item.image}
+                        fallback={<Image source={OFFER_IMAGE_FALLBACKS[index]} style={styles.promoImage} resizeMode="contain" />}
+                        style={styles.promoImage}
+                        resizeMode="contain"
+                      />
+                    </View>
                     <View style={styles.offerContent}>
-                      {!!item.label && <Text numberOfLines={1} style={[styles.offerLabel, { color: c.textSecondary }]}>{item.label}</Text>}
-                      <Text numberOfLines={2} style={[styles.offerTitle, { color: c.text }]}>{lines.join(' ')}</Text>
+                      {!!item.label && <Text numberOfLines={2} style={[styles.offerLabel, { color: c.textSecondary, textAlign: isRTL ? 'right' : 'left' }]}>{item.label}</Text>}
+                      <Text numberOfLines={2} style={[styles.offerTitle, { color: c.text, textAlign: isRTL ? 'right' : 'left' }]}>{lines.join(' ')}</Text>
                       <View style={[styles.offerAction, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
                         <Text numberOfLines={2} style={[styles.offerActionText, { color: c.primary }]}>{item.buttonLabel || 'Shop now'}</Text>
                         <MaterialCommunityIcons name={isRTL ? 'arrow-left' : 'arrow-right'} size={18} color={c.primary} />
@@ -430,14 +411,21 @@ export default function HomeScreen({ navigation }) {
             <PressableScale
               scaleTo={0.98}
               onPress={() => openPromo(bigBanner.buttonHref, bigBanner.title)}
-              style={[styles.bigBannerCard, shadows.md, { backgroundColor: c.card, borderColor: c.borderLight || c.border }]}
+              style={[styles.bigBannerCard, shadows.md, { marginHorizontal: layout.gutter, backgroundColor: c.card, borderColor: c.borderLight || c.border }]}
             >
-              <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'stretch' }}>
-                <RemoteImage source={bigBanner.image} fallbackSource={heroSlides[0]?.image} style={styles.campaignImage} resizeMode="cover" />
-                <View style={styles.campaignContent}>
-                  {!!bigBanner.subtitle && <Text numberOfLines={2} style={[styles.offerLabel, { color: c.textSecondary }]}>{bigBanner.subtitle}</Text>}
-                  <Text numberOfLines={2} style={[styles.campaignTitle, { color: c.text }]}>{String(bigBanner.title).replace(/\n/g, ' ')}</Text>
-                  {!!bigBanner.description && <Text numberOfLines={3} style={[styles.campaignDescription, { color: c.textSecondary }]}>{bigBanner.description}</Text>}
+              <View style={[styles.campaignLayout, { flexDirection: campaignHorizontal ? (isRTL ? 'row-reverse' : 'row') : 'column', alignItems: campaignHorizontal ? 'center' : 'stretch' }]}>
+                <View style={[styles.promoImageFrame, styles.campaignImageFrame, { width: campaignHorizontal ? '44%' : '100%', backgroundColor: c.surfaceElevated }]}>
+                  <RemoteImage
+                    source={bigBanner.image}
+                    fallback={<Image source={CAMPAIGN_IMAGE_FALLBACK} style={styles.promoImage} resizeMode="contain" />}
+                    style={styles.promoImage}
+                    resizeMode="contain"
+                  />
+                </View>
+                <View style={[styles.campaignContent, campaignHorizontal ? { flex: 1 } : { width: '100%' }]}>
+                  {!!bigBanner.subtitle && <Text style={[styles.offerLabel, { color: c.textSecondary, textAlign: isRTL ? 'right' : 'left' }]}>{bigBanner.subtitle}</Text>}
+                  <Text style={[styles.campaignTitle, { color: c.text, textAlign: isRTL ? 'right' : 'left' }]}>{String(bigBanner.title).replace(/\n/g, ' ')}</Text>
+                  {!!bigBanner.description && <Text style={[styles.campaignDescription, { color: c.textSecondary, textAlign: isRTL ? 'right' : 'left' }]}>{bigBanner.description}</Text>}
                   <View style={[styles.offerAction, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
                     <Text numberOfLines={2} style={[styles.offerActionText, { color: c.primary }]}>{bigBanner.buttonLabel || 'Shop now'}</Text>
                     <MaterialCommunityIcons name={isRTL ? 'arrow-left' : 'arrow-right'} size={18} color={c.primary} />
@@ -466,7 +454,6 @@ export default function HomeScreen({ navigation }) {
           </View>
         ) : null}
         ListFooterComponent={<>
-        {loadingMore ? <ActivityIndicator accessibilityLabel={copy.loadingProducts} color={c.primary} style={{ marginVertical: 16 }} /> : null}
         {catalogError ? <Text style={{ color: c.textSecondary, fontSize: 14, lineHeight: 21, textAlign: 'center', padding: 16 }}>{copy.loadFailed}</Text> : null}
         {newArrivals.length > 0 && (
           <SectionReveal delay={370}>
@@ -513,16 +500,18 @@ function SectionReveal({ children, delay = 0 }) {
   );
 }
 const styles = StyleSheet.create({
-  offerImage: { width: '100%', height: 140 },
-  offerContent: { padding: 14, gap: 6, flex: 1 },
-  offerLabel: { fontSize: 12, lineHeight: 18, fontWeight: '500' },
+  promoImageFrame: { width: '100%', aspectRatio: 16 / 10, padding: 12, borderRadius: borderRadius.lg, overflow: 'hidden' },
+  promoImage: { width: '100%', height: '100%' },
+  offerContent: { gap: 8, flex: 1 },
+  offerLabel: { fontSize: 13, lineHeight: 19, fontWeight: '500' },
   offerTitle: { fontSize: 17, lineHeight: 23, fontWeight: '600', minHeight: 46 },
   offerAction: { minHeight: 44, alignItems: 'center', gap: 8, marginTop: 2 },
   offerActionText: { flexShrink: 1, fontSize: 14, lineHeight: 20, fontWeight: '600' },
-  campaignImage: { width: '38%', minHeight: 210 },
-  campaignContent: { flex: 1, padding: 18, gap: 6 },
-  campaignTitle: { fontSize: 21, lineHeight: 27, fontWeight: '600' },
-  campaignDescription: { fontSize: 14, lineHeight: 21 },
+  campaignLayout: { gap: spacing.xl },
+  campaignImageFrame: { padding: spacing.base, flexShrink: 0 },
+  campaignContent: { minWidth: 0, gap: spacing.md },
+  campaignTitle: { fontSize: 24, lineHeight: 32, fontWeight: '600' },
+  campaignDescription: { fontSize: 15, lineHeight: 23 },
   safe: { flex: 1, width: '100%', maxWidth: 1200, alignSelf: 'center' },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: spacing.base, paddingVertical: spacing.sm, borderBottomWidth: 1 },
   brandBlock: { flex: 1, paddingRight: spacing.base },
@@ -532,7 +521,7 @@ const styles = StyleSheet.create({
   cartBadgeText: { color: '#FFF', fontSize: 10, lineHeight: 14, fontWeight: fontWeight.bold, includeFontPadding: false, textAlign: 'center', textAlignVertical: 'center' },
   searchBar: { flexDirection: 'row', alignItems: 'center', marginHorizontal: spacing.base, marginTop: spacing.sm, paddingHorizontal: spacing.md, height: 50, borderRadius: borderRadius.md, borderWidth: 1, gap: 10 },
   searchText: { flex: 1, minWidth: 0, fontSize: fontSize.base, lineHeight: 24, includeFontPadding: false, textAlignVertical: 'center' },
-  promoCard: { borderRadius: borderRadius.xl, overflow: 'hidden', marginRight: spacing.md, borderWidth: 1 },
+  promoCard: { borderRadius: borderRadius.xxl, overflow: 'hidden', marginRight: spacing.md, borderWidth: 1, padding: spacing.xl, gap: spacing.base },
   audienceMessage: { flexDirection: 'row', alignItems: 'flex-start', gap: 10, marginHorizontal: spacing.base, borderRadius: borderRadius.md, padding: 8, marginTop: spacing.sm, borderWidth: 1 },
   audienceIcon: { width: 26, height: 26, borderRadius: borderRadius.full, justifyContent: 'center', alignItems: 'center' },
   audienceText: { flex: 1, fontSize: fontSize.xs, lineHeight: 18, fontWeight: fontWeight.medium },
@@ -541,5 +530,5 @@ const styles = StyleSheet.create({
   catImgRing: { width: 62, height: 62, borderRadius: borderRadius.full, borderWidth: 1, padding: 2, backgroundColor: '#FFF', overflow: 'hidden', justifyContent: 'center', alignItems: 'center' },
   catImgNew: { width: 54, height: 54, borderRadius: borderRadius.full },
   catNameNew: { fontSize: fontSize.xs, lineHeight: 18, marginTop: 10, textAlign: 'center', fontWeight: fontWeight.semibold, includeFontPadding: false },
-  bigBannerCard: { marginHorizontal: spacing.base, marginBottom: spacing.base, borderRadius: borderRadius.xl, overflow: 'hidden', borderWidth: 1 },
+  bigBannerCard: { marginBottom: spacing.xl, borderRadius: borderRadius.xxl, overflow: 'hidden', borderWidth: 1, padding: spacing.xl },
 });

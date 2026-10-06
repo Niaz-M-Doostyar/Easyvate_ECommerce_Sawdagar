@@ -117,21 +117,21 @@ const defaultSiteContent = {
       {
         "label": "Everyday essentials",
         "title": "Find Your Everyday\nEssentials",
-        "image": "/assets/img/banner/mini-banner-1.jpg",
+        "image": "/assets/img/home/offer-essentials-20261006.jpg",
         "buttonLabel": "Shop Now",
         "buttonHref": "/search"
       },
       {
         "label": "Explore products",
         "title": "Discover More\nOn Sawdagar",
-        "image": "/assets/img/banner/mini-banner-2.jpg",
+        "image": "/assets/img/home/offer-discover-20261006.jpg",
         "buttonLabel": "Discover Now",
         "buttonHref": "/search"
       },
       {
         "label": "Shop the collection",
         "title": "Explore Our\nLatest Products",
-        "image": "/assets/img/banner/mini-banner-3.jpg",
+        "image": "/assets/img/home/offer-latest-20261006.jpg",
         "buttonLabel": "Discover Now",
         "buttonHref": "/search"
       }
@@ -165,7 +165,7 @@ const defaultSiteContent = {
       "description": "Browse our online marketplace in Afghanistan.",
       "buttonLabel": "Shop Now",
       "buttonHref": "/search",
-      "image": "/assets/img/banner/big-banner.jpg"
+      "image": "/assets/img/home/campaign-marketplace-20261006.jpg"
     },
     "brands": {
       "title": "Popular Brands"

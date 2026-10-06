@@ -32,7 +32,7 @@ test('provider requests keep SMS to digits only and select the WhatsApp endpoint
 });
 
 // Exercise actual Express handlers with isolated storage and a fake provider.
-test('signup requires verification, enforces limits, expires codes and consumes successful challenges', async () => {
+test('signup and two-step recovery enforce purpose, expiry, attempt limits and one-use verification', async () => {
   const originalFetch = global.fetch;
   const originalKey = process.env.GHONCHA_API_KEY;
   process.env.GHONCHA_API_KEY = 'test-key';
@@ -44,12 +44,11 @@ test('signup requires verification, enforces limits, expires codes and consumes 
     user: {
       findFirst: async ({ where }) => user && where.OR?.some(condition => condition.customerPhone === user.customerPhone || condition.phone?.in?.includes(user.phone)) ? user : null,
       findUnique: async ({ where }) => user?.email === where.email ? user : null,
-      updateMany: async ({ where, data }) => { if (!user || user.id !== where.id || user.customerPhone !== where.customerPhone) return { count: 0 }; Object.assign(user, data); return { count: 1 }; },
+      updateMany: async ({ where, data }) => { if (!user || user.id !== where.id || user.customerPhone !== where.customerPhone || user.phoneVerified !== where.phoneVerified || user.isActive !== where.isActive) return { count: 0 }; Object.assign(user, data); return { count: 1 }; },
       create: async ({ data }) => { user = { id: 1, ...data }; return user; },
     },
     phoneRegistration: {
       findUnique: async ({ where }) => pending && (where.phone === pending.phone || where.id === pending.id) ? { ...pending } : null,
-      updateMany: async ({ where, data }) => { if (!user || user.id !== where.id || user.customerPhone !== where.customerPhone) return { count: 0 }; Object.assign(user, data); return { count: 1 }; },
       create: async ({ data }) => { pending = { ...data }; return pending; },
       updateMany: async ({ where, data }) => {
         if (!pending || pending.id !== where.id) return { count: 0 };
@@ -89,6 +88,7 @@ test('signup requires verification, enforces limits, expires codes and consumes 
     assert.equal(pending.codeHash.includes(deliveredCode), false);
     assert.equal((await call('/customer-otp', body)).statusCode, 429);
     const challengeId = sent.body.challengeId;
+    assert.equal((await call('/verify-phone-reset-otp', { challengeId, code: deliveredCode })).statusCode, 400);
     assert.equal((await call('/verify-customer-otp', { challengeId, code: '000000' })).statusCode, 400);
     pending.expiresAt = new Date(0);
     assert.equal((await call('/verify-customer-otp', { challengeId, code: deliveredCode })).statusCode, 400);
@@ -114,6 +114,50 @@ test('signup requires verification, enforces limits, expires codes and consumes 
     assert.notEqual(user.password, oldPasswordHash);
     assert.equal(pending, null);
     assert.equal((await call('/reset-phone-password', { challengeId: reset.body.challengeId, code: deliveredCode, password: 'changed123', confirmPassword: 'changed123' })).statusCode, 400);
+    // The new mobile flow verifies first, then submits only a short-lived proof.
+    const recovery = await call('/customer-otp', { phone: body.phone, purpose: 'password-reset' });
+    const recoveryId = recovery.body.challengeId;
+    const resetCode = deliveredCode;
+    const passwordBeforeVerification = user.password;
+    assert.equal((await call('/verify-phone-reset-otp', { challengeId: recoveryId, code: '000000' })).statusCode, 400);
+    assert.equal(pending.attempts, 1);
+    assert.equal(user.password, passwordBeforeVerification);
+    pending.expiresAt = new Date(0);
+    assert.equal((await call('/verify-phone-reset-otp', { challengeId: recoveryId, code: resetCode })).statusCode, 400);
+    pending.expiresAt = new Date(Date.now() + 300000);
+    pending.attempts = 5;
+    assert.equal((await call('/verify-phone-reset-otp', { challengeId: recoveryId, code: resetCode })).statusCode, 400);
+    pending.attempts = 1;
+    const proof = await call('/verify-phone-reset-otp', { challengeId: recoveryId, code: resetCode });
+    assert.equal(proof.statusCode, 200);
+    assert.equal(proof.body.expiresIn, 600);
+    assert.match(proof.body.resetToken, /^[a-f0-9]{64}$/);
+    assert.equal(pending.purpose, 'password-reset-verified');
+    assert.notEqual(pending.codeHash, proof.body.resetToken);
+    assert.equal(user.password, passwordBeforeVerification);
+    assert.equal((await call('/verify-phone-reset-otp', { challengeId: recoveryId, code: resetCode })).statusCode, 400);
+    assert.equal((await call('/reset-phone-password', { challengeId: recoveryId, code: resetCode, password: 'newsecret123', confirmPassword: 'newsecret123' })).statusCode, 400);
+    const newPasswordBody = { challengeId: recoveryId, resetToken: proof.body.resetToken, password: 'newsecret123', confirmPassword: 'newsecret123' };
+    assert.equal((await call('/reset-phone-password', { ...newPasswordBody, confirmPassword: 'mismatch' })).statusCode, 400);
+    assert.equal(pending.attempts, 0);
+    assert.equal((await call('/reset-phone-password', { ...newPasswordBody, resetToken: 'bad' })).body.code, 'RESET_PROOF_INVALID');
+    assert.equal((await call('/reset-phone-password', { ...newPasswordBody, resetToken: '0'.repeat(64) })).body.code, 'RESET_PROOF_INVALID');
+    assert.equal(user.password, passwordBeforeVerification);
+    const verifiedExpiry = pending.expiresAt;
+    pending.expiresAt = new Date(0);
+    assert.equal((await call('/reset-phone-password', newPasswordBody)).body.code, 'RESET_PROOF_INVALID');
+    pending.expiresAt = verifiedExpiry;
+    pending.attempts = 5;
+    assert.equal((await call('/reset-phone-password', newPasswordBody)).body.code, 'RESET_PROOF_INVALID');
+    pending.attempts = 1;
+    user.isActive = false;
+    assert.equal((await call('/reset-phone-password', newPasswordBody)).body.code, 'RESET_PROOF_INVALID');
+    assert.equal(user.password, passwordBeforeVerification);
+    user.isActive = true;
+    assert.equal((await call('/reset-phone-password', newPasswordBody)).statusCode, 200);
+    assert.notEqual(user.password, passwordBeforeVerification);
+    assert.equal(pending, null);
+    assert.equal((await call('/reset-phone-password', newPasswordBody)).body.code, 'RESET_PROOF_INVALID');
     const supplierBody = { role: 'supplier', fullName: 'Test Supplier', companyName: 'Test Shop', province: 'Kabul', phone: '0700123457', password: 'secret123', confirmPassword: 'secret123' };
     assert.equal((await call('/customer-otp', { ...supplierBody, province: '' })).statusCode, 400);
     assert.equal((await call('/customer-otp', { ...supplierBody, email: 'invalid-email' })).statusCode, 400);

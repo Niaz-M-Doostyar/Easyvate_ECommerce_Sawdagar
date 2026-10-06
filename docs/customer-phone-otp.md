@@ -41,7 +41,7 @@ Signup keeps Afghanistan's +93 prefix visible and normalizes local, internationa
 
 ## Automatic verification
 
-Signup submits verification once the sixth digit is typed, pasted or autofilled. During checking the code field is disabled, and errors are displayed without creating an account. Editing an incorrect code allows another attempt; rerenders and network failures never automatically repeat the same attempt. Resending creates a new challenge. Phone recovery also submits automatically when the six-digit code and matching new password are ready. Server expiry, attempt limits and one-use verification remain unchanged.
+Signup submits verification once the sixth digit is typed, pasted or autofilled. During checking the code field is disabled, and errors are displayed without creating an account. Editing an incorrect code allows another attempt; rerenders and network failures never automatically repeat the same attempt. Resending creates a new challenge. Phone recovery verifies the six-digit code first, then opens a separate New Password screen. Server expiry, attempt limits and one-use verification remain enforced.
 
 ## OTP environment repair (2026-10-04)
 
@@ -64,3 +64,28 @@ One user-approved SMS was accepted and the user confirmed receipt. No account
 was created and no password was changed. Customer signup, supplier signup, and
 phone-password recovery tests pass. The deployed backend readiness check passed
 after the final release, and the provider key was verified in that release.
+
+## Separate recovery steps (October 5, 2026)
+
+`POST /api/auth/verify-phone-reset-otp` accepts `{challengeId, code}`. A valid
+recovery code becomes a random, one-use reset token valid for ten minutes. Only
+its hash is stored. The OTP is consumed at this transition; no password changes.
+The app replaces the verification screen with New Password and submits
+`{challengeId, resetToken, password, confirmPassword}` to
+`POST /api/auth/reset-phone-password`. Success consumes the token and returns
+the customer or supplier to sign in. Invalid, expired, exhausted, or consumed
+proofs return `RESET_PROOF_INVALID` and require another code. The existing
+single-step OTP/password request is retained for installed clients and the
+website; email recovery links are also retained. No schema migration is needed.
+
+The shared OTP input stays a native, focusable text field with visible opacity;
+only its glyphs are transparent beneath the six decorative digits. iOS uses
+`textContentType="oneTimeCode"`; Android uses `autoComplete="sms-otp"` and
+`importantForAutofill="yes"`. Formatted paste and Persian/Arabic numerals normalize
+before truncating to six digits. The input focuses after loading and when the
+app returns from Messages. These settings follow [React Native input guidance](https://reactnative.dev/docs/0.85/textinput),
+[Apple autofill guidance](https://developer.apple.com/documentation/security/enabling-password-autofill-on-a-text-input-view),
+and [Android autofill guidance](https://developer.android.com/identity/autofill/autofill-optimize).
+Actual SMS suggestions depend on the device, keyboard, received message and
+autofill settings; simulator tests cannot establish physical SMS suggestions.
+WhatsApp codes can be pasted or typed. No SMS-reading permission is requested.

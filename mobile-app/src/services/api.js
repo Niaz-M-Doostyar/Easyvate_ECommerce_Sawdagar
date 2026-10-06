@@ -77,6 +77,7 @@ export const api = {
 export const authApi = {
   login: (d) => api.post('/api/auth/login', d),
   requestCustomerOtp: (d) => api.post('/api/auth/customer-otp', d),
+  verifyPhoneResetOtp: (d) => api.post('/api/auth/verify-phone-reset-otp', d),
   resetPhonePassword: (d) => api.post('/api/auth/reset-phone-password', d),
   verifyCustomerOtp: (d) => api.post('/api/auth/verify-customer-otp', d),
   register: (d) => api.post('/api/auth/register', d),
