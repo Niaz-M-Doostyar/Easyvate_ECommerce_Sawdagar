@@ -7,6 +7,13 @@ import { useSiteData } from '@/contexts/SiteDataContext';
 import MocartProductItem, { MocartProductListItem } from '@/components/MocartProductItem';
 import { DealCountdown, StorefrontCarousel, StorefrontHero } from '@/components/StorefrontCarousel';
 
+const OFFER_IMAGE_FALLBACKS = [
+  '/assets/img/home/offer-essentials-20261006.jpg',
+  '/assets/img/home/offer-discover-20261006.jpg',
+  '/assets/img/home/offer-latest-20261006.jpg',
+];
+const CAMPAIGN_IMAGE_FALLBACK = '/assets/img/home/campaign-marketplace-20261006.jpg';
+
 function asArray(value) {
   return Array.isArray(value) ? value.filter(Boolean) : [];
 }
@@ -21,6 +28,11 @@ function imageSource(value) {
     return source;
   }
   return '/' + source;
+}
+
+function applyImageFallback(event, fallback) {
+  const image = event.currentTarget;
+  if (image.getAttribute('src') !== fallback) image.src = fallback;
 }
 
 function localizedValue(item, field, lang) {
@@ -134,7 +146,7 @@ export default function HomePageClient({
     const controller = new AbortController();
 
     Promise.allSettled([
-      fetchPublicJson('/api/products?limit=50&status=approved', controller.signal),
+      fetchPublicJson('/api/products?limit=60&status=approved', controller.signal),
       fetchPublicJson('/api/products/sponsored', controller.signal),
       fetchPublicJson('/api/blog?limit=3', controller.signal),
     ]).then(([productsResult, sponsoredResult, blogResult]) => {
@@ -173,7 +185,13 @@ export default function HomePageClient({
   const categories = asArray(siteCategories).filter((category) => (
     category?.id && category?.slug && getName(category)
   ));
-  const promoBanners = asArray(home.promoBanners).filter((banner) => imageSource(banner?.image));
+  const promoBanners = asArray(home.promoBanners)
+    .map((banner, index) => ({
+      ...banner,
+      resolvedImage: imageSource(banner?.image) || OFFER_IMAGE_FALLBACKS[index % OFFER_IMAGE_FALLBACKS.length],
+      fallbackImage: OFFER_IMAGE_FALLBACKS[index % OFFER_IMAGE_FALLBACKS.length],
+    }))
+    .filter((banner) => imageSource(banner.image) || banner.label || banner.title || (banner.buttonLabel && banner.buttonHref));
   const features = asArray(home.features).filter((feature) => (
     feature?.title || feature?.desc || feature?.description || feature?.image || feature?.icon
   ));
@@ -215,7 +233,7 @@ export default function HomePageClient({
   const realProducts = asArray(products).filter((product) => product?.id);
   const realSponsoredProducts = asArray(sponsoredProducts).filter((product) => product?.id);
   const trendingProducts = realProducts.slice(0, 20);
-  const featuredProducts = realProducts.slice(0, 30);
+  const featuredProducts = realProducts.slice(0, 60);
   const onSaleProducts = realProducts.filter((product) => {
     const currentPrice = Number(product.retailPrice || 0);
     const compareAt = Number(product.suggestedPrice || product.wholesaleCost || 0);
@@ -239,7 +257,7 @@ export default function HomePageClient({
 
   const videoId = getYouTubeId(video.videoUrl);
   const videoImage = imageSource(video.backgroundImage);
-  const bigBannerImage = imageSource(bigBanner.image);
+  const bigBannerImage = imageSource(bigBanner.image) || CAMPAIGN_IMAGE_FALLBACK;
   const hasBigBanner = Boolean(bigBannerImage && (
     bigBanner.subtitle
     || bigBanner.title
@@ -404,8 +422,15 @@ export default function HomePageClient({
             <div className="sd-promo-grid">
               {promoBanners.slice(0, 3).map((banner, index) => (
                 <article className="sd-promo-card" key={banner.id || banner.title || index}>
-                  <img src={imageSource(banner.image)} alt="" loading="lazy" decoding="async" />
-                  <span className="sd-promo-overlay" aria-hidden="true" />
+                  <div className="sd-promo-media">
+                    <img
+                      src={banner.resolvedImage}
+                      alt=""
+                      loading="lazy"
+                      decoding="async"
+                      onError={(event) => applyImageFallback(event, banner.fallbackImage)}
+                    />
+                  </div>
                   <div className="sd-promo-content">
                     {banner.label && <span>{banner.label}</span>}
                     {banner.title && <h2><MultilineText value={banner.title} /></h2>}
@@ -495,16 +520,22 @@ export default function HomePageClient({
       {hasBigBanner && (
         <section className="sd-section">
           <div className="container">
-            <div
-              className="sd-collection-banner"
-              style={{ '--sd-banner-image': 'url("' + bigBannerImage + '")' }}
-            >
+            <div className="sd-collection-banner">
+              <div className="sd-collection-media">
+                <img
+                  src={bigBannerImage}
+                  alt=""
+                  loading="lazy"
+                  decoding="async"
+                  onError={(event) => applyImageFallback(event, CAMPAIGN_IMAGE_FALLBACK)}
+                />
+              </div>
               <div className="sd-collection-copy">
                 {bigBanner.subtitle && <span>{bigBanner.subtitle}</span>}
                 {bigBanner.title && <h2>{bigBanner.title}</h2>}
                 {bigBanner.description && <p>{bigBanner.description}</p>}
                 {bigBanner.buttonLabel && bigBanner.buttonHref && (
-                  <Link href={bigBanner.buttonHref} className="sd-button sd-button-light">
+                  <Link href={bigBanner.buttonHref} className="sd-button sd-button-dark">
                     {bigBanner.buttonLabel} <i className="far fa-arrow-right" aria-hidden="true" />
                   </Link>
                 )}

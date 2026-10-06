@@ -14,6 +14,11 @@ in admin. The restored pre-October-2 slider, admin promotions and both distinct
 product shelves remain.
 This replaces the automatic pagination described in the earlier catalog review.
 
+The website also fetches and displays at most 60 Featured Items. Its three offer
+cards and below-category campaign show the entire 3:2 photograph in a padded
+frame, with copy and buttons outside the image. Custom admin images take
+priority; missing or unavailable images use the bundled campaign assets.
+
 ## Phone recovery
 
 Phone number → send code → verify code → New Password → sign in. Incorrect OTPs
@@ -39,6 +44,9 @@ sent during this work.
   after repeated end scrolling. The offer and campaign layouts were inspected.
 - The mobile suite contains 34 passing tests; all 9 backend tests pass, including
   recovery security checks. Mobile JavaScript sources parse successfully.
+- Website offer/campaign previews at 320px, 768px and 1440px showed full images
+  without horizontal overflow or overlapping copy. The production build and
+  rendered Featured Items count are checked during deployment.
 
 See [phone recovery review](mobile-phone-recovery-review.md) for the native
 recovery checks and [image assets and prompts](home-campaign-images.md).
@@ -64,3 +72,10 @@ To restore the previous API/site/admin code, point
 `sawdagar-backend`, `sawdagar-website`, and `sawdagar-admin` in PM2. Revert/rebuild
 the matching mobile source too. The replacement JPEGs remain available in the
 repository if the new campaign is wanted again.
+
+The website layout follow-up has a separate restore branch,
+`backup/website-before-home-images-layout-2026-10-06`, at `f0edf20c`.
+Revert the commit titled `Show complete home campaign images and 60 featured products on website`
+to undo only that layout/count follow-up, then rebuild and deploy the website.
+Its prior complete VPS release remains at
+`/var/www/releases/sawdagar/fixed60-offers-phone-reset-20261006`.
