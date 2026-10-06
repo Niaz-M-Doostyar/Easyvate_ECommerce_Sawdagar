@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import { View, Text, TouchableOpacity, FlatList, Image, RefreshControl, StyleSheet, Animated, Modal } from 'react-native';
+import { View, Text, TouchableOpacity, FlatList, Image, RefreshControl, StyleSheet, Animated, Modal, Platform } from 'react-native';
 import { WebView } from 'react-native-webview';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
@@ -12,7 +12,7 @@ import FeaturedProductCard from '../../components/FeaturedProductCard';
 import { featuredLayout } from '../../utils/featuredLayout';
 import { appendProducts } from '../../utils/productPagination';
 import HomeHeroCarousel from '../../components/HomeHeroCarousel';
-import RemoteImage from '../../components/RemoteImage';
+import { HomeFeaturedOffers, HomeDiscoveryCampaign, phoneCampaignArtwork } from '../../components/HomeCampaignSections';
 import SectionHeader from '../../components/SectionHeader';
 import SkeletonLoader from '../../components/SkeletonLoader';
 import BrandLogo from '../../components/BrandLogo';
@@ -20,19 +20,13 @@ import PressableScale from '../../components/PressableScale';
 import CategoryIcon3D from '../../components/CategoryIcon3D';
 import { productsApi, categoriesApi, siteApi } from '../../services/api';
 import { optimizedImageUri, buildImageUriCandidates } from '../../config';
-import { spacing, fontSize, fontWeight, borderRadius, shadows } from '../../theme';
+import { spacing, fontSize, fontWeight, borderRadius } from '../../theme';
 const TEMPLATE_BANNER_IMAGES = new Set([
   '/assets/img/banner/mini-banner-1.jpg',
   '/assets/img/banner/mini-banner-2.jpg',
   '/assets/img/banner/mini-banner-3.jpg',
   '/assets/img/banner/big-banner.jpg',
 ]);
-const OFFER_IMAGE_FALLBACKS = [
-  require('../../../assets/home/offer-essentials-20261006.jpg'),
-  require('../../../assets/home/offer-discover-20261006.jpg'),
-  require('../../../assets/home/offer-latest-20261006.jpg'),
-];
-const CAMPAIGN_IMAGE_FALLBACK = require('../../../assets/home/campaign-marketplace-20261006.jpg');
 function normalizeBannerImage(src) {
   if (!src || TEMPLATE_BANNER_IMAGES.has(src)) {
     return null;
@@ -56,8 +50,7 @@ export default function HomeScreen({ navigation }) {
   const c = theme.colors;
   const copy = homeCopy[lang] || homeCopy.en;
   const adSize = Math.max(120, Math.min(width - 48, height - 200, 480));
-  const promoCardWidth = Math.min(width * (isTablet ? 0.52 : 0.78), 560);
-  const campaignHorizontal = width >= 700 && width / Math.max(1, fontScale) >= 600;
+  const tabletCampaigns = Platform.OS === 'ios' ? Platform.isPad === true : isTablet;
   const newArrivalCardWidth = Math.min(240, Math.max(144, 152 * Math.min(fontScale, 1.6)));
   const [categories, setCategories] = useState([]);
   const [featured, setFeatured] = useState([]);
@@ -212,17 +205,18 @@ export default function HomeScreen({ navigation }) {
     priceValue: slide.priceValue || '',
   }));
   useEffect(() => {
+    const remoteSource = (source) => tabletCampaigns ? source : phoneCampaignArtwork(source).source;
     const promoUris = promoBanners
-      .map((item) => buildImageUriCandidates(item?.image)[0])
+      .map((item) => buildImageUriCandidates(remoteSource(item?.image))[0])
       .filter(Boolean);
-    const bigBannerUri = buildImageUriCandidates(bigBanner?.image)[0];
+    const bigBannerUri = buildImageUriCandidates(remoteSource(bigBanner?.image))[0];
     if (bigBannerUri) {
       promoUris.push(bigBannerUri);
     }
     promoUris.forEach((uri) => {
       Image.prefetch(uri).catch(() => {});
     });
-  }, [bigBanner?.image, promoBanners]);
+  }, [bigBanner?.image, promoBanners, tabletCampaigns]);
   useEffect(() => {
     const visibleProductUris = [
       ...featured.slice(0, 6),
@@ -345,44 +339,15 @@ export default function HomeScreen({ navigation }) {
         {promoBanners.length > 0 && (
           <SectionReveal delay={130}>
             <SectionHeader title="Featured Offers" actionLabel={t.viewAll} onAction={() => navigation.navigate('Products', { title: 'Featured Offers' })} />
-            <FlatList
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              data={promoBanners}
-              keyExtractor={(item, index) => `${item.title || 'banner'}-${index}`}
-              contentContainerStyle={{ paddingHorizontal: spacing.base }}
-              renderItem={({ item, index }) => {
-                const lines = getBannerTitle(item.title);
-                return (
-                  <PressableScale
-                    scaleTo={0.97}
-                    onPress={() => openPromo(item.buttonHref, item.title)}
-                    style={[
-                      styles.promoCard,
-                      { width: promoCardWidth },
-                      shadows.md,
-                      { backgroundColor: c.card, borderColor: c.borderLight || c.border },
-                    ]}
-                  >
-                    <View style={[styles.promoImageFrame, { backgroundColor: c.surfaceElevated }]}>
-                      <RemoteImage
-                        source={item.image}
-                        fallback={<Image source={OFFER_IMAGE_FALLBACKS[index]} style={styles.promoImage} resizeMode="contain" />}
-                        style={styles.promoImage}
-                        resizeMode="contain"
-                      />
-                    </View>
-                    <View style={styles.offerContent}>
-                      {!!item.label && <Text numberOfLines={2} style={[styles.offerLabel, { color: c.textSecondary, textAlign: isRTL ? 'right' : 'left' }]}>{item.label}</Text>}
-                      <Text numberOfLines={2} style={[styles.offerTitle, { color: c.text, textAlign: isRTL ? 'right' : 'left' }]}>{lines.join(' ')}</Text>
-                      <View style={[styles.offerAction, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-                        <Text numberOfLines={2} style={[styles.offerActionText, { color: c.primary }]}>{item.buttonLabel || 'Shop now'}</Text>
-                        <MaterialCommunityIcons name={isRTL ? 'arrow-left' : 'arrow-right'} size={18} color={c.primary} />
-                      </View>
-                    </View>
-                  </PressableScale>
-                );
-              }}
+            <HomeFeaturedOffers
+              banners={promoBanners}
+              width={width}
+              fontScale={fontScale}
+              isTablet={tabletCampaigns}
+              isRTL={isRTL}
+              theme={theme}
+              gutter={layout.gutter}
+              onPress={openPromo}
             />
           </SectionReveal>
         )}
@@ -408,31 +373,16 @@ export default function HomeScreen({ navigation }) {
         </SectionReveal>
         {bigBanner?.title ? (
           <SectionReveal delay={290}>
-            <PressableScale
-              scaleTo={0.98}
-              onPress={() => openPromo(bigBanner.buttonHref, bigBanner.title)}
-              style={[styles.bigBannerCard, shadows.md, { marginHorizontal: layout.gutter, backgroundColor: c.card, borderColor: c.borderLight || c.border }]}
-            >
-              <View style={[styles.campaignLayout, { flexDirection: campaignHorizontal ? (isRTL ? 'row-reverse' : 'row') : 'column', alignItems: campaignHorizontal ? 'center' : 'stretch' }]}>
-                <View style={[styles.promoImageFrame, styles.campaignImageFrame, { width: campaignHorizontal ? '44%' : '100%', backgroundColor: c.surfaceElevated }]}>
-                  <RemoteImage
-                    source={bigBanner.image}
-                    fallback={<Image source={CAMPAIGN_IMAGE_FALLBACK} style={styles.promoImage} resizeMode="contain" />}
-                    style={styles.promoImage}
-                    resizeMode="contain"
-                  />
-                </View>
-                <View style={[styles.campaignContent, campaignHorizontal ? { flex: 1 } : { width: '100%' }]}>
-                  {!!bigBanner.subtitle && <Text style={[styles.offerLabel, { color: c.textSecondary, textAlign: isRTL ? 'right' : 'left' }]}>{bigBanner.subtitle}</Text>}
-                  <Text style={[styles.campaignTitle, { color: c.text, textAlign: isRTL ? 'right' : 'left' }]}>{String(bigBanner.title).replace(/\n/g, ' ')}</Text>
-                  {!!bigBanner.description && <Text style={[styles.campaignDescription, { color: c.textSecondary, textAlign: isRTL ? 'right' : 'left' }]}>{bigBanner.description}</Text>}
-                  <View style={[styles.offerAction, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-                    <Text numberOfLines={2} style={[styles.offerActionText, { color: c.primary }]}>{bigBanner.buttonLabel || 'Shop now'}</Text>
-                    <MaterialCommunityIcons name={isRTL ? 'arrow-left' : 'arrow-right'} size={18} color={c.primary} />
-                  </View>
-                </View>
-              </View>
-            </PressableScale>
+            <HomeDiscoveryCampaign
+              banner={bigBanner}
+              width={width}
+              fontScale={fontScale}
+              isTablet={tabletCampaigns}
+              isRTL={isRTL}
+              theme={theme}
+              gutter={layout.gutter}
+              onPress={openPromo}
+            />
           </SectionReveal>
         ) : null}
         {recommended.length > 0 && <SectionReveal delay={320}>
@@ -500,18 +450,6 @@ function SectionReveal({ children, delay = 0 }) {
   );
 }
 const styles = StyleSheet.create({
-  promoImageFrame: { width: '100%', aspectRatio: 16 / 10, padding: 12, borderRadius: borderRadius.lg, overflow: 'hidden' },
-  promoImage: { width: '100%', height: '100%' },
-  offerContent: { gap: 8, flex: 1 },
-  offerLabel: { fontSize: 13, lineHeight: 19, fontWeight: '500' },
-  offerTitle: { fontSize: 17, lineHeight: 23, fontWeight: '600', minHeight: 46 },
-  offerAction: { minHeight: 44, alignItems: 'center', gap: 8, marginTop: 2 },
-  offerActionText: { flexShrink: 1, fontSize: 14, lineHeight: 20, fontWeight: '600' },
-  campaignLayout: { gap: spacing.xl },
-  campaignImageFrame: { padding: spacing.base, flexShrink: 0 },
-  campaignContent: { minWidth: 0, gap: spacing.md },
-  campaignTitle: { fontSize: 24, lineHeight: 32, fontWeight: '600' },
-  campaignDescription: { fontSize: 15, lineHeight: 23 },
   safe: { flex: 1, width: '100%', maxWidth: 1200, alignSelf: 'center' },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: spacing.base, paddingVertical: spacing.sm, borderBottomWidth: 1 },
   brandBlock: { flex: 1, paddingRight: spacing.base },
@@ -521,7 +459,6 @@ const styles = StyleSheet.create({
   cartBadgeText: { color: '#FFF', fontSize: 10, lineHeight: 14, fontWeight: fontWeight.bold, includeFontPadding: false, textAlign: 'center', textAlignVertical: 'center' },
   searchBar: { flexDirection: 'row', alignItems: 'center', marginHorizontal: spacing.base, marginTop: spacing.sm, paddingHorizontal: spacing.md, height: 50, borderRadius: borderRadius.md, borderWidth: 1, gap: 10 },
   searchText: { flex: 1, minWidth: 0, fontSize: fontSize.base, lineHeight: 24, includeFontPadding: false, textAlignVertical: 'center' },
-  promoCard: { borderRadius: borderRadius.xxl, overflow: 'hidden', marginRight: spacing.md, borderWidth: 1, padding: spacing.xl, gap: spacing.base },
   audienceMessage: { flexDirection: 'row', alignItems: 'flex-start', gap: 10, marginHorizontal: spacing.base, borderRadius: borderRadius.md, padding: 8, marginTop: spacing.sm, borderWidth: 1 },
   audienceIcon: { width: 26, height: 26, borderRadius: borderRadius.full, justifyContent: 'center', alignItems: 'center' },
   audienceText: { flex: 1, fontSize: fontSize.xs, lineHeight: 18, fontWeight: fontWeight.medium },
@@ -530,5 +467,4 @@ const styles = StyleSheet.create({
   catImgRing: { width: 62, height: 62, borderRadius: borderRadius.full, borderWidth: 1, padding: 2, backgroundColor: '#FFF', overflow: 'hidden', justifyContent: 'center', alignItems: 'center' },
   catImgNew: { width: 54, height: 54, borderRadius: borderRadius.full },
   catNameNew: { fontSize: fontSize.xs, lineHeight: 18, marginTop: 10, textAlign: 'center', fontWeight: fontWeight.semibold, includeFontPadding: false },
-  bigBannerCard: { marginBottom: spacing.xl, borderRadius: borderRadius.xxl, overflow: 'hidden', borderWidth: 1, padding: spacing.xl },
 });

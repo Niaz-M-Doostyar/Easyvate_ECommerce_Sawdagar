@@ -140,3 +140,13 @@ and revert that commit to retain later work. Rebuild installed apps after a
 restore. The backend supports both the existing one-step recovery request and
 the new two-step request; restore the matching app and API version together.
 See [verification and deployment](mobile-fixed60-recovery-review.md).
+
+## Phone offers and discovery restore point
+
+The version before the phone-only campaign redesign is saved at `9e36b640`,
+branch `backup/mobile-before-phone-campaigns-2026-10-06`.
+
+Find and revert the commit titled
+`Redesign phone offers and discovery with transparent artwork`, then rebuild
+the mobile app. This restores the previous phone offer/campaign sections while
+retaining later work. See [phone campaign review](mobile-phone-campaign-review.md).
