@@ -150,3 +150,13 @@ Find and revert the commit titled
 `Redesign phone offers and discovery with transparent artwork`, then rebuild
 the mobile app. This restores the previous phone offer/campaign sections while
 retaining later work. See [phone campaign review](mobile-phone-campaign-review.md).
+
+## Home theme and three-column Shop restore point
+
+The version before matching phone campaign colors to the admin-selected theme
+and changing Shop to three columns is saved at `4020ef0d`, branch
+`backup/mobile-before-theme-shop-grid-2026-10-06`.
+
+Find and revert the commit titled
+`Match home cards to active theme and show three Shop columns`, then rebuild
+the mobile app. See [theme and Shop review](mobile-theme-shop-review.md).

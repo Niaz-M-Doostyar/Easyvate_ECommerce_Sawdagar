@@ -3,11 +3,17 @@
 Featured Offers uses compact tonal cards with transparent product artwork,
 normal-flow copy and a clear 44pt action. The carousel shows the next card and
 snaps between offers. The below-category discovery campaign is a single
-integrated sage card rather than a photo frame above a separate copy block.
+integrated card rather than a photo frame above a separate copy block.
 Phone layouts stack for narrow space or larger text, mirror copy/actions for
 RTL, and use corresponding dark colors. Marketing-card text can grow up to
 twice its normal size without truncating the content. Admin text and destinations
 are kept.
+
+Card fills, artwork backgrounds and buttons now follow the same admin-selected
+theme as Home through `brandSurface`, `brandSurfaceStrong`, `card`,
+`surfaceElevated`, `primaryDark` and `white`. The earlier fixed pastel fills
+were replaced in the theme/Shop follow-up described
+[here](mobile-theme-shop-review.md).
 
 The iOS device idiom selects the iPad layout, including Split View; iPhones in
 landscape continue using the phone design. iPad photos and all 14 original

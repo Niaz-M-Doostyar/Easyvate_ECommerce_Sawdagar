@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, FlatList, TouchableOpacity, StyleSheet, RefreshControl, Image, ActivityIndicator, Modal, Pressable, ScrollView } from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, RefreshControl, Image, ActivityIndicator, Modal, Pressable, ScrollView, useWindowDimensions } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
-import useResponsiveLayout from '../../hooks/useResponsiveLayout';
+import { shopLayout } from '../../utils/shopLayout';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useLanguage } from '../../contexts/LanguageContext';
 import ProductCard from '../../components/ProductCard';
@@ -26,8 +26,10 @@ const belongsToSupplier = (product, supplierId) => (
 );
 
 export default function ProductsScreen({ navigation, route }) {
-  const { columns: numColumns, cardWidth: gridCardWidth, gutter, height } = useResponsiveLayout();
+  const { width, height, fontScale } = useWindowDimensions();
   const insets = useSafeAreaInsets();
+  const gridLayout = shopLayout(width - insets.left - insets.right, fontScale);
+  const { columns: numColumns, cardWidth: gridCardWidth, gutter, gap, isTablet } = gridLayout;
   const { theme } = useTheme();
   const { t, getName, lang, isRTL } = useLanguage();
   const c = theme.colors;
@@ -224,7 +226,7 @@ export default function ProductsScreen({ navigation, route }) {
       </Modal>
 
       {loading ? (
-        <CatalogSkeleton />
+        <CatalogSkeleton layout={isTablet ? undefined : gridLayout} />
       ) : products.length === 0 ? (
         <EmptyState icon="bag-outline" title={t.noResults} />
       ) : (
@@ -232,9 +234,10 @@ export default function ProductsScreen({ navigation, route }) {
           key={`grid-${numColumns}`}
           data={products} numColumns={numColumns} keyExtractor={i => String(i.id)}
           contentContainerStyle={[styles.grid, { paddingHorizontal: gutter }]}
+          columnWrapperStyle={numColumns > 1 ? { gap: isTablet ? 0 : gap, flexDirection: isRTL ? 'row-reverse' : 'row' } : undefined}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={c.primary} />}
           renderItem={({ item }) => (
-            <View style={[styles.gridItem, { width: `${100 / numColumns}%` }]}>
+            <View style={[styles.gridItem, { width: isTablet ? `${100 / numColumns}%` : gridCardWidth, paddingHorizontal: isTablet ? 6 : 0 }]}>
               <ProductCard product={item} onPress={() => navigation.navigate('ProductDetail', { id: item.id, product: item })} style={{ width: gridCardWidth }} />
             </View>
           )}
@@ -277,5 +280,5 @@ const styles = StyleSheet.create({
   sortItem: { minHeight: 48, alignItems: 'center', gap: 10, paddingVertical: 12, paddingHorizontal: 14 },
   sortItemText: { flex: 1, fontSize: 15, lineHeight: 22, fontWeight: '500' },
   grid: { paddingTop: 2, paddingBottom: 120 },
-  gridItem: { paddingHorizontal: 6, alignItems: 'center' },
+  gridItem: { alignItems: 'center' },
 });

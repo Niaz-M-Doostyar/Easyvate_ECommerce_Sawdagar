@@ -26,13 +26,21 @@ const STOCK_PHONE_IMAGES = {
 };
 const STOCK_IMAGE_ORIGINS = new Set([API_URL, WEBSITE_URL, 'https://www.sawdagar.com']
   .map((origin) => origin.replace(/\/$/, '').toLowerCase()));
-const OFFER_TONES = [
-  { light: '#F5EEE5', lightArt: '#E8DBCC', dark: '#302E2C', darkArt: '#443E37' },
-  { light: '#EAF2EF', lightArt: '#D4E4DC', dark: '#21332F', darkArt: '#30483F' },
-  { light: '#EFEDF7', lightArt: '#DDD8EF', dark: '#2D2C3B', darkArt: '#403D54' },
-];
-
 const titleText = (title) => String(title || '').replace(/\n+/g, ' ').trim();
+
+// Campaign fills follow the same admin-selected palette as the rest of Home.
+export function campaignPalette(theme, index = 0) {
+  const c = theme.colors;
+  const fills = [c.brandSurface, c.card, c.surfaceElevated];
+  const artworkFills = [c.brandSurfaceStrong, c.brandSurface, c.brandSurfaceStrong];
+  const position = index % fills.length;
+  return {
+    background: fills[position],
+    artwork: artworkFills[position],
+    actionBackground: c.primaryDark,
+    actionText: c.white,
+  };
+}
 
 // A custom admin upload stays primary. Only the bundled default photography is
 // replaced with transparent artwork on phones, including absolute CMS URLs.
@@ -57,17 +65,18 @@ function CampaignArtwork({ source, fallback, style }) {
 }
 
 function PhoneAction({ label, theme, isRTL }) {
+  const palette = campaignPalette(theme);
   return (
-    <View style={[styles.phoneAction, { flexDirection: isRTL ? 'row-reverse' : 'row', backgroundColor: theme.dark ? '#DCE5FF' : '#263438' }]}>
-      <Text maxFontSizeMultiplier={2} style={[styles.phoneActionText, { color: theme.dark ? '#18243A' : '#FFFFFF', textAlign: isRTL ? 'right' : 'left' }]}>{label || 'Shop now'}</Text>
-      <MaterialCommunityIcons name={isRTL ? 'arrow-left' : 'arrow-right'} size={17} color={theme.dark ? '#18243A' : '#FFFFFF'} />
+    <View style={[styles.phoneAction, { flexDirection: isRTL ? 'row-reverse' : 'row', backgroundColor: palette.actionBackground }]}>
+      <Text maxFontSizeMultiplier={2} style={[styles.phoneActionText, { color: palette.actionText, textAlign: isRTL ? 'right' : 'left' }]}>{label || 'Shop now'}</Text>
+      <MaterialCommunityIcons name={isRTL ? 'arrow-left' : 'arrow-right'} size={17} color={palette.actionText} />
     </View>
   );
 }
 
 export function PhoneOfferCard({ banner, index = 0, width, fontScale = 1, isRTL, theme, onPress }) {
   const stacked = fontScale >= 1.4 || width / Math.max(1, fontScale) < 300;
-  const tone = OFFER_TONES[index % OFFER_TONES.length];
+  const palette = campaignPalette(theme, index);
   const c = theme.colors;
   const artwork = phoneCampaignArtwork(banner.image, PHONE_OFFER_IMAGES[index % PHONE_OFFER_IMAGES.length]);
   return (
@@ -75,7 +84,7 @@ export function PhoneOfferCard({ banner, index = 0, width, fontScale = 1, isRTL,
       onPress={() => onPress?.(banner.buttonHref, banner.title)}
       accessibilityLabel={[banner.label, titleText(banner.title), banner.buttonLabel || 'Shop now'].filter(Boolean).join('. ')}
       scaleTo={0.98}
-      style={[styles.phoneOffer, { width, backgroundColor: theme.dark ? tone.dark : tone.light }]}
+      style={[styles.phoneOffer, { width, backgroundColor: palette.background }]}
     >
       <View style={[styles.phoneOfferRow, { flexDirection: stacked ? 'column' : isRTL ? 'row-reverse' : 'row' }]}>
         <View style={[styles.phoneOfferCopy, stacked && styles.stackedCopy]}>
@@ -86,7 +95,7 @@ export function PhoneOfferCard({ banner, index = 0, width, fontScale = 1, isRTL,
           </View>
         </View>
         <View style={[styles.phoneOfferArt, stacked && styles.stackedOfferArt]} pointerEvents="none">
-          <View style={[styles.artHalo, { backgroundColor: theme.dark ? tone.darkArt : tone.lightArt }]} />
+          <View style={[styles.artHalo, { backgroundColor: palette.artwork }]} />
           <CampaignArtwork {...artwork} style={styles.phoneArtwork} />
         </View>
       </View>
@@ -141,6 +150,7 @@ export function HomeFeaturedOffers({ banners, width, fontScale = 1, isTablet, is
 
 export function PhoneDiscoveryCard({ banner, width, fontScale = 1, isRTL, theme, gutter = 16, onPress }) {
   const c = theme.colors;
+  const palette = campaignPalette(theme);
   const stacked = fontScale >= 1.4 || width / Math.max(1, fontScale) < 300;
   const artwork = phoneCampaignArtwork(banner.image, PHONE_CAMPAIGN_IMAGE);
   return (
@@ -148,7 +158,7 @@ export function PhoneDiscoveryCard({ banner, width, fontScale = 1, isRTL, theme,
       scaleTo={0.98}
       onPress={() => onPress?.(banner.buttonHref, banner.title)}
       accessibilityLabel={[banner.subtitle, titleText(banner.title), banner.description, banner.buttonLabel || 'Shop now'].filter(Boolean).join('. ')}
-      style={[styles.phoneDiscovery, { marginHorizontal: gutter, backgroundColor: theme.dark ? '#20332F' : '#EAF2ED' }]}
+      style={[styles.phoneDiscovery, { marginHorizontal: gutter, backgroundColor: palette.background }]}
     >
       <View style={[styles.phoneDiscoveryTop, { flexDirection: stacked ? 'column' : isRTL ? 'row-reverse' : 'row' }]}>
         <View style={[styles.phoneDiscoveryCopy, stacked && styles.stackedCopy]}>
@@ -156,7 +166,7 @@ export function PhoneDiscoveryCard({ banner, width, fontScale = 1, isRTL, theme,
           <Text maxFontSizeMultiplier={2} style={[styles.phoneDiscoveryTitle, { color: c.text, textAlign: isRTL ? 'right' : 'left' }]}>{titleText(banner.title)}</Text>
         </View>
         <View style={[styles.phoneDiscoveryArt, stacked && styles.stackedDiscoveryArt]} pointerEvents="none">
-          <View style={[styles.discoveryHalo, { backgroundColor: theme.dark ? '#314A40' : '#D3E4D8' }]} />
+          <View style={[styles.discoveryHalo, { backgroundColor: palette.artwork }]} />
           <CampaignArtwork {...artwork} style={styles.phoneArtwork} />
         </View>
       </View>
