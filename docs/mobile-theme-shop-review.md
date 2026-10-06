@@ -3,9 +3,9 @@
 ## Home color management
 
 Phone offer and discovery cards previously used fixed pastel fills. They now
-read the active theme selected by admin, just like Home. Offer fills cycle
-through `brandSurface`, `card` and `surfaceElevated`; artwork backgrounds use
-`brandSurfaceStrong` or `brandSurface`. Discovery uses `brandSurface`.
+read the active theme selected by admin, just like Home. Every offer uses the
+same `brandSurface` background, with `brandSurfaceStrong` behind the artwork.
+Discovery uses the same pair.
 Buttons use `primaryDark` with `white` text. Transparent PNG artwork and iPad
 card styling are retained.
 
@@ -29,9 +29,9 @@ requests are unchanged. Search uses its previous layout.
 
 ## Native review
 
-The full app was checked in iPhone 17 Pro Max and iPhone 16e simulators at
-normal text size: both show three cards per row, with loaded product images,
-aligned actions and no horizontal overflow. The iPad Pro 11-inch simulator
+During the theme/Shop update, the full app was checked in iPhone 17 Pro Max and
+iPhone 16e simulators at normal text size: both show three cards per row, with
+loaded product images, aligned actions and no horizontal overflow. The iPad Pro 11-inch simulator
 retains its four-column layout. The phone marketing components were also
 checked in light and dark/RTL themes with the actual transparent PNG assets.
 Screenshots are saved in
@@ -39,11 +39,21 @@ Screenshots are saved in
 
 Temporary preview routes and component fixtures were restored before commit.
 
+For the uniform-background follow-up, all three actual phone offer components
+were displayed together in the iPhone 17 Pro Max simulator. Their fills and
+artwork backgrounds match, and all three transparent PNG images load correctly.
+The full app was restored after the check. Screenshots are saved in
+`/private/tmp/sawdagar-uniform-offers-20261006/`.
+
 ## Restore
 
-The complete version before this update is saved at `4020ef0d` on GitHub branch
+The complete version before the theme/Shop update is saved at `4020ef0d` on
+GitHub branch
 `backup/mobile-before-theme-shop-grid-2026-10-06`.
 To undo only this change while preserving later work, find and revert the
 commit titled `Match home cards to active theme and show three Shop columns`,
 then rebuild the mobile app. This update requires no website/admin/backend
 or database deployment.
+
+The follow-up that gives all phone offers one background has its own restore
+point and commit listed in [design restore instructions](mobile-design-restore.md).

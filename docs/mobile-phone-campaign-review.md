@@ -10,8 +10,8 @@ twice its normal size without truncating the content. Admin text and destination
 are kept.
 
 Card fills, artwork backgrounds and buttons now follow the same admin-selected
-theme as Home through `brandSurface`, `brandSurfaceStrong`, `card`,
-`surfaceElevated`, `primaryDark` and `white`. The earlier fixed pastel fills
+theme as Home through `brandSurface`, `brandSurfaceStrong`, `primaryDark`
+and `white`. All phone offers use the same fill and artwork background. The earlier fixed pastel fills
 were replaced in the theme/Shop follow-up described
 [here](mobile-theme-shop-review.md).
 

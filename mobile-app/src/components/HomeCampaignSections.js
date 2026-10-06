@@ -29,14 +29,11 @@ const STOCK_IMAGE_ORIGINS = new Set([API_URL, WEBSITE_URL, 'https://www.sawdagar
 const titleText = (title) => String(title || '').replace(/\n+/g, ' ').trim();
 
 // Campaign fills follow the same admin-selected palette as the rest of Home.
-export function campaignPalette(theme, index = 0) {
+export function campaignPalette(theme) {
   const c = theme.colors;
-  const fills = [c.brandSurface, c.card, c.surfaceElevated];
-  const artworkFills = [c.brandSurfaceStrong, c.brandSurface, c.brandSurfaceStrong];
-  const position = index % fills.length;
   return {
-    background: fills[position],
-    artwork: artworkFills[position],
+    background: c.brandSurface,
+    artwork: c.brandSurfaceStrong,
     actionBackground: c.primaryDark,
     actionText: c.white,
   };
@@ -76,7 +73,7 @@ function PhoneAction({ label, theme, isRTL }) {
 
 export function PhoneOfferCard({ banner, index = 0, width, fontScale = 1, isRTL, theme, onPress }) {
   const stacked = fontScale >= 1.4 || width / Math.max(1, fontScale) < 300;
-  const palette = campaignPalette(theme, index);
+  const palette = campaignPalette(theme);
   const c = theme.colors;
   const artwork = phoneCampaignArtwork(banner.image, PHONE_OFFER_IMAGES[index % PHONE_OFFER_IMAGES.length]);
   return (

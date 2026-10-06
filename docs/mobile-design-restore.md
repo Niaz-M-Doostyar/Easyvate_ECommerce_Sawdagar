@@ -160,3 +160,13 @@ and changing Shop to three columns is saved at `4020ef0d`, branch
 Find and revert the commit titled
 `Match home cards to active theme and show three Shop columns`, then rebuild
 the mobile app. See [theme and Shop review](mobile-theme-shop-review.md).
+
+## Uniform phone offer backgrounds restore point
+
+The version before making every phone offer use the same theme background is
+saved at `51aef0aa`, branch
+`backup/mobile-before-uniform-offers-2026-10-06`.
+
+Find and revert the commit titled
+`Use one theme background for every phone offer card`, then rebuild the mobile
+app. Shop sizing, iPad styling and admin content are preserved.
