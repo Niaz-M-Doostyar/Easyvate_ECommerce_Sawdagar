@@ -28,7 +28,7 @@ export default function ProductDetailScreen({ navigation, route }) {
   const insets = useSafeAreaInsets();
   const { theme } = useTheme();
   const { t, getName, getDesc, isRTL, lang } = useLanguage();
-  const { addItem } = useCart();
+  const { addItem, count, items } = useCart();
   const toast = useToast();
   const c = theme.colors;
   const copy = detailCopy[lang] || detailCopy.en;
@@ -182,6 +182,9 @@ export default function ProductDetailScreen({ navigation, route }) {
   const supplierName = product.supplier?.companyName || product.supplier?.fullName || null;
   const supplierVerified = !!product.supplier?.supplierVerified;
   const orderTotal = (product.retailPrice || 0) * qty;
+  const cartQuantity = items.reduce((total, item) => String(item.productId ?? item.product?.id) === String(product.id)
+    ? total + (Number(item.quantity) || 0) : total, 0);
+  const inCart = lang === 'ps' ? 'په کارټ کې' : lang === 'dr' ? 'در سبد شما' : 'in your cart';
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: c.background }]} edges={['top', 'left', 'right']}>
@@ -190,8 +193,11 @@ export default function ProductDetailScreen({ navigation, route }) {
           <TouchableOpacity onPress={handleShare} accessibilityRole="button" accessibilityLabel={copy.share} style={styles.headerAction}>
             <MaterialCommunityIcons name="share-variant-outline" size={22} color={c.text} />
           </TouchableOpacity>
-          <TouchableOpacity onPress={() => openTab('CartTab')} accessibilityRole="button" accessibilityLabel={copy.cart} style={styles.headerAction}>
+          <TouchableOpacity onPress={() => openTab('CartTab')} accessibilityRole="button" accessibilityLabel={`${copy.cart}, ${count} ${inCart}`} style={styles.headerAction}>
             <MaterialCommunityIcons name="cart-outline" size={22} color={c.text} />
+            {count > 0 ? <View pointerEvents="none" accessible={false} style={[styles.cartBadge, { backgroundColor: c.primary, borderColor: c.headerBg }, isRTL ? { left: 0 } : { right: 0 }]}>
+              <Text maxFontSizeMultiplier={1.2} style={[styles.cartBadgeText, { color: c.white }]}>{count > 99 ? '99+' : count}</Text>
+            </View> : null}
           </TouchableOpacity>
         </View>
       )} />
@@ -300,7 +306,10 @@ export default function ProductDetailScreen({ navigation, route }) {
 
       <View style={[styles.bottomBar, compactBottomBar && styles.bottomBarCompact, isTablet && { width: contentWidth, alignSelf: 'center' }, { backgroundColor: c.card, borderTopColor: c.border, paddingBottom: Math.max(insets.bottom, spacing.md) }]}>
         <View style={[styles.bottomSummary, compactBottomBar && styles.bottomSummaryCompact, compactBottomBar && rowDirection]}>
-          <Text style={[styles.bottomLabel, { color: c.textSecondary }]}>{copy.total}</Text>
+          <View style={styles.summaryCopy}>
+            <Text style={[styles.bottomLabel, { color: c.textSecondary }]}>{copy.total}</Text>
+            {cartQuantity > 0 ? <Text accessibilityLiveRegion="polite" style={[styles.inCart, { color: c.success }]}>{cartQuantity} {inCart}</Text> : null}
+          </View>
           <Text style={[styles.bottomValue, { color: c.text }]}>{formatPrice(orderTotal)}</Text>
         </View>
         <View style={[styles.bottomActions, rowDirection, !compactBottomBar && styles.bottomActionsWide, stackPurchaseActions && styles.bottomActionsStacked]}>
@@ -310,7 +319,7 @@ export default function ProductDetailScreen({ navigation, route }) {
             loading={adding}
             variant="outline"
             style={[styles.bottomBtn, stackPurchaseActions && styles.bottomBtnStacked]}
-            disabled={!available}
+            disabled={!available || adding}
             icon={<MaterialCommunityIcons name={available ? 'cart-plus' : 'cart-off'} size={20} color={available ? c.primary : c.textMuted} />}
             textStyle={!available ? { color: c.textMuted } : undefined}
           />
@@ -318,7 +327,7 @@ export default function ProductDetailScreen({ navigation, route }) {
             title={t.buyNow}
             onPress={handleBuyNow}
             style={[styles.bottomBtn, stackPurchaseActions && styles.bottomBtnStacked]}
-            disabled={!available}
+            disabled={!available || adding}
             icon={<MaterialCommunityIcons name="lightning-bolt-outline" size={20} color={c.white} />}
           />
         </View>
@@ -344,6 +353,8 @@ const styles = StyleSheet.create({
   safe: { flex: 1, width: '100%', maxWidth: 1200, alignSelf: 'center' },
   headerActions: { alignItems: 'center' },
   headerAction: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
+  cartBadge: { position: 'absolute', top: 0, minWidth: 20, height: 20, borderRadius: 10, borderWidth: 2, paddingHorizontal: 3, alignItems: 'center', justifyContent: 'center' },
+  cartBadgeText: { fontSize: 10, lineHeight: 13, fontWeight: fontWeight.bold, fontVariant: ['tabular-nums'] },
   imgWrap: { alignItems: 'center', paddingTop: spacing.sm },
   imageFrame: { overflow: 'hidden', borderRadius: 20, borderWidth: 1 },
   imagePage: { padding: spacing.base },
@@ -383,6 +394,8 @@ const styles = StyleSheet.create({
   bottomSummary: { minWidth: 92 },
   bottomSummaryCompact: { width: '100%', minWidth: 0, flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, justifyContent: 'space-between', alignItems: 'center' },
   bottomLabel: { fontSize: fontSize.xs, marginBottom: 4 },
+  summaryCopy: { flexShrink: 1 },
+  inCart: { fontSize: 12, lineHeight: 18, fontWeight: fontWeight.semibold },
   bottomValue: { flexShrink: 1, fontSize: fontSize.lg, fontWeight: fontWeight.bold },
   bottomActions: { width: '100%', minHeight: 50, flexDirection: 'row', alignItems: 'stretch', gap: 8 },
   bottomActionsWide: { width: 'auto', flex: 1 },

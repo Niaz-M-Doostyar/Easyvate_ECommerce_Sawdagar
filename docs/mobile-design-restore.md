@@ -182,3 +182,18 @@ Find and revert `Repair OTP retry feedback and iOS 27 device startup`, then
 rebuild/redeploy the affected app/API/website. Restoring the legacy iOS startup
 will also restore its SDK 27 launch failure. See
 [verification and device instructions](supplier-otp-device-review-20261007.md).
+
+## Shared-product image preview restore point
+
+Source before the JPEG preview repair is preserved on GitHub at `956ac58d`,
+branch `backup/before-product-share-preview-2026-10-07`. Revert
+`Serve lightweight JPEG product previews for social sharing`, then rebuild and
+redeploy the mobile app, API and website. See
+[sharing verification](product-share-preview-review-20261007.md).
+
+## Product cart feedback and SMS recognition restore point
+
+Source before this repair is saved at `c8d38453`, branch
+`backup/before-cart-otp-autofill-2026-10-07`. Revert the commit titled
+`Show product cart quantities and identify SMS verification codes`, then rebuild
+the mobile app and redeploy the API. Product data and account state are unchanged.

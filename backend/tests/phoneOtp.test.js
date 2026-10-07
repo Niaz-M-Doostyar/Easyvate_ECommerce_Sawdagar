@@ -9,7 +9,7 @@ test('Afghan phone variants normalize, while foreign and malformed numbers are r
   for (const phone of ['+44700123456', '070012345', '07001234567', '+93600123456', 'abc0700123456', null, {}]) assert.equal(normalizeAfghanPhone(phone), null);
 });
 
-test('provider requests keep SMS to digits only and select the WhatsApp endpoint explicitly', async () => {
+test('SMS identifies the verification code in one message and WhatsApp uses its explicit endpoint', async () => {
   const originalFetch = global.fetch;
   const originalKey = process.env.GHONCHA_API_KEY;
   process.env.GHONCHA_API_KEY = 'test-key';
@@ -19,7 +19,9 @@ test('provider requests keep SMS to digits only and select the WhatsApp endpoint
     await sendCode('+93700123456', '123456', 'sms');
     await sendCode('+93700123456', '123456', 'whatsapp');
     assert.equal(calls[0].url, 'https://sms.ghoncha.com/api/v1/send');
-    assert.deepEqual(JSON.parse(calls[0].body), { phone: '+93700123456', message: '123456' });
+    const sms = JSON.parse(calls[0].body);
+    assert.deepEqual(sms, { phone: '+93700123456', message: 'Your Sawdagar verification code is 123456. Valid for 5 minutes.' });
+    assert.ok(sms.message.length <= 160 && /^[\x20-\x7e]+$/.test(sms.message), 'fits one GSM SMS');
     assert.equal(calls[1].url, 'https://sms.ghoncha.com/api/v1/otp/send/whatsapp');
     assert.deepEqual(JSON.parse(calls[1].body), { phone: '+93700123456', code: '123456' });
     assert.equal(calls[0].headers['X-API-Key'], 'test-key');
@@ -37,7 +39,12 @@ test('signup and two-step recovery enforce purpose, expiry, attempt limits and o
   const originalKey = process.env.GHONCHA_API_KEY;
   process.env.GHONCHA_API_KEY = 'test-key';
   let deliveredCode;
-  global.fetch = async (_url, options) => { const body = JSON.parse(options.body); deliveredCode = body.message || body.code; return { ok: true, json: async () => ({ status: 'pending' }) }; };
+  global.fetch = async (_url, options) => {
+    const body = JSON.parse(options.body);
+    deliveredCode = body.code || body.message.match(/verification code is (\d{6})\./)?.[1];
+    assert.match(deliveredCode, /^\d{6}$/);
+    return { ok: true, json: async () => ({ status: 'pending' }) };
+  };
   let pending = null; let user = null;
   const db = {
     phoneOtpRate: { upsert: async () => ({ count: 1 }), deleteMany: async () => ({ count: 0 }) },

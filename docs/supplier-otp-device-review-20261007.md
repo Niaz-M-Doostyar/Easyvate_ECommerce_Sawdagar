@@ -74,8 +74,14 @@ crashed because the SDK 27 build used the legacy UIKit window lifecycle.
 The fix adds a single-scene manifest and SceneDelegate, creates the window from
 UIWindowScene and forwards cold/warm URLs and user activities through the
 existing React Native factory/Linking manager. Signing settings are unchanged.
-Release rebuild and code-signature validation passed. Installation of the fixed
-build and sustained running verification await USB reconnection.
+Release rebuild and code-signature validation passed. The phone later appeared
+in USB inventory, but its developer connection timed out. Restarting and
+unlocking the iPhone recovered the paired wired connection. The scene-compatible
+Release app was installed successfully. Startup and a separate cold launch
+produced running processes; the old scene-lifecycle crash did not recur during
+the check. A physical screenshot confirmed the Cart screen, product image and
+controls rendered. This verifies startup/rendering, not every authenticated flow
+or a frame-rate benchmark.
 
 Artifacts: `/private/tmp/sawdagar-iphone-release-20261007*`.
 The development provisioning profile expires October 13, 2026, 08:24 UTC

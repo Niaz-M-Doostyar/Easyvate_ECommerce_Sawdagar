@@ -51,7 +51,7 @@ export function OtpVerification({ code, onChange, phone, sentChannel, channel, r
   }, []);
   return <View style={[styles.verification, { backgroundColor: c.brandSurface, borderColor: c.border }]}>
     <View style={styles.sent}><View style={[styles.sentIcon, { backgroundColor: c.card }]}><Ionicons name="shield-checkmark-outline" size={25} color={c.primary} /></View><View style={{flex:1}}><Text style={[styles.sentTitle, {color:c.text}]}>Check your {label(sentChannel)}</Text><Text style={[styles.hint, {color:c.textSecondary}]}>Code sent to <Text style={{fontWeight:'600',color:c.text}}>{phone}</Text></Text></View></View>
-    <Text style={[styles.hint, {color:c.textSecondary, marginBottom:16}]}>{sentChannel === 'sms' ? 'Open your Messages app and enter the six-digit code below. If your keyboard suggests the code, tap it to fill it in.' : 'Open WhatsApp and find your six-digit code, then return here to enter it.'}</Text>
+    <Text style={[styles.hint, {color:c.textSecondary, marginBottom:16}]}>{sentChannel === 'sms' ? 'Stay on this screen. When the SMS arrives, tap the code above your keyboard to fill it in. You can also paste the six-digit code.' : 'Open WhatsApp and find your six-digit code, then return here to enter it.'}</Text>
     <Text style={[styles.label, {color:c.text}]}>Verification code</Text>
     <View style={styles.codeWrap} onLayout={event => setCodeWidth(event.nativeEvent.layout.width)}>
       <View pointerEvents="none" style={[styles.digits, { gap: layout.gap }]} accessible={false} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
