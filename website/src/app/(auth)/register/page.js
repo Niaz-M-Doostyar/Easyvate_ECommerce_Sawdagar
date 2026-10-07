@@ -1,6 +1,7 @@
 "use client";
 import { nationalPhone, internationalPhone } from '@/lib/afghanPhone.cjs';
 import useAutoOtpVerification from '@/hooks/useAutoOtpVerification';
+import useOtpCountdown from '@/hooks/useOtpCountdown';
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -27,21 +28,34 @@ export default function RegisterPage() {
   const [sentChannel, setSentChannel] = useState("sms");
   const [expiresAt, setExpiresAt] = useState(0);
   const [retryAt, setRetryAt] = useState(0);
+  const retrySeconds = useOtpCountdown(retryAt);
   const customerRequest = async (path, body) => {
     const response = await fetch(`/api/auth/${path}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
-    const data = await response.json();
-    if (!response.ok) throw new Error(data.error || 'Request failed');
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      const error = new Error(data.error || 'Request failed');
+      error.status = response.status;
+      error.data = data;
+      throw error;
+    }
     return data;
   };
   const requestCode = async () => {
-    const data = await customerRequest('customer-otp', { ...form, role, channel });
-    setChallengeId(data.challengeId);
-    setCode(""); setSentChannel(channel); setExpiresAt(Date.now() + (data.expiresIn || 300) * 1000);
-    setRetryAt(Date.now() + data.retryAfter * 1000);
-    toast.success(data.message);
+    if (Date.now() < retryAt) throw new Error(`Try again in ${Math.ceil((retryAt - Date.now()) / 1000)} seconds.`);
+    try {
+      const data = await customerRequest('customer-otp', { ...form, role, channel });
+      setChallengeId(data.challengeId);
+      setCode(""); setSentChannel(channel); setExpiresAt(Date.now() + (data.expiresIn || 300) * 1000);
+      setRetryAt(Date.now() + data.retryAfter * 1000);
+      toast.success(data.message);
+    } catch (error) {
+      const retryAfter = Number(error.data?.retryAfter);
+      if (Number.isFinite(retryAfter) && retryAfter > 0) setRetryAt(Date.now() + retryAfter * 1000);
+      throw error;
+    }
   };
   const resendCode = async () => {
-    if (Date.now() < retryAt) { setFormError('Please wait 60 seconds between code requests.'); return; }
+    if (loading) return;
     setLoading(true); setFormError('');
     try { await requestCode(); } catch (err) { setFormError(err.message); }
     finally { setLoading(false); }
@@ -193,8 +207,8 @@ export default function RegisterPage() {
               </div>
             )}
 
-            {challengeId ? <p role="status" aria-live="polite" style={{textAlign:"center"}}>{loading ? 'Checking your code…' : formError ? 'Edit the code to try again.' : 'Your code will be checked automatically.'}</p> : <button type="submit" className="f2-content-button f2-content-button--wide" disabled={loading || (!!challengeId && code.length !== 6)}>
-              {loading ? 'Please wait...' : 'Send verification code'}
+            {challengeId ? <p role="status" aria-live="polite" style={{textAlign:"center"}}>{loading ? 'Checking your code…' : formError ? 'Edit the code to try again.' : 'Your code will be checked automatically.'}</p> : <button type="submit" className="f2-content-button f2-content-button--wide" disabled={loading || retrySeconds > 0}>
+              {loading ? 'Please wait...' : retrySeconds > 0 ? `Try again in ${retrySeconds}s` : 'Send verification code'}
             </button>}
 
             <p className="f2-auth-alternative">{t('already_have_account') || 'Already have an account?'} <Link href="/login">{t('login') || 'Sign In'}</Link></p>

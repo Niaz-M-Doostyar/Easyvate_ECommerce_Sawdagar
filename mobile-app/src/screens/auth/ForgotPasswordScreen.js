@@ -1,4 +1,5 @@
 import useAutoOtpVerification from '../../hooks/useAutoOtpVerification';
+import useOtpCountdown from '../../hooks/useOtpCountdown';
 import { OtpMethodPicker, OtpVerification } from '../../components/OtpControls';
 import { nationalPhone, internationalPhone } from '../../services/afghanPhone.cjs';
 import React, { useEffect, useRef, useState } from 'react';
@@ -41,11 +42,13 @@ export default function ForgotPasswordScreen({ navigation, route }) {
   const [sentChannel, setSentChannel] = useState('sms');
   const [expiresAt, setExpiresAt] = useState(0);
   const [retryAt, setRetryAt] = useState(0);
+  const retrySeconds = useOtpCountdown(retryAt);
   const [verificationError, setVerificationError] = useState('');
   const [sent, setSent] = useState(false);
   const busy = useRef(false);
   const mounted = useRef(true);
   const isPhone = !useEmail;
+  const retryMessage = seconds => lang === 'ps' ? `په ${seconds} ثانیو کې بیا هڅه وکړئ` : lang === 'dr' ? `پس از ${seconds} ثانیه دوباره تلاش کنید` : `Try again in ${seconds}s`;
   useEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
 
   const handleIdentifierChange = value => {
@@ -53,25 +56,32 @@ export default function ForgotPasswordScreen({ navigation, route }) {
     setIdentifierError('');
   };
   const requestCode = async () => {
-    if (Date.now() < retryAt) throw new Error(copy.retry);
+    if (Date.now() < retryAt) throw new Error(retryMessage(Math.ceil((retryAt - Date.now()) / 1000)));
     const phone = challengePhone || internationalPhone(identifier);
-    const data = await authApi.requestCustomerOtp({ phone, channel, purpose: 'password-reset' });
-    if (!mounted.current) return;
-    setChallengeId(data.challengeId);
-    setChallengePhone(phone);
-    setCode('');
-    setVerificationError('');
-    setSentChannel(channel);
-    setExpiresAt(Date.now() + (data.expiresIn || 300) * 1000);
-    setRetryAt(Date.now() + 60000);
-    toast.success(data.message);
+    try {
+      const data = await authApi.requestCustomerOtp({ phone, channel, purpose: 'password-reset' });
+      if (!mounted.current) return;
+      setChallengeId(data.challengeId);
+      setChallengePhone(phone);
+      setCode('');
+      setVerificationError('');
+      setSentChannel(channel);
+      setExpiresAt(Date.now() + (data.expiresIn || 300) * 1000);
+      setRetryAt(Date.now() + data.retryAfter * 1000);
+      toast.success(data.message);
+    } catch (error) {
+      const retryAfter = Number(error.data?.retryAfter);
+      if (mounted.current && Number.isFinite(retryAfter) && retryAfter > 0) setRetryAt(Date.now() + retryAfter * 1000);
+      throw error;
+    }
   };
   const resend = async () => {
     if (busy.current) return;
     busy.current = true;
     setLoading(true);
+    setVerificationError('');
     try { await requestCode(); }
-    catch (error) { if (mounted.current) toast.error(error.message || copy.failed); }
+    catch (error) { if (mounted.current) { setVerificationError(error.message || copy.failed); toast.error(error.message || copy.failed); } }
     finally { busy.current = false; if (mounted.current) setLoading(false); }
   };
   const handleSend = async () => {
@@ -118,7 +128,6 @@ export default function ForgotPasswordScreen({ navigation, route }) {
     setChallengePhone('');
     setCode('');
     setExpiresAt(0);
-    setRetryAt(0);
     setVerificationError('');
   };
 
@@ -154,7 +163,7 @@ export default function ForgotPasswordScreen({ navigation, route }) {
             {challengeId ? <>
               <Text accessibilityLiveRegion="polite" style={[styles.status, alignment, { color: c.textSecondary }]}>{loading ? copy.checking : copy.auto}</Text>
               <Button title={copy.verifyCode} onPress={verifyCode} loading={loading} disabled={code.length !== 6} style={{ marginTop: spacing.md }} />
-            </> : <Button title={isPhone ? copy.sendCode : t.sendResetLink} onPress={handleSend} loading={loading} style={{ marginTop: spacing.md }} />}
+            </> : <Button title={isPhone ? (retrySeconds > 0 ? retryMessage(retrySeconds) : copy.sendCode) : t.sendResetLink} onPress={handleSend} loading={loading} disabled={isPhone && retrySeconds > 0} style={{ marginTop: spacing.md }} />}
           </View>
         </ScrollView>
       </KeyboardAvoidingView>

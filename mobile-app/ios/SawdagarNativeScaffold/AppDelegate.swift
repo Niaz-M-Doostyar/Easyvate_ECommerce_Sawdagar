@@ -20,6 +20,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 
   var reactNativeDelegate: ReactNativeDelegate?
   var reactNativeFactory: RCTReactNativeFactory?
+  var initialLaunchOptions: [UIApplication.LaunchOptionsKey: Any]?
 
   func application(
     _ application: UIApplication,
@@ -31,16 +32,82 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 
     reactNativeDelegate = delegate
     reactNativeFactory = factory
+    initialLaunchOptions = launchOptions
 
-    window = UIWindow(frame: UIScreen.main.bounds)
+    return true
+  }
+}
+
+class SceneDelegate: UIResponder, UIWindowSceneDelegate {
+  var window: UIWindow?
+
+  func scene(
+    _ scene: UIScene,
+    willConnectTo session: UISceneSession,
+    options connectionOptions: UIScene.ConnectionOptions
+  ) {
+    guard let windowScene = scene as? UIWindowScene,
+          let appDelegate = UIApplication.shared.delegate as? AppDelegate,
+          let factory = appDelegate.reactNativeFactory else { return }
+
+    let window = UIWindow(windowScene: windowScene)
+    self.window = window
+    appDelegate.window = window
+
+    // React Native reads initial links from its launch options, while UIKit
+    // delivers them through scene connection options when scenes are enabled.
+    var launchOptions = appDelegate.initialLaunchOptions ?? [:]
+    if let urlContext = connectionOptions.urlContexts.first {
+      launchOptions[.url] = urlContext.url
+      if let sourceApplication = urlContext.options.sourceApplication {
+        launchOptions[.sourceApplication] = sourceApplication
+      }
+      if let annotation = urlContext.options.annotation {
+        launchOptions[.annotation] = annotation
+      }
+    }
+    let userActivity = connectionOptions.userActivities.first {
+      $0.activityType == NSUserActivityTypeBrowsingWeb
+    } ?? connectionOptions.userActivities.first
+    if let userActivity {
+      launchOptions[.userActivityDictionary] = [
+        UIApplication.LaunchOptionsKey.userActivityType.rawValue: userActivity.activityType,
+        "UIApplicationLaunchOptionsUserActivityKey": userActivity
+      ]
+    }
 
     factory.startReactNative(
       withModuleName: "SawdagarNativeScaffold",
       in: window,
       launchOptions: launchOptions
     )
+  }
 
-    return true
+  func scene(_ scene: UIScene, openURLContexts URLContexts: Set<UIOpenURLContext>) {
+    for context in URLContexts {
+      var options: [UIApplication.OpenURLOptionsKey: Any] = [
+        .openInPlace: context.options.openInPlace
+      ]
+      if let sourceApplication = context.options.sourceApplication {
+        options[.sourceApplication] = sourceApplication
+      }
+      if let annotation = context.options.annotation {
+        options[.annotation] = annotation
+      }
+      _ = RCTLinkingManager.application(
+        UIApplication.shared,
+        open: context.url,
+        options: options
+      )
+    }
+  }
+
+  func scene(_ scene: UIScene, continue userActivity: NSUserActivity) {
+    _ = RCTLinkingManager.application(
+      UIApplication.shared,
+      continue: userActivity,
+      restorationHandler: { _ in }
+    )
   }
 }
 

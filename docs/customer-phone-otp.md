@@ -89,3 +89,16 @@ and [Android autofill guidance](https://developer.android.com/identity/autofill/
 Actual SMS suggestions depend on the device, keyboard, received message and
 autofill settings; simulator tests cannot establish physical SMS suggestions.
 WhatsApp codes can be pasted or typed. No SMS-reading permission is requested.
+
+## Supplier delivery review (October 7, 2026)
+
+Supplier signup was checked against the live provider using the user-approved
+test number. SMS delivery and receipt were confirmed. WhatsApp was accepted
+by Ghoncha, but receipt was not confirmed and its status lookup returned HTTP
+500. The delivery investigation is recorded in
+[supplier OTP and device review](supplier-otp-device-review-20261007.md).
+
+Retry failures now return the actual cooldown in both JSON and `Retry-After`.
+Mobile and website forms retain the original error, display a countdown and
+disable early retries. Minute, hourly, IP and concurrent-send limits remain
+enforced; failed sends cannot activate an account.

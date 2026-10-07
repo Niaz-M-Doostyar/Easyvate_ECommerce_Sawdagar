@@ -1,4 +1,5 @@
 import useAutoOtpVerification from '../../hooks/useAutoOtpVerification';
+import useOtpCountdown from '../../hooks/useOtpCountdown';
 import { nationalPhone, internationalPhone } from '../../services/afghanPhone.cjs';
 import { OtpMethodPicker, OtpVerification } from '../../components/OtpControls';
 import { authApi } from '../../services/api';
@@ -35,6 +36,7 @@ export default function RegisterScreen({ navigation }) {
   const [sentChannel, setSentChannel] = useState('sms');
   const [expiresAt, setExpiresAt] = useState(0);
   const [retryAt, setRetryAt] = useState(0);
+  const retrySeconds = useOtpCountdown(retryAt);
   const [errors, setErrors] = useState({});
   const [verificationError, setVerificationError] = useState('');
 
@@ -59,14 +61,21 @@ export default function RegisterScreen({ navigation }) {
   };
 
   const requestCode = async () => {
-    if (Date.now() < retryAt) throw new Error('Please wait 60 seconds before resending.');
-    const data = await authApi.requestCustomerOtp({ role: form.role, firstName: form.name.trim(), lastName: form.lastName.trim(), fullName: form.name.trim(), email: form.role === 'supplier' ? form.email.trim().toLowerCase() : '', companyName: form.companyName.trim(), province: form.province, district: form.district, village: form.village, landmark: form.landmark, phone: form.phone, password: form.password, confirmPassword: form.confirmPassword, channel });
-    setChallengeId(data.challengeId); setCode(''); setSentChannel(channel); setExpiresAt(Date.now() + (data.expiresIn || 300) * 1000); setRetryAt(Date.now() + data.retryAfter * 1000); toast.success(data.message);
+    if (Date.now() < retryAt) throw new Error(`Try again in ${Math.ceil((retryAt - Date.now()) / 1000)} seconds.`);
+    try {
+      const data = await authApi.requestCustomerOtp({ role: form.role, firstName: form.name.trim(), lastName: form.lastName.trim(), fullName: form.name.trim(), email: form.role === 'supplier' ? form.email.trim().toLowerCase() : '', companyName: form.companyName.trim(), province: form.province, district: form.district, village: form.village, landmark: form.landmark, phone: form.phone, password: form.password, confirmPassword: form.confirmPassword, channel });
+      setChallengeId(data.challengeId); setCode(''); setSentChannel(channel); setExpiresAt(Date.now() + (data.expiresIn || 300) * 1000); setRetryAt(Date.now() + data.retryAfter * 1000); toast.success(data.message);
+    } catch (error) {
+      const retryAfter = Number(error.data?.retryAfter);
+      if (Number.isFinite(retryAfter) && retryAfter > 0) setRetryAt(Date.now() + retryAfter * 1000);
+      throw error;
+    }
   };
   const resendCode = async () => {
     if (loading) return;
     setLoading(true);
-    try { await requestCode(); } catch (err) { toast.error(err.message); }
+    setVerificationError('');
+    try { await requestCode(); } catch (err) { setVerificationError(err.message); toast.error(err.message); }
     finally { setLoading(false); }
   };
   const handleRegister = async () => {
@@ -82,8 +91,8 @@ export default function RegisterScreen({ navigation }) {
       }
     } catch (err) {
       const msg = err?.message || 'Registration failed';
-      if (challengeId) setVerificationError(msg);
-      else Alert.alert('Registration failed', msg);
+      setVerificationError(msg);
+      if (!challengeId) Alert.alert('Registration failed', msg);
       toast.error(msg);
     } finally {
       setLoading(false);
@@ -139,9 +148,10 @@ export default function RegisterScreen({ navigation }) {
             </>}
               {challengeId && <OtpVerification code={code} onChange={value => { setCode(value); setVerificationError(''); }} phone={form.phone} sentChannel={sentChannel} channel={channel} retryAt={retryAt} expiresAt={expiresAt} onResend={resendCode} onEdit={() => { setChallengeId(''); setCode(''); setVerificationError(''); }} loading={loading} error={verificationError} />}
               <OtpMethodPicker value={channel} onChange={setChannel} disabled={loading} verifying={!!challengeId} />
+            {!challengeId && verificationError ? <Text accessibilityRole="alert" style={[styles.error, { color: c.error }]}>{verificationError}</Text> : null}
             {challengeId ? <View accessibilityLiveRegion="polite" style={{marginTop:16}}>
               <Text style={{color:c.textSecondary,textAlign:'center'}}>{loading ? 'Checking your code…' : verificationError ? 'Edit the code to try again.' : 'Your code will be checked automatically.'}</Text>
-            </View> : <Button title="Send verification code" onPress={handleRegister} loading={loading} style={{ marginTop: spacing.base }} /> }
+            </View> : <Button title={retrySeconds > 0 ? `Try again in ${retrySeconds}s` : 'Send verification code'} onPress={handleRegister} loading={loading} disabled={retrySeconds > 0} style={{ marginTop: spacing.base }} /> }
 
           </View>
           <View style={styles.footer}>
@@ -158,6 +168,7 @@ export default function RegisterScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
+  error: { fontSize: 14, lineHeight: 22, marginTop: 12 },
   step: {fontSize: 12,fontWeight:'700',letterSpacing:1.1,marginBottom:10},
   heading:{fontSize:28,fontWeight:'700',letterSpacing:-0.6,marginBottom:8},
   subtitle:{fontSize:14,lineHeight:22,marginBottom:24},

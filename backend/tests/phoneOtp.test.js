@@ -72,7 +72,7 @@ test('signup and two-step recovery enforce purpose, expiry, attempt limits and o
   const router = require('../routes/auth');
   const call = async (path, body) => {
     const handler = router.stack.find(layer => layer.route?.path === path).route.stack[0].handle;
-    const res = { statusCode: 200, status(code) { this.statusCode = code; return this; }, json(data) { this.body = data; return this; } };
+    const res = { statusCode: 200, headers: {}, set(name, value) { this.headers[name] = value; return this; }, status(code) { this.statusCode = code; return this; }, json(data) { this.body = data; return this; } };
     await handler({ body, ip: '127.0.0.1' }, res);
     return res;
   };
@@ -86,7 +86,10 @@ test('signup and two-step recovery enforce purpose, expiry, attempt limits and o
     assert.equal(user, null);
     assert.equal(pending.password === body.password, false);
     assert.equal(pending.codeHash.includes(deliveredCode), false);
-    assert.equal((await call('/customer-otp', body)).statusCode, 429);
+    const cooldown = await call('/customer-otp', body);
+    assert.equal(cooldown.statusCode, 429);
+    assert.ok(cooldown.body.retryAfter > 0 && cooldown.body.retryAfter <= 60);
+    assert.equal(cooldown.headers['Retry-After'], String(cooldown.body.retryAfter));
     const challengeId = sent.body.challengeId;
     assert.equal((await call('/verify-phone-reset-otp', { challengeId, code: deliveredCode })).statusCode, 400);
     assert.equal((await call('/verify-customer-otp', { challengeId, code: '000000' })).statusCode, 400);
@@ -173,6 +176,37 @@ test('signup and two-step recovery enforce purpose, expiry, attempt limits and o
     assert.equal(user.isApproved, false);
     assert.equal(user.email, '93700123457@phone.sawdagar.local');
     assert.equal(user.companyName, 'Test Shop');
+    // A failed supplier send cannot activate an account, and retry timers must
+    // reflect both the minute cooldown and the full hourly send limit.
+    user = null;
+    global.fetch = async () => ({ ok: false, status: 502 });
+    const failedSupplier = await call('/customer-otp', supplierBody);
+    assert.equal(failedSupplier.statusCode, 503);
+    assert.equal(failedSupplier.body.retryAfter, 60);
+    assert.equal(failedSupplier.headers['Retry-After'], '60');
+    assert.equal(user, null);
+    assert.ok(pending.expiresAt <= new Date());
+    assert.equal((await call('/verify-customer-otp', { challengeId: pending.id, code: '000000' })).statusCode, 400);
+    pending.lastSentAt = new Date(Date.now() - 70000);
+    pending.windowStart = new Date(Date.now() - 300000);
+    pending.sendCount = 5;
+    const hourlyLimit = await call('/customer-otp', supplierBody);
+    assert.equal(hourlyLimit.statusCode, 429);
+    assert.ok(hourlyLimit.body.retryAfter >= 3299 && hourlyLimit.body.retryAfter <= 3300);
+    assert.equal(hourlyLimit.headers['Retry-After'], String(hourlyLimit.body.retryAfter));
+    db.phoneOtpRate.upsert = async () => ({ count: 21 });
+    const ipLimit = await call('/customer-otp', supplierBody);
+    assert.equal(ipLimit.statusCode, 429);
+    assert.ok(ipLimit.body.retryAfter > 0 && ipLimit.body.retryAfter <= 3600);
+    assert.equal(ipLimit.headers['Retry-After'], String(ipLimit.body.retryAfter));
+    // Two first requests can race on the unique phone constraint.
+    db.phoneOtpRate.upsert = async () => ({ count: 1 });
+    pending = null;
+    db.phoneRegistration.create = async () => { throw Object.assign(new Error('Duplicate phone'), { code: 'P2002' }); };
+    const concurrentSend = await call('/customer-otp', supplierBody);
+    assert.equal(concurrentSend.statusCode, 429);
+    assert.equal(concurrentSend.body.retryAfter, 60);
+    assert.equal(concurrentSend.headers['Retry-After'], '60');
   } finally {
     global.fetch = originalFetch;
     if (originalKey === undefined) delete process.env.GHONCHA_API_KEY; else process.env.GHONCHA_API_KEY = originalKey;

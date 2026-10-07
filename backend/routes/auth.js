@@ -66,6 +66,12 @@ const crypto = require('node:crypto');
 const { normalizeAfghanPhone, codeHash, sendCode } = require('../lib/phoneOtp');
 const publicEmail = user => user.email?.endsWith('@phone.sawdagar.local') ? '' : user.email;
 
+function otpRetryError(res, status, error, seconds) {
+  const retryAfter = Math.max(1, Math.ceil(seconds));
+  res.set('Retry-After', String(retryAfter));
+  return res.status(status).json({ error, retryAfter });
+}
+
 // Persist challenges and limits so restarts and multiple workers cannot bypass them.
 router.post('/customer-otp', async (req, res) => {
   try {
@@ -100,14 +106,21 @@ router.post('/customer-otp', async (req, res) => {
     const rateKey = crypto.createHash('sha256').update(req.ip || 'unknown').digest('hex');
     const rateId = `${rateKey}:${Math.floor(now.getTime() / 3600000)}`;
     const rate = await prisma.phoneOtpRate.upsert({ where: { id: rateId }, create: { id: rateId, count: 1, expiresAt: new Date(now.getTime() + 7200000) }, update: { count: { increment: 1 } } });
-    if (rate.count > 20) return res.status(429).json({ error: 'Too many verification requests. Try again later.' });
+    if (rate.count > 20) return otpRetryError(res, 429, 'Too many verification requests. Try again later.',
+      ((Math.floor(now.getTime() / 3600000) + 1) * 3600000 - now.getTime()) / 1000);
     await prisma.phoneOtpRate.deleteMany({ where: { expiresAt: { lt: now } } });
     const id = crypto.randomUUID();
     const code = String(crypto.randomInt(100000, 1000000));
     const passwordHash = purpose === 'registration' ? await hashPassword(password) : '';
     const previous = await prisma.phoneRegistration.findUnique({ where: { phone } });
-    if (previous && (now - previous.lastSentAt < 60000 || (now - previous.windowStart < 3600000 && previous.sendCount >= 5)))
-      return res.status(429).json({ error: 'Please wait before requesting another code. Maximum 5 sends per hour.' });
+    if (previous) {
+      const cooldown = 60000 - (now - previous.lastSentAt);
+      const hourlyLimit = previous.sendCount >= 5 ? 3600000 - (now - previous.windowStart) : 0;
+      if (Math.max(cooldown, hourlyLimit) > 0)
+        return otpRetryError(res, 429, hourlyLimit > 0
+          ? 'Maximum 5 codes per hour. Try again after the countdown.'
+          : 'Please wait before requesting another code.', Math.max(cooldown, hourlyLimit) / 1000);
+    }
     const data = { id, purpose, userId: purpose === 'password-reset' ? existing.id : null, fullName: purpose === 'registration' ? (role === 'supplier' ? supplierName : `${sanitize(firstName).trim()} ${sanitize(lastName).trim()}`) : '', password: passwordHash,
       registrationData: purpose === 'registration' ? { role, email: role === 'supplier' ? supplierEmail : '', companyName: role === 'supplier' ? supplierCompany : '', province: role === 'supplier' ? supplierProvince : '', district: role === 'supplier' ? sanitize(String(req.body.district || '')) : '', village: role === 'supplier' ? sanitize(String(req.body.village || '')) : '', landmark: role === 'supplier' ? sanitize(String(req.body.landmark || '')) : '' } : null,
       codeHash: codeHash(id, code), expiresAt: new Date(now.getTime() + 300000), lastSentAt: now, attempts: 0,
@@ -116,18 +129,21 @@ router.post('/customer-otp', async (req, res) => {
     // Compare-and-swap reserves the send before contacting the paid provider.
     if (previous) {
       const reserved = await prisma.phoneRegistration.updateMany({ where: { id: previous.id, lastSentAt: previous.lastSentAt }, data });
-      if (!reserved.count) return res.status(429).json({ error: 'Another code request is in progress' });
+      if (!reserved.count) return otpRetryError(res, 429, 'Another code request is in progress', 60);
     } else await prisma.phoneRegistration.create({ data: { ...data, phone } });
     try { await sendCode(phone, code, channel); }
     catch (deliveryFailure) {
       const reason = /^OTP_[A-Z0-9_]+$/.test(deliveryFailure.code || '') ? deliveryFailure.code : 'OTP_PROVIDER_NETWORK_ERROR';
       console.error(`Phone OTP delivery failed: ${reason}`);
       await prisma.phoneRegistration.updateMany({ where: { id }, data: { expiresAt: now } });
-      return res.status(503).json({ error: 'Could not send the code. Wait 60 seconds and try again or choose the other method.' });
+      return otpRetryError(res, 503, 'Could not send the code. Wait 60 seconds and try again or choose the other method.', 60);
     }
     return res.json({ challengeId: id, expiresIn: 300, retryAfter: 60, channel, message: `Code sent by ${channel === 'sms' ? 'SMS' : 'WhatsApp'}` });
   } catch (err) {
-    return res.status(err.code === 'P2002' ? 429 : 500).json({ error: 'Unable to request verification. Please try again later.' });
+    if (err.code === 'P2002') return otpRetryError(res, 429, 'Another code request is in progress. Please wait before trying again.', 60);
+    const reason = /^P\d{4}$/.test(err.code || '') ? err.code : 'OTP_REQUEST_ERROR';
+    console.error(`Phone OTP request failed: ${reason}`);
+    return res.status(500).json({ error: 'Unable to request verification. Please try again later.' });
   }
 });
 router.post('/verify-customer-otp', async (req, res) => {

@@ -170,3 +170,15 @@ saved at `51aef0aa`, branch
 Find and revert the commit titled
 `Use one theme background for every phone offer card`, then rebuild the mobile
 app. Shop sizing, iPad styling and admin content are preserved.
+
+## Supplier OTP and physical iPhone restore point
+
+The application source before this repair is saved at `4dbf4676`, branch
+`backup/before-supplier-otp-ios-device-2026-10-07`. Original iOS startup files,
+which were previously ignored by Git, are preserved at `a8ad578e`, branch
+`backup/native-before-scenes-2026-10-07`.
+
+Find and revert `Repair OTP retry feedback and iOS 27 device startup`, then
+rebuild/redeploy the affected app/API/website. Restoring the legacy iOS startup
+will also restore its SDK 27 launch failure. See
+[verification and device instructions](supplier-otp-device-review-20261007.md).

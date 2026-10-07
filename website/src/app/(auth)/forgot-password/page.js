@@ -1,5 +1,6 @@
 "use client";
 import useAutoOtpVerification from '@/hooks/useAutoOtpVerification';
+import useOtpCountdown from '@/hooks/useOtpCountdown';
 import { useState } from "react";
 import Link from "next/link";
 import { useToast } from "@/contexts/ToastContext";
@@ -20,17 +21,29 @@ export default function ForgotPasswordPage() {
   const [sentChannel, setSentChannel] = useState('sms');
   const [expiresAt, setExpiresAt] = useState(0);
   const [retryAt, setRetryAt] = useState(0);
+  const retrySeconds = useOtpCountdown(retryAt);
   const isPhone = !identifier.includes('@');
   async function request(path, body) {
     const response = await fetch(`/api/auth/${path}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
-    const data = await response.json();
-    if (!response.ok) throw new Error(data.error || 'Request failed');
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      const error = new Error(data.error || 'Request failed');
+      error.status = response.status;
+      error.data = data;
+      throw error;
+    }
     return data;
   }
   async function sendCode() {
-    if (Date.now() < retryAt) throw new Error('Please wait 60 seconds before requesting another code.');
-    const data = await request('customer-otp', { phone: identifier, channel, purpose: 'password-reset' });
-    setChallengeId(data.challengeId); setCode(''); setSentChannel(channel); setExpiresAt(Date.now() + (data.expiresIn || 300) * 1000); setRetryAt(Date.now() + 60000); toast.success(data.message);
+    if (Date.now() < retryAt) throw new Error(`Try again in ${Math.ceil((retryAt - Date.now()) / 1000)} seconds.`);
+    try {
+      const data = await request('customer-otp', { phone: identifier, channel, purpose: 'password-reset' });
+      setChallengeId(data.challengeId); setCode(''); setSentChannel(channel); setExpiresAt(Date.now() + (data.expiresIn || 300) * 1000); setRetryAt(Date.now() + data.retryAfter * 1000); toast.success(data.message);
+    } catch (error) {
+      const retryAfter = Number(error.data?.retryAfter);
+      if (Number.isFinite(retryAfter) && retryAfter > 0) setRetryAt(Date.now() + retryAfter * 1000);
+      throw error;
+    }
   }
   const handleSubmit = async e => {
     e.preventDefault(); if (loading) return; setVerificationError(''); setLoading(true);
@@ -43,8 +56,9 @@ export default function ForgotPasswordPage() {
     finally { setLoading(false); }
   };
   const resend = async () => {
-    setLoading(true);
-    try { await sendCode(); } catch (err) { toast.error(err.message); }
+    if (loading) return;
+    setLoading(true); setVerificationError('');
+    try { await sendCode(); } catch (err) { setVerificationError(err.message); toast.error(err.message); }
     finally { setLoading(false); }
   };
   useAutoOtpVerification({ challengeId, code, loading, ready: !sent && password.length >= 6 && password.length <= 72 && password === confirmPassword, onVerify: () => handleSubmit({preventDefault() {}}) });
@@ -59,7 +73,8 @@ export default function ForgotPasswordPage() {
           <OtpVerification code={code} onChange={setCode} phone={identifier} sentChannel={sentChannel} channel={channel} retryAt={retryAt} expiresAt={expiresAt} onResend={resend} onEdit={() => { setChallengeId(''); setCode(''); }} loading={loading} />
         </>}
         {isPhone && <OtpMethodPicker value={channel} onChange={setChannel} disabled={loading} verifying={!!challengeId} />}
-        {challengeId ? <div aria-live="polite">{verificationError && <p role="alert">{verificationError}</p>}<p>{loading ? 'Checking your code…' : password !== confirmPassword || password.length < 6 ? 'Choose and confirm your new password, then enter the code.' : 'Your code will be checked automatically. Edit it to retry.'}</p></div> : <button type="submit" disabled={loading || (!!challengeId && code.length !== 6)} className="f2-content-button f2-content-button--wide">{loading ? 'Please wait...' : isPhone ? (challengeId ? 'Verify & reset password' : 'Send verification code') : 'Send reset link'}</button>}
+        {verificationError && <div className="f2-content-alert f2-content-alert--error" role="alert">{verificationError}</div>}
+        {challengeId ? <div aria-live="polite"><p>{loading ? 'Checking your code…' : password !== confirmPassword || password.length < 6 ? 'Choose and confirm your new password, then enter the code.' : 'Your code will be checked automatically. Edit it to retry.'}</p></div> : <button type="submit" disabled={loading || (isPhone && retrySeconds > 0)} className="f2-content-button f2-content-button--wide">{loading ? 'Please wait...' : isPhone ? (retrySeconds > 0 ? `Try again in ${retrySeconds}s` : 'Send verification code') : 'Send reset link'}</button>}
         <p className="f2-auth-alternative">Remember your password? <Link href="/login">Sign In</Link></p>
       </form>}
     </div></div></div></div>;
