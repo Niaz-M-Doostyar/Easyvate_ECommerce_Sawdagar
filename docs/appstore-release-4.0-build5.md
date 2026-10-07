@@ -20,7 +20,13 @@ Description, promotional text, keywords and release notes were updated for the
 customer shopping app. Marketing/support links now use `sawdagar.com`.
 The previous privacy link pointed to the old domain's About page. The app's
 existing privacy text is reproduced verbatim in `website/public/privacy-policy.html`;
-its public deployment and listing link update remain pending.
+the page is publicly served over HTTPS and its content matches the local file.
+The editable 4.0 App Info localization now uses that verified privacy URL.
+
+Final API verification confirmed build 5 is VALID and selected, both screenshot
+sets contain exactly five COMPLETE images, and release notes and the updated
+links are saved. Existing review contact, demo-account requirement and review
+notes were preserved.
 
 No App Review submission or public release has been performed. The listing
 remains in PREPARE_FOR_SUBMISSION. API keys and signing secrets are not in Git.
@@ -38,3 +44,7 @@ existing distribution certificate in April 2027. Reproduction script:
 `mobile-app/scripts/build-appstore-release.sh`; choose a new unused build number
 for another upload. Its signing parameters do not change the development
 project's physical-iPhone bundle ID.
+
+Source before listing preparation is preserved on GitHub at `321632b8`, branch
+`backup/before-appstore-4.0-listing-2026-10-07`. Screenshot hashes are recorded
+in `docs/appstore-4.0-screenshots.json`.
