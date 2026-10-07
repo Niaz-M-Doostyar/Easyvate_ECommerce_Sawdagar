@@ -11,11 +11,15 @@ registration fields. The test phone is not an existing account.
 One approved supplier SMS test was accepted by Ghoncha, progressed to delivered,
 and was confirmed received by the user. One approved WhatsApp test was accepted
 with status `sent` and charged 1.00 AFN, but the user reported no WhatsApp receipt.
-Ghoncha's delivery-status API returned HTTP 500 with
-`operator configuration missing` for that message. WhatsApp receipt is
-unresolved; the provider's configuration/status lookup needs investigation,
-and WhatsApp must be active and online on the same phone. No further paid messages are authorized by the
-completed two-message test. No account was created or password changed; the
+The subsequent delivery-status lookup returned HTTP 500 with
+`operator configuration missing`. [Ghoncha's documentation](https://sms.ghoncha.com/docs)
+says a WhatsApp charge means accepted for delivery and can remain even when
+the message never arrives. The documentation describes status lookup alongside
+SMS and does not confirm support for WhatsApp message IDs, so this lookup error
+does not establish the cause of the missing WhatsApp message. WhatsApp must be
+active and online on the same number; provider delivery investigation remains
+necessary. No further paid messages are authorized by the completed two-message
+test. No account was created or password changed; the
 test challenges were expired. Total test cost: 1.50 AFN.
 
 Delivery keys, OTP values, passwords and provider response bodies were kept out
@@ -34,6 +38,31 @@ expiry, verification attempt limits and account approval rules remain enforced.
 Verification: four backend OTP tests passed, including supplier verification,
 failed-send protection, minute/hour/IP cooldowns and first-send collisions.
 Changed client files parse with Babel, and the website production build passed.
+
+## Production rollout
+
+The existing CI deployed `61e0d669` successfully to
+`/var/www/releases/sawdagar/61e0d6690afab66bf729df4d63d3cadf4476b992-20261007T071106Z`.
+The API health/readiness checks, admin login, website home, public signup and
+password-recovery pages returned HTTP 200. An invalid-phone request to the public
+supplier OTP endpoint returned HTTP 400 before any database write or provider send.
+The active API and changed website sources match the local SHA-256 hashes.
+
+CI saved a database backup at
+`/var/backups/cicd/sawdagar/sawdagar-61e0d6690afa-20261007T071109Z.sql.gz`.
+The earlier release remains available, and product uploads still resolve to
+`/var/lib/cicd/persistent/sawdagar/backend-uploads`. No new schema migration was
+required for this repair.
+
+## WhatsApp provider investigation
+
+The existing message can be investigated without charging for another send.
+Its provider message ID is `8a3debb1-4289-478f-87fa-63c65ed8c015`.
+Ask Ghoncha to check that message's downstream delivery result, confirm whether
+`GET /api/v1/status/{id}` supports WhatsApp IDs, and identify the correct receipt
+mechanism. The accepted request used `POST /api/v1/otp/send/whatsapp`, returned
+`channel: whatsapp` and `status: sent`, and cost 1.00 AFN. SMS was delivered.
+No support message has been sent on the user's behalf.
 
 ## Physical iPhone
 
