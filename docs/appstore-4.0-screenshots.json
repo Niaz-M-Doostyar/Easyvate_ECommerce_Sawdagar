@@ -1,0 +1,42 @@
+[
+  {
+    "file": "screenshots/ipad/01-home.jpg",
+    "sha256": "4095654793f6ed10e4911c331833777f2d7645e8eec002ff0cd35bb28d6b2ddd"
+  },
+  {
+    "file": "screenshots/ipad/02-discover.jpg",
+    "sha256": "e039eec909204f35395d5260f22819aebcb6d4112851eae5d8ecf686c9f9ec74"
+  },
+  {
+    "file": "screenshots/ipad/03-shop.jpg",
+    "sha256": "5f829ec2bdd4ec5cbdbace00ccb62ebbb0cf246460015071cfdf2a0428fe1df6"
+  },
+  {
+    "file": "screenshots/ipad/04-categories.jpg",
+    "sha256": "6ea538833115b01954eb4980bbae315212cc6dae43447f908d55971620010bcf"
+  },
+  {
+    "file": "screenshots/ipad/05-product.jpg",
+    "sha256": "64f789b6efcec21f8bba55eda43f5761e114e20d2939aaea44446d8c1b4e785e"
+  },
+  {
+    "file": "screenshots/iphone/01-home.jpg",
+    "sha256": "efdf5315de793f71221873f7adc8bf13d4ebdf189b0b7eb81b2e4ba4cb4ff1ce"
+  },
+  {
+    "file": "screenshots/iphone/02-discover.jpg",
+    "sha256": "913c8b9221a8ce03224559a40f7e64e80cfeb051a7448ffe664f90d064cd7f9b"
+  },
+  {
+    "file": "screenshots/iphone/03-shop.jpg",
+    "sha256": "371c8ce1fee62fbe63d8afde8abfff0fa1de5103f1346fc3b425acced225810f"
+  },
+  {
+    "file": "screenshots/iphone/04-categories.jpg",
+    "sha256": "3e9aefec62f87aad467d20f3621e123d97b0895bae88f40c4232d6c9f809221d"
+  },
+  {
+    "file": "screenshots/iphone/05-product.jpg",
+    "sha256": "488ecaeb4ea78fdcfee9c962a096da6777483182c064de66b7e40676bd2f08c6"
+  }
+]
