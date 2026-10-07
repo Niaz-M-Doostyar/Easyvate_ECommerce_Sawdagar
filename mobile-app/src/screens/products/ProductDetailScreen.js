@@ -135,7 +135,7 @@ export default function ProductDetailScreen({ navigation, route }) {
     // Share the public product URL: messaging apps (WhatsApp, Facebook, …) render
     // the rich preview from the website's Open Graph tags, and the OS opens this
     // link directly in the Sawdagar app (App Links / Universal Links) when installed.
-    const url = `${WEBSITE_URL}/share/products/${encodeURIComponent(product.id)}`;
+    const url = `${WEBSITE_URL}/share/products/${encodeURIComponent(product.id)}?preview=2`;
     const price = product.retailPrice != null ? formatPrice(product.retailPrice) : null;
     const message = `${getName(product)}${price ? `\n${price}` : ''}\n${url}`;
     try {

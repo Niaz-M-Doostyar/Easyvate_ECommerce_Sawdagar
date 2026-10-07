@@ -37,9 +37,10 @@ router.get('/', async (req, res) => {
   try {
     const src = req.query.src;
     // Bucket variants so arbitrary query values cannot create unbounded files.
-    const width = nearestAllowed(req.query.w, allowedWidths, 800);
-    const quality = nearestAllowed(req.query.q, allowedQualities, 60);
-    const format = req.query.f === 'jpeg' ? 'jpeg' : 'webp';
+    const social = req.query.fit === 'social';
+    const width = social ? 1200 : nearestAllowed(req.query.w, allowedWidths, 800);
+    const quality = social ? 75 : nearestAllowed(req.query.q, allowedQualities, 60);
+    const format = social || req.query.f === 'jpeg' ? 'jpeg' : 'webp';
 
     const originalPath = normalizeUploadPath(src);
     if (!originalPath) return res.status(400).json({ error: 'Invalid image source' });
@@ -48,11 +49,14 @@ router.get('/', async (req, res) => {
     const parsed = path.parse(originalPath);
     const stat = fs.statSync(originalPath);
     const sourceVersion = Math.round(stat.mtimeMs).toString(36);
-    const cacheName = `${parsed.name}-${sourceVersion}-w${width}-q${quality}.${format}`;
+    const recipe = social ? 'social-v1-1200x630' : `w${width}-q${quality}`;
+    const cacheName = `${parsed.name}-${sourceVersion}-${recipe}.${format}`;
     const cachePath = path.join(cacheRoot, cacheName);
 
     // ETag based on original file mtime + params
-    const etag = `"${stat.mtimeMs}-${width}-${quality}-${format}"`;
+    const etag = `"${stat.mtimeMs}-${recipe}-${format}"`;
+    res.setHeader('ETag', etag);
+    res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
     if (req.headers['if-none-match'] === etag) {
       return res.status(304).end();
     }
@@ -60,13 +64,30 @@ router.get('/', async (req, res) => {
     if (!fs.existsSync(cachePath)) {
       // Deduplicate concurrent requests for the same conversion
       if (!pending.has(cacheName)) {
-        const pipeline = sharp(originalPath)
-          .rotate()
-          .resize({ width, withoutEnlargement: true, fit: 'inside' });
-
-        const promise = format === 'jpeg'
-          ? pipeline.jpeg({ quality, progressive: true, mozjpeg: true }).toFile(cachePath)
-          : pipeline.webp({ quality, effort: 4 }).toFile(cachePath);
+        const promise = (async () => {
+          if (social) {
+            // Social clients need a small, opaque raster instead of the upload.
+            // Keep the entire product visible and bound every preview's size.
+            const pipeline = sharp(originalPath).rotate()
+              .flatten({ background: '#ffffff' })
+              .resize(1200, 630, { fit: 'contain', background: '#ffffff' });
+            for (const previewQuality of [75, 60, 45, 30, 20]) {
+              const buffer = await pipeline.clone().jpeg({ quality: previewQuality, progressive: true, mozjpeg: true }).toBuffer();
+              if (buffer.length <= 280000) {
+                const temporaryPath = `${cachePath}.${process.pid}.tmp`;
+                await fs.promises.writeFile(temporaryPath, buffer);
+                await fs.promises.rename(temporaryPath, cachePath);
+                return;
+              }
+            }
+            throw new Error('Preview image exceeds size limit');
+          }
+          const pipeline = sharp(originalPath).rotate()
+            .resize({ width, withoutEnlargement: true, fit: 'inside' });
+          await (format === 'jpeg'
+            ? pipeline.jpeg({ quality, progressive: true, mozjpeg: true }).toFile(cachePath)
+            : pipeline.webp({ quality, effort: 4 }).toFile(cachePath));
+        })();
 
         pending.set(cacheName, promise.finally(() => pending.delete(cacheName)));
       }

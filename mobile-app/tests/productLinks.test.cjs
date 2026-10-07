@@ -4,6 +4,7 @@ const {normalizeProductLink,referrerProductLink,copiedProductLink}=require('../s
 test('all public and custom scheme formats resolve to the same product',()=>{
  for(const prefix of ['https://sawdagar.com/','https://www.sawdagar.com/','https://sawdagar.com/share/','sawdagar://']){
    assert.equal(normalizeProductLink(prefix+'products/1027'),'sawdagar://products/1027');
+   assert.equal(normalizeProductLink(prefix+'products/1027?preview=2'),'sawdagar://products/1027');
  }
 });
 test('untrusted, malformed, or ambiguous URLs never navigate',()=>{
@@ -16,6 +17,7 @@ test('Play referrer resolves product and rejects duplicates or bad encoding',()=
 test('iOS accepts only recent explicitly saved product links',()=>{
  const now=Date.now();const url='https://sawdagar.com/share/products/1027';
  assert.equal(copiedProductLink(url+'?sawdagar_install='+now,now),'sawdagar://products/1027');
+ assert.equal(copiedProductLink(url+'?preview=2&sawdagar_install='+now,now),'sawdagar://products/1027');
  assert.equal(copiedProductLink(url,now),null);
  assert.equal(copiedProductLink(url+'?sawdagar_install='+(now-8*86400000),now),null);
  assert.equal(copiedProductLink(url+'?sawdagar_install='+(now+3600000),now),null);

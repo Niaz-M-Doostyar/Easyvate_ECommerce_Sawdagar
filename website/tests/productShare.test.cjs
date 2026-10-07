@@ -1,7 +1,7 @@
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const vm = require('node:vm');
-const { shareDocument, productImage } = require('../src/lib/productShare.cjs');
+const { shareDocument, productImage, productPreview, productUploadPath } = require('../src/lib/productShare.cjs');
 const product = { id: '1027', nameEn: '</script><script>alert(1)</script>', images: [{ url: 'http://localhost:4000/uploads/phone.jpg' }] };
 function browser(userAgent, options = {}) {
   const nodes = {open:{addEventListener:(_,fn)=>{nodes.openClick=fn;}}, android:{href:'play'}, ios:{href:'apple'}, 'install-help':{}, 'copy-error':{hidden:true}, 'copy-install':{hidden:true,addEventListener:(_,fn)=>{nodes.click=fn;}}};
@@ -20,11 +20,22 @@ function browser(userAgent, options = {}) {
 test('preview escapes content and uses a publicly fetchable image', () => {
   assert.equal(productImage(product), 'https://sawdagar.com/uploads/phone.jpg');
   const html = shareDocument(product);
-  assert.ok(html.includes('property="og:image" content="https://sawdagar.com/uploads/phone.jpg"'));
+  assert.ok(html.includes(`property="og:image" content="${productPreview(product).url}"`));
+  assert.ok(html.includes('property="og:image:type" content="image/jpeg"'));
+  assert.ok(html.includes('property="og:image:width" content="1200"'));
+  assert.ok(html.includes('property="og:image:height" content="630"'));
   assert.ok(!html.includes(product.nameEn));
   assert.ok(html.includes('sawdagar://products/1027'));
   assert.ok(html.includes('referrer=sawdagar_product%3D1027'));
   new vm.Script(shareDocument({...product,id:"a'b"}).match(/<script>([\s\S]*?)<\/script>/)[1]);
+});
+test('preview URLs change with the product image and reject non-upload sources', () => {
+  assert.equal(productUploadPath(product), '/uploads/phone.jpg');
+  assert.notEqual(productPreview(product).url, productPreview({...product, images:[{url:'/uploads/other.png'}]}).url);
+  assert.notEqual(productPreview(product).url, productPreview({...product, updatedAt:'2026-10-07'}).url);
+  assert.equal(productUploadPath({...product, images:[{url:'https://example.com/photo.png'}]}), null);
+  assert.equal(productUploadPath({...product, images:[{url:'/uploads/../secret'}]}), null);
+  assert.equal(productPreview({...product,images:[]}).url, 'https://sawdagar.com/assets/img/logo/logo.png');
 });
 test('Android store redirect preserves referrer and app intent has fallback', () => {
   const b=browser('Android');
@@ -38,7 +49,7 @@ test('iOS copies only after consent, then opens the store', async () => {
   assert.equal(b.copied,undefined);
   assert.equal(b.nodes['copy-install'].hidden,false);
   await b.nodes.click();
-  assert.match(b.copied,/^https:\/\/sawdagar.com\/share\/products\/1027\?sawdagar_install=\d{13}$/);
+  assert.match(b.copied,/^https:\/\/sawdagar.com\/share\/products\/1027\?preview=2&sawdagar_install=\d{13}$/);
   assert.equal(b.destination,'apple');
 });
 test('iOS stays on the install preview in Safari until the user chooses an action',()=>{
