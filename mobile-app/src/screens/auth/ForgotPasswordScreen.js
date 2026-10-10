@@ -65,7 +65,7 @@ export default function ForgotPasswordScreen({ navigation, route }) {
       setChallengePhone(phone);
       setCode('');
       setVerificationError('');
-      setSentChannel(channel);
+      setSentChannel(data.channel || channel);
       setExpiresAt(Date.now() + (data.expiresIn || 300) * 1000);
       setRetryAt(Date.now() + data.retryAfter * 1000);
       toast.success(data.message);

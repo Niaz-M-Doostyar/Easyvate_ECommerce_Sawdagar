@@ -64,7 +64,7 @@ export default function RegisterScreen({ navigation }) {
     if (Date.now() < retryAt) throw new Error(`Try again in ${Math.ceil((retryAt - Date.now()) / 1000)} seconds.`);
     try {
       const data = await authApi.requestCustomerOtp({ role: form.role, firstName: form.name.trim(), lastName: form.lastName.trim(), fullName: form.name.trim(), email: form.role === 'supplier' ? form.email.trim().toLowerCase() : '', companyName: form.companyName.trim(), province: form.province, district: form.district, village: form.village, landmark: form.landmark, phone: form.phone, password: form.password, confirmPassword: form.confirmPassword, channel });
-      setChallengeId(data.challengeId); setCode(''); setSentChannel(channel); setExpiresAt(Date.now() + (data.expiresIn || 300) * 1000); setRetryAt(Date.now() + data.retryAfter * 1000); toast.success(data.message);
+      setChallengeId(data.challengeId); setCode(''); setSentChannel(data.channel || channel); setExpiresAt(Date.now() + (data.expiresIn || 300) * 1000); setRetryAt(Date.now() + data.retryAfter * 1000); toast.success(data.message);
     } catch (error) {
       const retryAfter = Number(error.data?.retryAfter);
       if (Number.isFinite(retryAfter) && retryAfter > 0) setRetryAt(Date.now() + retryAfter * 1000);

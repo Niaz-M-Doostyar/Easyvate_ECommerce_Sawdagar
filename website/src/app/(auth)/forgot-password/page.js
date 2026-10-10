@@ -38,7 +38,7 @@ export default function ForgotPasswordPage() {
     if (Date.now() < retryAt) throw new Error(`Try again in ${Math.ceil((retryAt - Date.now()) / 1000)} seconds.`);
     try {
       const data = await request('customer-otp', { phone: identifier, channel, purpose: 'password-reset' });
-      setChallengeId(data.challengeId); setCode(''); setSentChannel(channel); setExpiresAt(Date.now() + (data.expiresIn || 300) * 1000); setRetryAt(Date.now() + data.retryAfter * 1000); toast.success(data.message);
+      setChallengeId(data.challengeId); setCode(''); setSentChannel(data.channel || channel); setExpiresAt(Date.now() + (data.expiresIn || 300) * 1000); setRetryAt(Date.now() + data.retryAfter * 1000); toast.success(data.message);
     } catch (error) {
       const retryAfter = Number(error.data?.retryAfter);
       if (Number.isFinite(retryAfter) && retryAfter > 0) setRetryAt(Date.now() + retryAfter * 1000);

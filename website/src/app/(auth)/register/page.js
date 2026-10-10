@@ -45,7 +45,7 @@ export default function RegisterPage() {
     try {
       const data = await customerRequest('customer-otp', { ...form, role, channel });
       setChallengeId(data.challengeId);
-      setCode(""); setSentChannel(channel); setExpiresAt(Date.now() + (data.expiresIn || 300) * 1000);
+      setCode(""); setSentChannel(data.channel || channel); setExpiresAt(Date.now() + (data.expiresIn || 300) * 1000);
       setRetryAt(Date.now() + data.retryAfter * 1000);
       toast.success(data.message);
     } catch (error) {

@@ -4,7 +4,7 @@ Website and mobile customer signup collect first name, last name, Afghanistan mo
 
 Ghoncha documentation: https://sms.ghoncha.com/docs
 
-SMS is the default. The server calls `/api/v1/send` with `<six digits only>` in `message`. Ghoncha requires exactly six ASCII digits with no explanatory text. WhatsApp calls `/api/v1/otp/send/whatsapp` with an application-generated six-digit `code`. Customers may switch channels and resend after 60 seconds. Each resend replaces the challenge and invalidates the previous code; use the most recent requested code. Codes expire after five minutes, with five verification attempts per challenge, five sends per phone per hour and twenty requests per IP per hour. Challenges, password hashes, code hashes and rate limits are stored in MySQL. Provider failures never activate accounts. No provider key or OTP is returned to clients.
+SMS is the default. The server calls `/api/v1/otp/send` with its own six-digit `code` and `ttl: 300`; Afghanistan destinations use SMS first with provider-managed WhatsApp fallback. Ghoncha requires exactly six ASCII digits with no explanatory text. WhatsApp calls `/api/v1/otp/send/whatsapp` with an application-generated six-digit `code`. Customers may switch channels and resend after 60 seconds. Each resend replaces the challenge and invalidates the previous code; use the most recent requested code. Codes expire after five minutes, with five verification attempts per challenge, five sends per phone per hour and twenty requests per IP per hour. Challenges, password hashes, code hashes and rate limits are stored in MySQL. Provider failures never activate accounts. No provider key or OTP is returned to clients.
 
 ## Setup
 
@@ -107,7 +107,7 @@ enforced; failed sends cannot activate an account.
 
 Ghoncha explicitly warned that Afghanistan mobile networks only permit six-digit
 OTP messages without additional text. The October 7 wording was incorrect and
-has been removed. SMS `message` and WhatsApp `code` contain only six ASCII digits.
+has been removed. Both OTP endpoints receive only six ASCII digits in `code`; no free-form SMS text is submitted.
 The provider boundary rejects any other format before making a network request.
 Native one-time-code input hints remain enabled; keyboard suggestions are controlled
 by the OS and cannot be guaranteed. Mock tests cover signup and password recovery

@@ -131,14 +131,16 @@ router.post('/customer-otp', async (req, res) => {
       const reserved = await prisma.phoneRegistration.updateMany({ where: { id: previous.id, lastSentAt: previous.lastSentAt }, data });
       if (!reserved.count) return otpRetryError(res, 429, 'Another code request is in progress', 60);
     } else await prisma.phoneRegistration.create({ data: { ...data, phone } });
-    try { await sendCode(phone, code, channel); }
+    let delivery;
+    try { delivery = await sendCode(phone, code, channel); }
     catch (deliveryFailure) {
       const reason = /^OTP_[A-Z0-9_]+$/.test(deliveryFailure.code || '') ? deliveryFailure.code : 'OTP_PROVIDER_NETWORK_ERROR';
       console.error(`Phone OTP delivery failed: ${reason}`);
       await prisma.phoneRegistration.updateMany({ where: { id }, data: { expiresAt: now } });
       return otpRetryError(res, 503, 'Could not send the code. Wait 60 seconds and try again or choose the other method.', 60);
     }
-    return res.json({ challengeId: id, expiresIn: 300, retryAfter: 60, channel, message: `Code sent by ${channel === 'sms' ? 'SMS' : 'WhatsApp'}` });
+    const deliveredChannel = ['sms', 'whatsapp'].includes(delivery.channel) ? delivery.channel : channel;
+    return res.json({ challengeId: id, expiresIn: 300, retryAfter: 60, channel: deliveredChannel, fallback: delivery.fallback === true, message: `Code sent by ${deliveredChannel === 'sms' ? 'SMS' : 'WhatsApp'}` });
   } catch (err) {
     if (err.code === 'P2002') return otpRetryError(res, 429, 'Another code request is in progress. Please wait before trying again.', 60);
     const reason = /^P\d{4}$/.test(err.code || '') ? err.code : 'OTP_REQUEST_ERROR';

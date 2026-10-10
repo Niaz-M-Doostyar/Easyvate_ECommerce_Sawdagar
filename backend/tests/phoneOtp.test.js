@@ -18,16 +18,16 @@ test('SMS sends strictly six digits and WhatsApp uses its explicit endpoint', as
   try {
     await sendCode('+93700123456', '123456', 'sms');
     await sendCode('+93700123456', '123456', 'whatsapp');
-    assert.equal(calls[0].url, 'https://sms.ghoncha.com/api/v1/send');
+    assert.equal(calls[0].url, 'https://sms.ghoncha.com/api/v1/otp/send');
     const sms = JSON.parse(calls[0].body);
-    assert.deepEqual(sms, { phone: '+93700123456', message: '123456' });
-    assert.match(sms.message, /^[0-9]{6}$/);
+    assert.deepEqual(sms, { phone: '+93700123456', code: '123456', ttl: 300 });
+    assert.match(sms.code, /^[0-9]{6}$/);
     for (const invalid of ['Your code is 123456', '12345', '1234567', '123456\n', 123456]) {
       await assert.rejects(sendCode('+93700123456', invalid, 'sms'), { code: 'OTP_INVALID_CODE' });
     }
     assert.equal(calls.length, 2, 'invalid payloads never reach Ghoncha');
     assert.equal(calls[1].url, 'https://sms.ghoncha.com/api/v1/otp/send/whatsapp');
-    assert.deepEqual(JSON.parse(calls[1].body), { phone: '+93700123456', code: '123456' });
+    assert.deepEqual(JSON.parse(calls[1].body), { phone: '+93700123456', code: '123456', ttl: 300 });
     assert.equal(calls[0].headers['X-API-Key'], 'test-key');
     global.fetch = async () => ({ ok: false, json: async () => ({ error: 'insufficient balance' }) });
     await assert.rejects(sendCode('+93700123456', '123456', 'sms'));
@@ -47,7 +47,7 @@ test('signup and two-step recovery enforce purpose, expiry, attempt limits and o
     const body = JSON.parse(options.body);
     deliveredCode = body.code || body.message;
     assert.match(deliveredCode, /^\d{6}$/);
-    return { ok: true, json: async () => ({ status: 'pending' }) };
+    return { ok: true, json: async () => ({ status: 'sent', channel: 'whatsapp', fallback: true }) };
   };
   let pending = null; let user = null;
   const db = {
@@ -94,6 +94,8 @@ test('signup and two-step recovery enforce purpose, expiry, attempt limits and o
     assert.equal((await call('/register', { role: 'customer' })).statusCode, 400);
     const sent = await call('/customer-otp', body);
     assert.equal(sent.statusCode, 200);
+    assert.equal(sent.body.channel, 'whatsapp', 'report provider fallback rather than claiming SMS');
+    assert.equal(sent.body.fallback, true);
     assert.equal(user, null);
     assert.equal(pending.password === body.password, false);
     assert.equal(pending.codeHash.includes(deliveredCode), false);
