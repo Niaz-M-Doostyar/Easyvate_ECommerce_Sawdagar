@@ -9,6 +9,7 @@ import ProductCard from '../../components/ProductCard';
 import EmptyState from '../../components/EmptyState';
 import ScreenHeader from '../../components/ScreenHeader';
 import { productsApi } from '../../services/api';
+import { loadSearchResults } from '../../utils/searchResults';
 
 const searchCopy = {
   en: { hint: 'Type at least 2 letters to find products.', suggestions: ['Rice', 'Cooking oil', 'Fresh arrivals', 'Electronics'], result: 'result', results: 'results', clear: 'Clear search', noMatches: 'No products found for' },
@@ -29,24 +30,41 @@ export default function SearchScreen({ navigation }) {
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(false);
   const [searched, setSearched] = useState(false);
+  const [total, setTotal] = useState(0);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [searchError, setSearchError] = useState(false);
+  const [retry, setRetry] = useState(0);
   const timer = useRef(null);
 
   useEffect(() => { inputRef.current?.focus(); }, []);
 
   useEffect(() => {
-    if (timer.current) clearTimeout(timer.current);
-    if (query.trim().length < 2) { setResults([]); setSearched(false); return; }
+    let active = true;
+    setResults([]);
+    setTotal(0);
+    setSearched(false);
+    setSearchError(false);
+    setLoadingMore(false);
+    const term = query.trim();
+    setLoading(term.length >= 2);
+    if (term.length < 2) return;
     timer.current = setTimeout(async () => {
-      setLoading(true);
       try {
-        const data = await productsApi.search(query.trim());
-        setResults(data.products || data || []);
-      } catch { setResults([]); }
-      setSearched(true);
-      setLoading(false);
+        await loadSearchResults(productsApi.search, term, () => active, (products, count, hasMore) => {
+          setResults(products);
+          setTotal(count);
+          setSearched(true);
+          setLoading(false);
+          setLoadingMore(hasMore);
+        });
+      } catch {
+        if (active) { setSearchError(true); setSearched(true); }
+      } finally {
+        if (active) { setLoading(false); setLoadingMore(false); }
+      }
     }, 400);
-    return () => clearTimeout(timer.current);
-  }, [query]);
+    return () => { active = false; clearTimeout(timer.current); };
+  }, [query, retry]);
 
   const showPrompt = query.trim().length < 2 && !loading && !searched;
 
@@ -81,12 +99,16 @@ export default function SearchScreen({ navigation }) {
             ))}
           </View>
         </ScrollView>
+      ) : searchError && results.length === 0 ? (
+        <TouchableOpacity accessibilityRole="button" onPress={() => setRetry(value => value + 1)} style={styles.promptWrap}>
+          <Text style={{ color: c.primary, textAlign: 'center' }}>{t.retry || 'Retry'}</Text>
+        </TouchableOpacity>
       ) : searched && results.length === 0 ? (
         <EmptyState icon="search-outline" title={t.noResults} subtitle={`${copy.noMatches} “${query}”`} />
       ) : (
         <>
           <View style={[styles.resultBar, { paddingHorizontal: gutter }]}>
-            <Text style={[styles.resultTitle, alignment, { color: c.text }]}>{results.length} {results.length === 1 ? copy.result : copy.results}</Text>
+            <Text style={[styles.resultTitle, alignment, { color: c.text }]}>{total} {total === 1 ? copy.result : copy.results}</Text>
           </View>
           <FlatList
             key={`grid-${numColumns}`}
@@ -98,6 +120,12 @@ export default function SearchScreen({ navigation }) {
               </View>
             )}
             keyboardShouldPersistTaps="handled"
+            keyboardDismissMode="on-drag"
+            ListFooterComponent={loadingMore ? <ActivityIndicator color={c.primary} /> : searchError ? (
+              <TouchableOpacity accessibilityRole="button" onPress={() => setRetry(value => value + 1)} style={{ padding: 16 }}>
+                <Text style={{ color: c.primary, textAlign: 'center' }}>{t.retry || 'Retry'}</Text>
+              </TouchableOpacity>
+            ) : null}
           />
         </>
       )}

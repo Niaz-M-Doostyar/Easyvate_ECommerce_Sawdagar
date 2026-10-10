@@ -9,7 +9,7 @@ test('Afghan phone variants normalize, while foreign and malformed numbers are r
   for (const phone of ['+44700123456', '070012345', '07001234567', '+93600123456', 'abc0700123456', null, {}]) assert.equal(normalizeAfghanPhone(phone), null);
 });
 
-test('SMS identifies the verification code in one message and WhatsApp uses its explicit endpoint', async () => {
+test('SMS sends strictly six digits and WhatsApp uses its explicit endpoint', async () => {
   const originalFetch = global.fetch;
   const originalKey = process.env.GHONCHA_API_KEY;
   process.env.GHONCHA_API_KEY = 'test-key';
@@ -20,8 +20,12 @@ test('SMS identifies the verification code in one message and WhatsApp uses its 
     await sendCode('+93700123456', '123456', 'whatsapp');
     assert.equal(calls[0].url, 'https://sms.ghoncha.com/api/v1/send');
     const sms = JSON.parse(calls[0].body);
-    assert.deepEqual(sms, { phone: '+93700123456', message: 'Your Sawdagar verification code is 123456. Valid for 5 minutes.' });
-    assert.ok(sms.message.length <= 160 && /^[\x20-\x7e]+$/.test(sms.message), 'fits one GSM SMS');
+    assert.deepEqual(sms, { phone: '+93700123456', message: '123456' });
+    assert.match(sms.message, /^[0-9]{6}$/);
+    for (const invalid of ['Your code is 123456', '12345', '1234567', '123456\n', 123456]) {
+      await assert.rejects(sendCode('+93700123456', invalid, 'sms'), { code: 'OTP_INVALID_CODE' });
+    }
+    assert.equal(calls.length, 2, 'invalid payloads never reach Ghoncha');
     assert.equal(calls[1].url, 'https://sms.ghoncha.com/api/v1/otp/send/whatsapp');
     assert.deepEqual(JSON.parse(calls[1].body), { phone: '+93700123456', code: '123456' });
     assert.equal(calls[0].headers['X-API-Key'], 'test-key');
@@ -41,7 +45,7 @@ test('signup and two-step recovery enforce purpose, expiry, attempt limits and o
   let deliveredCode;
   global.fetch = async (_url, options) => {
     const body = JSON.parse(options.body);
-    deliveredCode = body.code || body.message.match(/verification code is (\d{6})\./)?.[1];
+    deliveredCode = body.code || body.message;
     assert.match(deliveredCode, /^\d{6}$/);
     return { ok: true, json: async () => ({ status: 'pending' }) };
   };

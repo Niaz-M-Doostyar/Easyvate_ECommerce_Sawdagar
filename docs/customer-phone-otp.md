@@ -4,7 +4,7 @@ Website and mobile customer signup collect first name, last name, Afghanistan mo
 
 Ghoncha documentation: https://sms.ghoncha.com/docs
 
-SMS is the default. The server calls `/api/v1/send` with `Your Sawdagar verification code is <six digits>. Valid for 5 minutes.` in `message`. This ASCII wording fits one SMS and helps the operating system recognize the code. WhatsApp calls `/api/v1/otp/send/whatsapp` with an application-generated six-digit `code`. Customers may switch channels and resend after 60 seconds. Each resend replaces the challenge and invalidates the previous code; use the most recent requested code. Codes expire after five minutes, with five verification attempts per challenge, five sends per phone per hour and twenty requests per IP per hour. Challenges, password hashes, code hashes and rate limits are stored in MySQL. Provider failures never activate accounts. No provider key or OTP is returned to clients.
+SMS is the default. The server calls `/api/v1/send` with `<six digits only>` in `message`. Ghoncha requires exactly six ASCII digits with no explanatory text. WhatsApp calls `/api/v1/otp/send/whatsapp` with an application-generated six-digit `code`. Customers may switch channels and resend after 60 seconds. Each resend replaces the challenge and invalidates the previous code; use the most recent requested code. Codes expire after five minutes, with five verification attempts per challenge, five sends per phone per hour and twenty requests per IP per hour. Challenges, password hashes, code hashes and rate limits are stored in MySQL. Provider failures never activate accounts. No provider key or OTP is returned to clients.
 
 ## Setup
 
@@ -37,7 +37,7 @@ Public smoke checks cover Afghan-only validation, unissued/expired OTP rejection
 
 ## Form refinements
 
-Signup keeps Afghanistan's +93 prefix visible and normalizes local, international and Persian/Arabic-digit input. The customer enters nine digits beginning with 7. Name fields have matching icons and autofill metadata; native keyboards support Next navigation and a Done accessory for the phone keypad. Password fields advertise new-password autofill. OTP input advertises one-time-code autofill; actual suggestions depend on the OS and received message. Verification guidance appears in the app/site, and the SMS identifies the six digits as a Sawdagar verification code. The verification view retains the live resend countdown and code expiry timer.
+Signup keeps Afghanistan's +93 prefix visible and normalizes local, international and Persian/Arabic-digit input. The customer enters nine digits beginning with 7. Name fields have matching icons and autofill metadata; native keyboards support Next navigation and a Done accessory for the phone keypad. Password fields advertise new-password autofill. OTP input advertises one-time-code autofill; actual suggestions depend on the OS and received message. Verification guidance appears in the app/site, and the SMS contains only the six digits required by Ghoncha. The verification view retains the live resend countdown and code expiry timer.
 
 ## Automatic verification
 
@@ -103,12 +103,12 @@ Mobile and website forms retain the original error, display a countdown and
 disable early retries. Minute, hourly, IP and concurrent-send limits remain
 enforced; failed sends cannot activate an account.
 
-## SMS recognition repair (October 7, 2026)
+## Ghoncha provider correction (October 10, 2026)
 
-The user confirmed with a screenshot that received messages previously contained
-only six digits. The generic [Ghoncha SMS endpoint](https://sms.ghoncha.com/docs)
-supports application wording; its generated-OTP endpoint has different rules.
-The app already supplies the native one-time-code input hint. Adding verification
-wording addresses SMS recognition without changing verification, expiry or
-account security. iOS still controls the keyboard suggestion; physical receipt
-and suggestion verification for this wording remain pending.
+Ghoncha explicitly warned that Afghanistan mobile networks only permit six-digit
+OTP messages without additional text. The October 7 wording was incorrect and
+has been removed. SMS `message` and WhatsApp `code` contain only six ASCII digits.
+The provider boundary rejects any other format before making a network request.
+Native one-time-code input hints remain enabled; keyboard suggestions are controlled
+by the OS and cannot be guaranteed. Mock tests cover signup and password recovery
+without sending paid messages.

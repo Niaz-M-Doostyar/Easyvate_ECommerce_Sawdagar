@@ -1,3 +1,8 @@
+# Superseded OTP message wording
+
+The October 7 SMS wording described below was reverted on October 10 following
+Ghoncha’s explicit digits-only requirement. See `customer-phone-otp.md`.
+
 # Product cart feedback and SMS recognition — October 7, 2026
 
 The product details header now observes the shared cart state and displays its
