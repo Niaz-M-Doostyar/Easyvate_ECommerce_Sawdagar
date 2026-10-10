@@ -42,6 +42,8 @@ router.get('/', async (req, res) => {
     const quality = social ? 75 : nearestAllowed(req.query.q, allowedQualities, 60);
     const format = social || req.query.f === 'jpeg' ? 'jpeg' : 'webp';
 
+    const lossless = format === 'webp' && req.query.lossless === '1';
+
     const originalPath = normalizeUploadPath(src);
     if (!originalPath) return res.status(400).json({ error: 'Invalid image source' });
     if (!fs.existsSync(originalPath)) return res.status(404).json({ error: 'Image not found' });
@@ -49,7 +51,7 @@ router.get('/', async (req, res) => {
     const parsed = path.parse(originalPath);
     const stat = fs.statSync(originalPath);
     const sourceVersion = Math.round(stat.mtimeMs).toString(36);
-    const recipe = social ? 'social-v1-1200x630' : `w${width}-q${quality}`;
+    const recipe = social ? 'social-v1-1200x630' : `w${width}-${lossless ? 'lossless-v1' : `q${quality}`}`;
     const cacheName = `${parsed.name}-${sourceVersion}-${recipe}.${format}`;
     const cachePath = path.join(cacheRoot, cacheName);
 
@@ -84,9 +86,15 @@ router.get('/', async (req, res) => {
           }
           const pipeline = sharp(originalPath).rotate()
             .resize({ width, withoutEnlargement: true, fit: 'inside' });
-          await (format === 'jpeg'
-            ? pipeline.jpeg({ quality, progressive: true, mozjpeg: true }).toFile(cachePath)
-            : pipeline.webp({ quality, effort: 4 }).toFile(cachePath));
+          const temporaryPath = `${cachePath}.${process.pid}.tmp`;
+          try {
+            await (format === 'jpeg'
+              ? pipeline.jpeg({ quality, progressive: true, mozjpeg: true }).toFile(temporaryPath)
+              : pipeline.webp({ quality, lossless, effort: 4 }).toFile(temporaryPath));
+            await fs.promises.rename(temporaryPath, cachePath);
+          } finally {
+            await fs.promises.unlink(temporaryPath).catch(() => {});
+          }
         })();
 
         pending.set(cacheName, promise.finally(() => pending.delete(cacheName)));

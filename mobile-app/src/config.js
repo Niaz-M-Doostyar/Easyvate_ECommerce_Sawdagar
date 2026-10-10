@@ -57,9 +57,9 @@ export function buildImageUriCandidates(src, options = {}) {
   if (uploadMatch) {
     const uploadPath = uploadMatch[0].startsWith('/') ? uploadMatch[0] : `/${uploadMatch[0]}`;
     // Request a resized WebP via the backend resize endpoint when a display width is given.
-    const { width, quality = 75 } = options;
+    const { width, quality = 75, lossless = true } = options;
     if (width) {
-      push(`${API_URL}/api/image?src=${encodeURIComponent(uploadPath)}&w=${width}&q=${quality}&f=webp`);
+      push(`${API_URL}/api/image?src=${encodeURIComponent(uploadPath)}&w=${width}&q=${quality}&f=webp${lossless ? '&lossless=1' : ''}`);
     }
     push(`${API_URL}${uploadPath}`);
   }

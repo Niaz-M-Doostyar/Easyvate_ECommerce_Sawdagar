@@ -53,6 +53,7 @@ function CampaignArtwork({ source, fallback, style }) {
   return (
     <RemoteImage
       source={source}
+      width={800}
       fallback={<Image source={fallback} style={style} resizeMode="contain" accessible={false} />}
       style={style}
       resizeMode="contain"

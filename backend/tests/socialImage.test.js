@@ -49,3 +49,20 @@ test('ordinary image variants remain separate and unsafe sources are rejected',a
   assert.equal((await sharp(Buffer.from(await normal.arrayBuffer())).metadata()).width,80);
   assert.equal((await fetch(url('/uploads/../secret',{fit:'social'}))).status,400);
 });
+test('lossless display variants preserve alpha and resized pixels without modifying originals', async () => {
+  const originalPath = path.join(root, 'transparent.png');
+  const original = await fs.readFile(originalPath);
+  const responses = await Promise.all(Array.from({ length: 6 }, () => fetch(url('/uploads/transparent.png', { w: '280', lossless: '1' }))));
+  const buffers = await Promise.all(responses.map(async r => { assert.equal(r.status, 200); return Buffer.from(await r.arrayBuffer()); }));
+  for (const buffer of buffers) assert.deepEqual(buffer, buffers[0], 'concurrent requests receive the complete variant');
+  const expected = await sharp(original).rotate().resize({ width: 280, withoutEnlargement: true, fit: 'inside' }).raw().toBuffer();
+  const actual = await sharp(buffers[0]).raw().toBuffer();
+  assert.deepEqual(actual, expected, 'lossless encoding keeps every resized pixel');
+  assert.equal((await sharp(buffers[0]).metadata()).hasAlpha, true);
+  assert.deepEqual(await fs.readFile(originalPath), original, 'original upload remains byte-identical');
+  const earlierEtag = responses[0].headers.get('etag');
+  const future = new Date(Date.now() + 10000);
+  await fs.utimes(originalPath, future, future);
+  const refreshed = await fetch(url('/uploads/transparent.png', { w: '280', lossless: '1' }));
+  assert.notEqual(refreshed.headers.get('etag'), earlierEtag, 'updated uploads get a fresh cached variant');
+});

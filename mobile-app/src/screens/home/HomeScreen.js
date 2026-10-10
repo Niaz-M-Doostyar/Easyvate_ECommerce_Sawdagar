@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import { View, Text, TouchableOpacity, FlatList, Image, RefreshControl, StyleSheet, Animated, Modal, Platform } from 'react-native';
+import { View, Text, TouchableOpacity, FlatList, RefreshControl, StyleSheet, Animated, Modal, Platform } from 'react-native';
 import { WebView } from 'react-native-webview';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
@@ -8,6 +8,8 @@ import useResponsiveLayout from '../../hooks/useResponsiveLayout';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useCart } from '../../contexts/CartContext';
+import DeferredImages, { notifyImageViewport } from '../../components/DeferredImages';
+import RemoteImage from '../../components/RemoteImage';
 import FeaturedProductCard from '../../components/FeaturedProductCard';
 import { featuredLayout } from '../../utils/featuredLayout';
 import { appendProducts } from '../../utils/productPagination';
@@ -19,7 +21,7 @@ import BrandLogo from '../../components/BrandLogo';
 import PressableScale from '../../components/PressableScale';
 import CategoryIcon3D from '../../components/CategoryIcon3D';
 import { productsApi, categoriesApi, siteApi } from '../../services/api';
-import { optimizedImageUri, buildImageUriCandidates } from '../../config';
+import { buildImageUriCandidates } from '../../config';
 import { spacing, fontSize, fontWeight, borderRadius } from '../../theme';
 const TEMPLATE_BANNER_IMAGES = new Set([
   '/assets/img/banner/mini-banner-1.jpg',
@@ -126,9 +128,6 @@ export default function HomeScreen({ navigation }) {
           // Display promotions without waiting for the larger catalog requests.
           const hero = (data?.content?.home || data?.home || {}).hero;
           if (generation === catalog.current.generation) setHeroContent(hero || null);
-          (hero?.slides || []).slice(0, 2).forEach(slide => {
-            if (slide.image) Image.prefetch(optimizedImageUri(slide.image, { width: 400, quality: 72 })).catch(() => {});
-          });
           return data;
         }).catch(() => null),
       ]);
@@ -204,31 +203,6 @@ export default function HomeScreen({ navigation }) {
     description: getName(slide, 'description') || slide.description || '',
     priceValue: slide.priceValue || '',
   }));
-  useEffect(() => {
-    const remoteSource = (source) => tabletCampaigns ? source : phoneCampaignArtwork(source).source;
-    const promoUris = promoBanners
-      .map((item) => buildImageUriCandidates(remoteSource(item?.image))[0])
-      .filter(Boolean);
-    const bigBannerUri = buildImageUriCandidates(remoteSource(bigBanner?.image))[0];
-    if (bigBannerUri) {
-      promoUris.push(bigBannerUri);
-    }
-    promoUris.forEach((uri) => {
-      Image.prefetch(uri).catch(() => {});
-    });
-  }, [bigBanner?.image, promoBanners, tabletCampaigns]);
-  useEffect(() => {
-    const visibleProductUris = [
-      ...featured.slice(0, 6),
-      ...sponsored.slice(0, 4),
-      ...newArrivals.slice(0, 4),
-    ]
-      .map((product) => buildImageUriCandidates(product?.images?.[0]?.url || product?.image || product?.thumbnail)[0])
-      .filter(Boolean);
-    Array.from(new Set(visibleProductUris)).forEach((uri) => {
-      Image.prefetch(uri).catch(() => {});
-    });
-  }, [featured, newArrivals, sponsored]);
   const openPromo = (href, title) => {
     const [, queryString = ''] = String(href || '/search').split('?');
     const query = new URLSearchParams(queryString);
@@ -301,10 +275,12 @@ export default function HomeScreen({ navigation }) {
         ref={scrollRef}
         data={productRows}
         keyExtractor={row => String(row[0].id)}
+        onScroll={notifyImageViewport}
+        scrollEventThrottle={80}
         renderItem={({ item: row }) => (
-          <View style={{ paddingHorizontal: layout.gutter, marginBottom: layout.gap, flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'stretch', gap: layout.gap }}>
+          <DeferredImages><View style={{ paddingHorizontal: layout.gutter, marginBottom: layout.gap, flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'stretch', gap: layout.gap }}>
             {row.map(product => <FeaturedProductCard key={product.id} product={product} onPress={() => goProduct(product)} style={{ width: layout.cardWidth }} />)}
-          </View>
+          </View></DeferredImages>
         )}
         initialNumToRender={3}
         maxToRenderPerBatch={6}
@@ -361,7 +337,7 @@ export default function HomeScreen({ navigation }) {
               <PressableScale onPress={() => goCategory(item)} scaleTo={0.93} style={styles.catCardNew}>
                 {item.image ? (
                   <View style={[styles.catImgRing, { borderColor: c.border }]}>
-                    <Image source={{ uri: optimizedImageUri(item.image, { width: 96 }) }} style={styles.catImgNew} />
+                    <RemoteImage source={item.image} width={192} style={styles.catImgNew} />
                   </View>
                 ) : (
                   <CategoryIcon3D category={item} size={66} />
@@ -387,7 +363,7 @@ export default function HomeScreen({ navigation }) {
         ) : null}
         {recommended.length > 0 && <SectionReveal delay={320}>
           <SectionHeader title={copy.recommended} actionLabel={t.seeAll} onAction={() => navigation.navigate('Products')} />
-          <FlatList horizontal inverted={isRTL} showsHorizontalScrollIndicator={false} data={recommended} keyExtractor={item => String(item.id)} contentContainerStyle={{ paddingHorizontal: spacing.base }} renderItem={({ item }) => <FeaturedProductCard product={item} onPress={() => goProduct(item)} style={{ width: newArrivalCardWidth, marginRight: spacing.md }} />} />
+          <FlatList initialNumToRender={2} maxToRenderPerBatch={2} windowSize={3} horizontal inverted={isRTL} showsHorizontalScrollIndicator={false} data={recommended} keyExtractor={item => String(item.id)} contentContainerStyle={{ paddingHorizontal: spacing.base }} renderItem={({ item }) => <FeaturedProductCard product={item} onPress={() => goProduct(item)} style={{ width: newArrivalCardWidth, marginRight: spacing.md }} />} />
         </SectionReveal>}
         <SectionReveal delay={330}>
           <SectionHeader title={copy.featured} />
@@ -444,9 +420,9 @@ function SectionReveal({ children, delay = 0 }) {
     ]).start();
   }, [delay, opacity, translateY]);
   return (
-    <Animated.View style={{ opacity, transform: [{ translateY }] }}>
+    <DeferredImages><Animated.View style={{ opacity, transform: [{ translateY }] }}>
       {children}
-    </Animated.View>
+    </Animated.View></DeferredImages>
   );
 }
 const styles = StyleSheet.create({

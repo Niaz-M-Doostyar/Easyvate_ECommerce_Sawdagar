@@ -1,5 +1,6 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState, useContext } from 'react';
 import { Image } from 'react-native';
+import { ImageLoadingContext } from './DeferredImages';
 import { buildImageUriCandidates } from '../config';
 
 export default function RemoteImage({
@@ -10,11 +11,12 @@ export default function RemoteImage({
   resizeMode = 'cover',
   width,
   quality,
-  cache,
+  cache = 'force-cache',
   onError,
   onLoad,
   ...rest
 }) {
+  const enabled = useContext(ImageLoadingContext);
   const candidates = useMemo(() => {
     const options = width ? { width, quality } : undefined;
     const primary = buildImageUriCandidates(source, options);
@@ -30,7 +32,7 @@ export default function RemoteImage({
   }, [candidates]);
 
   const uri = candidates[candidateIndex];
-  if (!uri || exhausted) {
+  if (!enabled || !uri || exhausted) {
     return fallback;
   }
 

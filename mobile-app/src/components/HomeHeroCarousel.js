@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { AccessibilityInfo, AppState, I18nManager, View, Text, Pressable, Image, StyleSheet, Animated, useWindowDimensions } from 'react-native';
+import { AccessibilityInfo, AppState, I18nManager, View, Text, Pressable, StyleSheet, Animated, PixelRatio, useWindowDimensions } from 'react-native';
 import { useIsFocused } from '@react-navigation/native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useTheme } from '../contexts/ThemeContext';
@@ -7,7 +7,6 @@ import { useLanguage } from '../contexts/LanguageContext';
 import Gradient from './Gradient';
 import Button from './Button';
 import RemoteImage from './RemoteImage';
-import { optimizedImageUri } from '../config';
 import { shadows } from '../theme';
 import useResponsiveLayout from '../hooks/useResponsiveLayout';
 
@@ -21,6 +20,7 @@ const COPY = {
 
 export default function HomeHeroCarousel({ slides = [], primaryLabel, secondaryLabel, onPrimaryPress, onSecondaryPress, height }) {
   const { theme } = useTheme();
+  const [loadedImage, setLoadedImage] = useState(null);
   const { isRTL, lang } = useLanguage();
   const focused = useIsFocused();
   const { width } = useResponsiveLayout();
@@ -29,6 +29,7 @@ export default function HomeHeroCarousel({ slides = [], primaryLabel, secondaryL
   const items = Array.isArray(slides) ? slides.filter(Boolean) : [];
   const count = items.length;
   const cardWidth = Math.min(740, Math.max(0, width - 40));
+  const imageWidth = Math.min(1200, Math.ceil(Math.min(560, cardWidth * 0.85) * PixelRatio.get()));
   const inset = (width - cardWidth) / 2;
   const interval = cardWidth + GAP;
   const nativeRTL = I18nManager.isRTL;
@@ -42,15 +43,8 @@ export default function HomeHeroCarousel({ slides = [], primaryLabel, secondaryL
   const [reduceMotion, setReduceMotion] = useState(true);
   const [screenReader, setScreenReader] = useState(true);
   const activeImage = items[active]?.image;
-  const nextImage = items[(active + 1) % Math.max(1, count)]?.image;
-
-  // Warm only the visible/next slide, not the entire promoted catalog.
-  useEffect(() => {
-    if (!focused || !foreground) return;
-    [...new Set([activeImage, nextImage].filter(Boolean))].forEach(source => {
-      Image.prefetch(optimizedImageUri(source, { width: 560, quality: 75 })).catch(() => {});
-    });
-  }, [activeImage, nextImage, focused, foreground]);
+  // Mount the next slide image only after the visible image loads. The native
+  // image request is the preloader too, so there is no duplicate fetch.
 
   useEffect(() => {
     let mounted = true;
@@ -113,9 +107,9 @@ export default function HomeHeroCarousel({ slides = [], primaryLabel, secondaryL
         onScrollBeginDrag={() => setPaused(true)} onScrollEndDrag={settle} onMomentumScrollEnd={settle}
         scrollEventThrottle={16}
         onScroll={Animated.event([{ nativeEvent: { contentOffset: { x: scrollX } } }], { useNativeDriver: true })}
-        initialNumToRender={2} windowSize={3}
+        initialNumToRender={1} maxToRenderPerBatch={1} windowSize={3}
         renderItem={({ item, index }) => (
-          <HeroSlide slide={item} width={cardWidth} minHeight={height} colors={c} dark={theme.dark}
+          <HeroSlide slide={item} imageWidth={imageWidth} loadImage={index === active || (loadedImage === activeImage && index === (active + 1) % count)} onImageLoad={() => { if (index === active) setLoadedImage(item.image); }} width={cardWidth} minHeight={height} colors={c} dark={theme.dark}
             isRTL={isRTL} primaryLabel={primaryLabel} secondaryLabel={secondaryLabel}
             onPrimaryPress={onPrimaryPress} onSecondaryPress={onSecondaryPress} active={index === active} copy={copy}
             scale={reduceMotion ? 1 : scrollX.interpolate({ inputRange: [-1, 0, 1].map(delta => ((nativeRTL ? count - 1 - index : index) + delta) * interval), outputRange: [0.97, 1, 0.97], extrapolate: 'clamp' })}
@@ -149,7 +143,7 @@ export default function HomeHeroCarousel({ slides = [], primaryLabel, secondaryL
   );
 }
 
-function HeroSlide({ slide, width, minHeight, colors: c, dark, isRTL, primaryLabel, secondaryLabel, onPrimaryPress, onSecondaryPress, scale, active, copy }) {
+function HeroSlide({ slide, imageWidth, loadImage, onImageLoad, width, minHeight, colors: c, dark, isRTL, primaryLabel, secondaryLabel, onPrimaryPress, onSecondaryPress, scale, active, copy }) {
   const { fontScale } = useWindowDimensions();
   const wide = width >= 600 && fontScale <= 1.5;
   return (
@@ -158,8 +152,7 @@ function HeroSlide({ slide, width, minHeight, colors: c, dark, isRTL, primaryLab
         <View pointerEvents="none" style={styles.orbit} />
         <View pointerEvents="none" style={styles.orbitInner} />
         <View style={styles.imageFrame}>
-          <RemoteImage source={slide.image} width={400} quality={72} resizeMode="contain" style={StyleSheet.absoluteFill} fallback={<MaterialCommunityIcons name="shopping-outline" size={64} color={dark ? c.heroTextMuted : c.primaryDark} />} />
-          <RemoteImage source={slide.image} width={560} quality={75} resizeMode="contain" style={StyleSheet.absoluteFill} />
+          {loadImage && <RemoteImage source={slide.image} width={imageWidth} onLoad={onImageLoad} resizeMode="contain" style={StyleSheet.absoluteFill} fallback={<MaterialCommunityIcons name="shopping-outline" size={64} color={dark ? c.heroTextMuted : c.primaryDark} />} />}
         </View>
       </Gradient>
       <View style={[styles.copy, wide && { flex: 1 }, { alignItems: isRTL ? 'flex-end' : 'flex-start' }]}>
