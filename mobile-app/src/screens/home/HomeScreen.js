@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { View, Text, TouchableOpacity, FlatList, RefreshControl, StyleSheet, Animated, Modal, Platform } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { readHomeCache, writeHomeCache } from '../../services/homeCache';
 import { WebView } from 'react-native-webview';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
@@ -43,7 +45,7 @@ const homeCopy = {
 const FEATURED_PRODUCT_LIMIT = 60;
 export default function HomeScreen({ navigation }) {
   const scrollRef = useRef(null);
-  const catalog = useRef({ generation: 0, loaded: false, busy: false });
+  const catalog = useRef({ generation: 0, loaded: false, busy: false, hydrated: false });
   const { width, height, isTablet, fontScale } = useResponsiveLayout();
   const layout = featuredLayout(width, fontScale);
   const { theme } = useTheme();
@@ -118,52 +120,65 @@ export default function HomeScreen({ navigation }) {
   const load = useCallback(async () => {
     const generation = ++catalog.current.generation;
     catalog.current.busy = true;
-    setCatalogError(false);
-    try {
-      const [cats, prod, spon, siteData] = await Promise.all([
-        categoriesApi.list(),
-        productsApi.list({ page: 1, limit: FEATURED_PRODUCT_LIMIT }),
-        productsApi.sponsored().catch(() => []),
-        siteApi.content().then(data => {
-          // Display promotions without waiting for the larger catalog requests.
-          const hero = (data?.content?.home || data?.home || {}).hero;
-          if (generation === catalog.current.generation) setHeroContent(hero || null);
-          return data;
-        }).catch(() => null),
-      ]);
-      if (generation !== catalog.current.generation) return;
-      setCategories(cats.categories || cats || []);
+    const current = () => generation === catalog.current.generation;
+    const applyProducts = prod => {
       const products = appendProducts([], Array.isArray(prod) ? prod : prod?.products)
         .slice(0, FEATURED_PRODUCT_LIMIT);
       setFeatured(products);
-      catalog.current.loaded = true;
-      // The catalog is newest first. Keep these shelves distinct so a product
-      // does not appear in both New Arrivals and Recommended for you.
       setNewArrivals(products.slice(0, 8));
       setRecommended(products.slice(8, 16));
-      setSponsored(spon.products || spon || []);
-      const homeContent = siteData?.content?.home || siteData?.home || {};
-      setHeroContent(homeContent.hero || null);
-      const mobileContent = siteData?.content?.mobileApp || siteData?.mobileApp || {};
-      setAudienceMessage(mobileContent.audienceMessage || homeContent.advertText || '');
-      setPromoBanners(
-        (homeContent.promoBanners || []).slice(0, 3).map((banner, index) => ({
-          ...banner,
-          image: normalizeBannerImage(banner?.image),
-        }))
-      );
-      setBigBanner(
-        homeContent.bigBanner
-          ? {
-              ...homeContent.bigBanner,
-              image: normalizeBannerImage(homeContent.bigBanner.image),
-            }
-          : null
-      );
-    } catch {
-      if (generation === catalog.current.generation) setCatalogError(true);
+      catalog.current.loaded = true;
+      setLoading(false);
+    };
+    const applySite = siteData => {
+      const home = siteData?.content?.home || siteData?.home || {};
+      const mobile = siteData?.content?.mobileApp || siteData?.mobileApp || {};
+      setHeroContent(home.hero || null);
+      setAudienceMessage(mobile.audienceMessage || home.advertText || '');
+      setPromoBanners((home.promoBanners || []).slice(0, 3).map(banner => ({
+        ...banner, image: normalizeBannerImage(banner?.image),
+      })));
+      setBigBanner(home.bigBanner ? {
+        ...home.bigBanner, image: normalizeBannerImage(home.bigBanner.image),
+      } : null);
+    };
+    setCatalogError(false);
+    try {
+      // Restore public catalog metadata before requesting a fresh copy. Native
+      // image caching can then display the same image URLs immediately.
+      if (!catalog.current.hydrated) {
+        catalog.current.hydrated = true;
+        const cached = await readHomeCache(AsyncStorage);
+        if (!current()) return;
+        if (cached.categories) setCategories(cached.categories);
+        if (cached.products) applyProducts(cached.products);
+        if (cached.site) applySite(cached.site);
+      }
+      // Each section updates independently; slow promotions or categories must
+      // not hold the products back. Failed refreshes keep the previous content.
+      await Promise.allSettled([
+        categoriesApi.list().then(data => {
+          if (!current()) return;
+          const cats = data.categories || data || [];
+          setCategories(cats);
+          return writeHomeCache(AsyncStorage, 'categories', cats);
+        }),
+        productsApi.list({ page: 1, limit: FEATURED_PRODUCT_LIMIT }).then(data => {
+          if (!current()) return;
+          applyProducts(data);
+          return writeHomeCache(AsyncStorage, 'products', Array.isArray(data) ? data.slice(0, 60) : (data.products || []).slice(0, 60));
+        }).catch(() => { if (current()) setCatalogError(true); }),
+        productsApi.sponsored().then(data => {
+          if (current()) setSponsored(data.products || data || []);
+        }),
+        siteApi.content().then(data => {
+          if (!current()) return;
+          applySite(data);
+          return writeHomeCache(AsyncStorage, 'site', data);
+        }),
+      ]);
     } finally {
-      if (generation === catalog.current.generation) {
+      if (current()) {
         catalog.current.busy = false;
         setLoading(false);
       }

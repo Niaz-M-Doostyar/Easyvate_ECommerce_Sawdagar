@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState, useContext } from 'react';
-import { Image } from 'react-native';
+import { Image, View, StyleSheet } from 'react-native';
 import { ImageLoadingContext } from './DeferredImages';
 import { buildImageUriCandidates } from '../config';
 
@@ -25,6 +25,9 @@ export default function RemoteImage({
   }, [fallbackSource, quality, source, width]);
   const [candidateIndex, setCandidateIndex] = useState(0);
   const [exhausted, setExhausted] = useState(false);
+  const [loadedUri, setLoadedUri] = useState(null);
+  const previewUri = useMemo(() => width > 80
+    ? buildImageUriCandidates(source, { width: 80 })[0] : null, [source, width]);
 
   useEffect(() => {
     setCandidateIndex(0);
@@ -37,13 +40,21 @@ export default function RemoteImage({
   }
 
   return (
+    <View style={style}>
+      {previewUri && previewUri !== uri && loadedUri !== uri && (
+        <Image source={{ uri: previewUri, cache: 'force-cache' }} style={StyleSheet.absoluteFill}
+          resizeMode={resizeMode} fadeDuration={0} accessible={false} />
+      )}
     <Image
       source={cache ? { uri, cache } : { uri }}
-      style={style}
+      style={StyleSheet.absoluteFill}
       resizeMode={resizeMode}
       progressiveRenderingEnabled
       fadeDuration={220}
-      onLoad={onLoad}
+      onLoad={event => {
+        setLoadedUri(uri);
+        onLoad?.(event);
+      }}
       onError={(event) => {
         setCandidateIndex((current) => {
           if (current + 1 < candidates.length) {
@@ -59,5 +70,6 @@ export default function RemoteImage({
       }}
       {...rest}
     />
+    </View>
   );
 }

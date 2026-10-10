@@ -20,7 +20,7 @@ const COPY = {
 
 export default function HomeHeroCarousel({ slides = [], primaryLabel, secondaryLabel, onPrimaryPress, onSecondaryPress, height }) {
   const { theme } = useTheme();
-  const [loadedImage, setLoadedImage] = useState(null);
+  const [loadedImages, setLoadedImages] = useState({});
   const { isRTL, lang } = useLanguage();
   const focused = useIsFocused();
   const { width } = useResponsiveLayout();
@@ -77,10 +77,10 @@ export default function HomeHeroCarousel({ slides = [], primaryLabel, secondaryL
   }, [count, interval, isRTL, nativeRTL, scrollX]);
 
   useEffect(() => {
-    if (count < 2 || paused || touching || !foreground || !focused || reduceMotion || screenReader) return undefined;
+    if ((activeImage && !loadedImages[activeImage]) || (items[(active + 1) % count]?.image && !loadedImages[items[(active + 1) % count].image]) || count < 2 || paused || touching || !foreground || !focused || reduceMotion || screenReader) return undefined;
     const timer = setTimeout(() => goTo(current.current + 1), AUTO_PLAY_MS);
     return () => clearTimeout(timer);
-  }, [active, count, paused, touching, foreground, focused, reduceMotion, screenReader, goTo]);
+  }, [active, activeImage, loadedImages, count, paused, touching, foreground, focused, reduceMotion, screenReader, goTo]);
 
   const settle = event => {
     const { contentOffset, contentSize, layoutMeasurement } = event.nativeEvent;
@@ -109,7 +109,7 @@ export default function HomeHeroCarousel({ slides = [], primaryLabel, secondaryL
         onScroll={Animated.event([{ nativeEvent: { contentOffset: { x: scrollX } } }], { useNativeDriver: true })}
         initialNumToRender={1} maxToRenderPerBatch={1} windowSize={3}
         renderItem={({ item, index }) => (
-          <HeroSlide slide={item} imageWidth={imageWidth} loadImage={index === active || (loadedImage === activeImage && index === (active + 1) % count)} onImageLoad={() => { if (index === active) setLoadedImage(item.image); }} width={cardWidth} minHeight={height} colors={c} dark={theme.dark}
+          <HeroSlide slide={item} imageWidth={imageWidth} loadImage={index === active || ((!activeImage || loadedImages[activeImage]) && index === (active + 1) % count)} onImageLoad={() => { setLoadedImages(images => images[item.image] ? images : { ...images, [item.image]: true }); }} width={cardWidth} minHeight={height} colors={c} dark={theme.dark}
             isRTL={isRTL} primaryLabel={primaryLabel} secondaryLabel={secondaryLabel}
             onPrimaryPress={onPrimaryPress} onSecondaryPress={onSecondaryPress} active={index === active} copy={copy}
             scale={reduceMotion ? 1 : scrollX.interpolate({ inputRange: [-1, 0, 1].map(delta => ((nativeRTL ? count - 1 - index : index) + delta) * interval), outputRange: [0.97, 1, 0.97], extrapolate: 'clamp' })}
