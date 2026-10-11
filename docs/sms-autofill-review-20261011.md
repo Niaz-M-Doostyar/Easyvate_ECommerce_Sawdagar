@@ -25,3 +25,13 @@ The user tested the visible field and reported that SMS suggestions still did no
 41 mobile tests passed; Babel compiled the modified component. Physical-device build and installation are recorded in this session. SMS QuickType receipt was not verified by an automated or paid delivery test.
 
 Previous revision: `cc1519d1`, saved in `backup/before-sms-autofill-20261011`. Rebuild that revision to restore the previous control.
+
+### Recognition investigation
+
+The user confirmed Apple’s built-in keyboard and enabled AutoFill. React Native’s implementation forwards the declared `oneTimeCode` value directly to the native text input; no custom input view or accessory is attached to the OTP field.
+
+Apple’s Security Code AutoFill session states that its message detector looks for words such as code/passcode near the code, and gives a diagnostic: tapping a recognized code in Messages offers “Copy Code.” Reference: https://developer.apple.com/videos/play/wwdc2018/204/ (26-minute section). This makes digits-only SMS recognition a likely cause, but does not establish the specific iOS detector outcome without the user’s Messages check.
+
+Ghoncha’s public documentation was retrieved on 11 October from https://sms.ghoncha.com/docs. It documents the existing OTP route and generic send route but no iOS autofill/sender-metadata option. Its generic text examples permit custom wording, which conflicts with the account-specific warning supplied by the user. Do not use those generic examples to override the explicit digits-only requirement. Obtain written provider confirmation before modifying message format.
+
+No paid test, SMS payload change, additional installation or design change was performed during this investigation. A provider support question is prepared separately and has not been sent.

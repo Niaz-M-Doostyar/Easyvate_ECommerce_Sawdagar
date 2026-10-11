@@ -1,0 +1,11 @@
+Subject: iPhone SMS OTP recognition with your mandatory digits-only format
+
+Hello Ghoncha Support,
+
+Sawdagar sends OTP requests through /api/v1/otp/send with a code containing exactly six ASCII digits and ttl 300. SMS delivery now succeeds. We have retained your required digits-only format and have not added verification text or a domain suffix.
+
+On the customer's iPhone 12 Pro Max using Apple's built-in keyboard with AutoFill enabled, the SMS code is not offered in the keyboard's Security Code AutoFill suggestion. Our native input uses UITextContentType.oneTimeCode, remains focused, and accepts all six digits when entered or pasted. Changing to a visible native field did not resolve the report; we restored the original design.
+
+Does your digits-only SMS route support iOS Security Code AutoFill recognition? Is there a supported sender ID, message metadata or other approved configuration that enables recognition without changing the SMS body? If digits-only recognition is not supported, please confirm whether any iOS-compatible format is permitted by your service and Afghan networks before we make any change.
+
+No actual OTP values or API credentials are included in this request.
