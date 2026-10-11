@@ -35,3 +35,19 @@ Apple’s Security Code AutoFill session states that its message detector looks 
 Ghoncha’s public documentation was retrieved on 11 October from https://sms.ghoncha.com/docs. It documents the existing OTP route and generic send route but no iOS autofill/sender-metadata option. Its generic text examples permit custom wording, which conflicts with the account-specific warning supplied by the user. Do not use those generic examples to override the explicit digits-only requirement. Obtain written provider confirmation before modifying message format.
 
 No paid test, SMS payload change, additional installation or design change was performed during this investigation. A provider support question is prepared separately and has not been sent.
+
+### Further investigation: automatic suggestion without copying
+
+The user declined contacting Ghoncha and requires unchanged six-digit-only SMS, no copying, and the existing six-box design. A further native-control audit found no remaining app-side blocker: the view has opacity 1, a focused editable native field, a system keyboard, no custom input view or accessory, and a direct mapping to `UITextContentTypeOneTimeCode`. Both channels use the same control. The earlier visible-field trial did not fix the SMS behavior.
+
+Checked the installed iOS 27 SDK's UIKit, AuthenticationServices, UserNotifications and IdentityLookup headers plus Apple's primary documentation. No supported API was found that forces an unrecognized digits-only SMS into the keyboard's OTP suggestions. `ASOneTimeCodeCredential` supplies credentials a provider already holds; it does not read incoming SMS. An SMS filtering extension cannot share message data with its containing shopping app and is not a supported workaround.
+
+Apple's iOS 26 feature list documents verification-code autofill from app notifications (PDF page 14): https://www.apple.com/os/pdf/All_New_Features_iOS_26_Sept_2025.pdf. This is a possible explanation for WhatsApp suggestions; the exact WhatsApp path on the user's phone was not directly observed. This does not expose Messages or other apps' notifications to Sawdagar.
+
+Sources for alternatives checked:
+- https://developer.apple.com/documentation/security/one-time-codes
+- https://developer.apple.com/documentation/security/enabling-autofill-for-domain-bound-sms-codes
+- https://developer.apple.com/videos/play/wwdc2024/10125/
+- https://developer.apple.com/documentation/identitylookup/sms-and-mms-message-filtering
+
+Result: automatic SMS suggestion remains unresolved under the requested constraints. Do not claim it has been implemented or guaranteed. Do not return a verification code to the requesting app or create a notification from that returned code: that would bypass evidence that the user received the phone message. No app code, design, SMS payload or installed build changed in this follow-up.
