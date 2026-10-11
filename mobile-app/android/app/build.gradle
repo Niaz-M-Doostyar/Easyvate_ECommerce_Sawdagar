@@ -94,8 +94,8 @@ android {
         applicationId "com.ahmadwali.afghan_bazar.afghan_bazar"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 15
-        versionName "1.0.7"
+        versionCode 16
+        versionName "1.0.8"
     }
     signingConfigs {
         debug {

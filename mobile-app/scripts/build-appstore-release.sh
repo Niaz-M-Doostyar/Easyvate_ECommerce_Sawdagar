@@ -2,8 +2,8 @@
 set -euo pipefail
 # Build with the installed distribution identity/profile; upload separately.
 project_root="$(cd "$(dirname "$0")/../.." && pwd)"
-release_version="${SAWDAGAR_IOS_VERSION:-4.0}"
-release_build="${SAWDAGAR_IOS_BUILD:-5}"
+release_version="${SAWDAGAR_IOS_VERSION:-4.1}"
+release_build="${SAWDAGAR_IOS_BUILD:-6}"
 release_profile="${SAWDAGAR_IOS_PROFILE:-7b5b82f3-82f5-490f-8fd2-ce7ebde9f6f4}"
 release_dir="$project_root/mobile-app/build/releases/ios-${release_version}-build${release_build}"
 mkdir -p "$release_dir"
