@@ -18,6 +18,10 @@ Apple reference: https://developer.apple.com/documentation/security/enabling-pas
 
 ## Verification and restore
 
+### Follow-up: design restored
+
+The user tested the visible field and reported that SMS suggestions still did not appear. The field redesign did not resolve the reported problem. Restored the previous six-box design exactly, retaining only the matching iOS autofill property and the nonvisual test identifier. Do not claim the SMS recognition problem is solved. Neither further provider requests nor SMS content changes were made.
+
 41 mobile tests passed; Babel compiled the modified component. Physical-device build and installation are recorded in this session. SMS QuickType receipt was not verified by an automated or paid delivery test.
 
 Previous revision: `cc1519d1`, saved in `backup/before-sms-autofill-20261011`. Rebuild that revision to restore the previous control.
