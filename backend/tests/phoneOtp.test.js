@@ -14,7 +14,7 @@ test('SMS sends strictly six digits and WhatsApp uses its explicit endpoint', as
   const originalKey = process.env.GHONCHA_API_KEY;
   process.env.GHONCHA_API_KEY = 'test-key';
   const calls = [];
-  global.fetch = async (url, options) => { calls.push({ url, ...options }); return { ok: true, json: async () => ({ status: 'pending' }) }; };
+  global.fetch = async (url, options) => { calls.push({ url, ...options }); return { ok: true, json: async () => ({ message_id: 'test-message', status: 'pending', channel: url.endsWith('/whatsapp') ? 'whatsapp' : 'sms' }) }; };
   try {
     await sendCode('+93700123456', '123456', 'sms');
     await sendCode('+93700123456', '123456', 'whatsapp');
@@ -43,11 +43,12 @@ test('signup and two-step recovery enforce purpose, expiry, attempt limits and o
   const originalKey = process.env.GHONCHA_API_KEY;
   process.env.GHONCHA_API_KEY = 'test-key';
   let deliveredCode;
+  let providerStatus = 'pending';
   global.fetch = async (_url, options) => {
     const body = JSON.parse(options.body);
     deliveredCode = body.code || body.message;
     assert.match(deliveredCode, /^\d{6}$/);
-    return { ok: true, json: async () => ({ status: 'sent', channel: 'whatsapp', fallback: true }) };
+    return { ok: true, json: async () => ({ message_id: 'test-message', status: providerStatus, channel: 'whatsapp', fallback: true }) };
   };
   let pending = null; let user = null;
   const db = {
@@ -96,6 +97,11 @@ test('signup and two-step recovery enforce purpose, expiry, attempt limits and o
     assert.equal(sent.statusCode, 200);
     assert.equal(sent.body.channel, 'whatsapp', 'report provider fallback rather than claiming SMS');
     assert.equal(sent.body.fallback, true);
+    assert.equal(sent.body.deliveryStatus, 'pending');
+    assert.equal(sent.body.deliveryConfirmed, false);
+    assert.match(sent.body.message, /Code requested by WhatsApp/);
+    assert.equal('message_id' in sent.body, false, 'provider references stay out of the public response');
+    assert.equal('code' in sent.body, false);
     assert.equal(user, null);
     assert.equal(pending.password === body.password, false);
     assert.equal(pending.codeHash.includes(deliveredCode), false);
@@ -120,8 +126,12 @@ test('signup and two-step recovery enforce purpose, expiry, attempt limits and o
     assert.equal((await call('/verify-customer-otp', { challengeId, code: deliveredCode })).statusCode, 400);
     assert.equal((await call('/customer-otp', body)).statusCode, 409);
     const oldPasswordHash = user.password;
+    providerStatus = 'sent';
     const reset = await call('/customer-otp', { phone: body.phone, purpose: 'password-reset', channel: 'whatsapp' });
     assert.equal(reset.statusCode, 200);
+    assert.equal(reset.body.deliveryStatus, 'sent');
+    assert.equal(reset.body.deliveryConfirmed, false, 'provider send acceptance does not confirm handset receipt');
+    assert.match(reset.body.message, /Code requested/);
     assert.equal(pending.purpose, 'password-reset');
     assert.equal((await call('/verify-customer-otp', { challengeId: reset.body.challengeId, code: deliveredCode })).statusCode, 400);
     assert.equal((await call('/reset-phone-password', { challengeId: reset.body.challengeId, code: '000000', password: 'changed123', confirmPassword: 'changed123' })).statusCode, 400);
@@ -177,8 +187,12 @@ test('signup and two-step recovery enforce purpose, expiry, attempt limits and o
     const supplierBody = { role: 'supplier', fullName: 'Test Supplier', companyName: 'Test Shop', province: 'Kabul', phone: '0700123457', password: 'secret123', confirmPassword: 'secret123' };
     assert.equal((await call('/customer-otp', { ...supplierBody, province: '' })).statusCode, 400);
     assert.equal((await call('/customer-otp', { ...supplierBody, email: 'invalid-email' })).statusCode, 400);
+    providerStatus = 'delivered';
     const supplierSent = await call('/customer-otp', supplierBody);
     assert.equal(supplierSent.statusCode, 200);
+    assert.equal(supplierSent.body.deliveryStatus, 'delivered');
+    assert.equal(supplierSent.body.deliveryConfirmed, true);
+    assert.match(supplierSent.body.message, /Code delivered by WhatsApp/);
     assert.equal(pending.registrationData.role, 'supplier');
     const supplierVerified = await call('/verify-customer-otp', { challengeId: supplierSent.body.challengeId, code: deliveredCode });
     assert.equal(supplierVerified.statusCode, 201);
@@ -200,6 +214,16 @@ test('signup and two-step recovery enforce purpose, expiry, attempt limits and o
     assert.equal(user, null);
     assert.ok(pending.expiresAt <= new Date());
     assert.equal((await call('/verify-customer-otp', { challengeId: pending.id, code: '000000' })).statusCode, 400);
+    // An HTTP 200 without the documented response fields must not leave an
+    // active challenge or claim that a code was sent.
+    pending.lastSentAt = new Date(Date.now() - 70000);
+    global.fetch = async () => ({ ok: true, json: async () => ({}) });
+    const malformedSupplier = await call('/customer-otp', supplierBody);
+    assert.equal(malformedSupplier.statusCode, 503);
+    assert.equal(malformedSupplier.body.retryAfter, 60);
+    assert.equal('challengeId' in malformedSupplier.body, false);
+    assert.ok(pending.expiresAt <= new Date());
+    assert.equal(user, null);
     pending.lastSentAt = new Date(Date.now() - 70000);
     pending.windowStart = new Date(Date.now() - 300000);
     pending.sendCount = 5;
@@ -242,6 +266,21 @@ test('missing configuration and malformed provider replies have safe diagnostic 
     await assert.rejects(sendCode('+93700123456', '123456', 'sms'), { code: 'OTP_PROVIDER_INVALID_RESPONSE' });
     global.fetch = async () => ({ ok: true, json: async () => ({ status: 'failed' }) });
     await assert.rejects(sendCode('+93700123456', '123456', 'sms'), { code: 'OTP_PROVIDER_REJECTED' });
+    global.fetch = async () => ({ ok: true, json: async () => ({ error: 'provider rejected request' }) });
+    await assert.rejects(sendCode('+93700123456', '123456', 'sms'), { code: 'OTP_PROVIDER_REJECTED' });
+    for (const reply of [{}, [], 'sent',
+      { status: 'unknown', message_id: 'test-message', channel: 'sms' },
+      { status: 'sent', channel: 'sms' },
+      { status: 'sent', message_id: ' ', channel: 'sms' },
+      { status: 'sent', message_id: 'test-message', channel: 'email' }]) {
+      global.fetch = async () => ({ ok: true, json: async () => reply });
+      await assert.rejects(sendCode('+93700123456', '123456', 'sms'), { code: 'OTP_PROVIDER_INVALID_RESPONSE' });
+    }
+    for (const status of ['pending', 'processed', 'sent', 'delivered']) {
+      global.fetch = async () => ({ ok: true, json: async () => ({ message_id: 'test-message', status, channel: 'sms' }) });
+      const reply = await sendCode('+93700123456', '123456', 'sms');
+      assert.equal(reply.status, status, 'accepted states retain their actual delivery status');
+    }
   } finally {
     global.fetch = originalFetch;
     if (originalKey === undefined) delete process.env.GHONCHA_API_KEY; else process.env.GHONCHA_API_KEY = originalKey;

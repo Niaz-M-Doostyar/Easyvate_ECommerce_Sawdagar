@@ -40,6 +40,7 @@ export default function ForgotPasswordScreen({ navigation, route }) {
   const [challengePhone, setChallengePhone] = useState('');
   const [code, setCode] = useState('');
   const [sentChannel, setSentChannel] = useState('sms');
+  const [deliveryStatus, setDeliveryStatus] = useState('pending');
   const [expiresAt, setExpiresAt] = useState(0);
   const [retryAt, setRetryAt] = useState(0);
   const retrySeconds = useOtpCountdown(retryAt);
@@ -65,7 +66,7 @@ export default function ForgotPasswordScreen({ navigation, route }) {
       setChallengePhone(phone);
       setCode('');
       setVerificationError('');
-      setSentChannel(data.channel || channel);
+      setSentChannel(data.channel || channel); setDeliveryStatus(data.deliveryStatus || 'pending');
       setExpiresAt(Date.now() + (data.expiresIn || 300) * 1000);
       setRetryAt(Date.now() + data.retryAfter * 1000);
       toast.success(data.message);
@@ -157,7 +158,7 @@ export default function ForgotPasswordScreen({ navigation, route }) {
               <TouchableOpacity onPress={() => { setUseEmail(!useEmail); setIdentifier(''); setIdentifierError(''); setVerificationError(''); }} disabled={loading} accessibilityRole="button" style={styles.methodLink}>
                 <Text style={[styles.methodLinkText, alignment, { color: c.primary }]}>{useEmail ? copy.usePhone : copy.useEmail}</Text>
               </TouchableOpacity>
-            </> : <OtpVerification error={verificationError} code={code} onChange={value => { setCode(value); setVerificationError(''); }} phone={challengePhone} sentChannel={sentChannel} channel={channel} retryAt={retryAt} expiresAt={expiresAt} onResend={resend} onEdit={editPhone} loading={loading} />}
+            </> : <OtpVerification error={verificationError} code={code} onChange={value => { setCode(value); setVerificationError(''); }} phone={challengePhone} sentChannel={sentChannel} deliveryStatus={deliveryStatus} channel={channel} retryAt={retryAt} expiresAt={expiresAt} onResend={resend} onEdit={editPhone} loading={loading} />}
             {!challengeId && verificationError ? <Text accessibilityRole="alert" style={[styles.error, alignment, { color: c.error }]}>{verificationError}</Text> : null}
             {isPhone ? <OtpMethodPicker value={channel} onChange={setChannel} disabled={loading} verifying={!!challengeId} /> : null}
             {challengeId ? <>

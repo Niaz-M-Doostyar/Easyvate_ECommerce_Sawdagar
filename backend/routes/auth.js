@@ -139,8 +139,12 @@ router.post('/customer-otp', async (req, res) => {
       await prisma.phoneRegistration.updateMany({ where: { id }, data: { expiresAt: now } });
       return otpRetryError(res, 503, 'Could not send the code. Wait 60 seconds and try again or choose the other method.', 60);
     }
-    const deliveredChannel = ['sms', 'whatsapp'].includes(delivery.channel) ? delivery.channel : channel;
-    return res.json({ challengeId: id, expiresIn: 300, retryAfter: 60, channel: deliveredChannel, fallback: delivery.fallback === true, message: `Code sent by ${deliveredChannel === 'sms' ? 'SMS' : 'WhatsApp'}` });
+    const deliveryChannel = delivery.channel;
+    const deliveryConfirmed = delivery.status === 'delivered';
+    const method = deliveryChannel === 'sms' ? 'SMS' : 'WhatsApp';
+    return res.json({ challengeId: id, expiresIn: 300, retryAfter: 60, channel: deliveryChannel,
+      fallback: delivery.fallback === true, deliveryStatus: delivery.status, deliveryConfirmed,
+      message: deliveryConfirmed ? `Code delivered by ${method}` : `Code requested by ${method}. Delivery may take a moment.` });
   } catch (err) {
     if (err.code === 'P2002') return otpRetryError(res, 429, 'Another code request is in progress. Please wait before trying again.', 60);
     const reason = /^P\d{4}$/.test(err.code || '') ? err.code : 'OTP_REQUEST_ERROR';

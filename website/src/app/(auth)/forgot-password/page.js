@@ -19,6 +19,7 @@ export default function ForgotPasswordPage() {
   const [verificationError, setVerificationError] = useState('');
   const [sent, setSent] = useState(false);
   const [sentChannel, setSentChannel] = useState('sms');
+  const [deliveryStatus, setDeliveryStatus] = useState('pending');
   const [expiresAt, setExpiresAt] = useState(0);
   const [retryAt, setRetryAt] = useState(0);
   const retrySeconds = useOtpCountdown(retryAt);
@@ -38,7 +39,7 @@ export default function ForgotPasswordPage() {
     if (Date.now() < retryAt) throw new Error(`Try again in ${Math.ceil((retryAt - Date.now()) / 1000)} seconds.`);
     try {
       const data = await request('customer-otp', { phone: identifier, channel, purpose: 'password-reset' });
-      setChallengeId(data.challengeId); setCode(''); setSentChannel(data.channel || channel); setExpiresAt(Date.now() + (data.expiresIn || 300) * 1000); setRetryAt(Date.now() + data.retryAfter * 1000); toast.success(data.message);
+      setChallengeId(data.challengeId); setCode(''); setSentChannel(data.channel || channel); setDeliveryStatus(data.deliveryStatus || 'pending'); setExpiresAt(Date.now() + (data.expiresIn || 300) * 1000); setRetryAt(Date.now() + data.retryAfter * 1000); toast.success(data.message);
     } catch (error) {
       const retryAfter = Number(error.data?.retryAfter);
       if (Number.isFinite(retryAfter) && retryAfter > 0) setRetryAt(Date.now() + retryAfter * 1000);
@@ -70,7 +71,7 @@ export default function ForgotPasswordPage() {
         {challengeId && <>
           <div className="f2-content-field"><label htmlFor="recovery-password">New password</label><input id="recovery-password" type="password" autoComplete="new-password" minLength={6} maxLength={72} value={password} onChange={e => setPassword(e.target.value)} required /></div>
           <div className="f2-content-field"><label htmlFor="recovery-confirm">Confirm password</label><input id="recovery-confirm" type="password" autoComplete="new-password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} required /></div>
-          <OtpVerification code={code} onChange={setCode} phone={identifier} sentChannel={sentChannel} channel={channel} retryAt={retryAt} expiresAt={expiresAt} onResend={resend} onEdit={() => { setChallengeId(''); setCode(''); }} loading={loading} />
+          <OtpVerification code={code} onChange={setCode} phone={identifier} sentChannel={sentChannel} deliveryStatus={deliveryStatus} channel={channel} retryAt={retryAt} expiresAt={expiresAt} onResend={resend} onEdit={() => { setChallengeId(''); setCode(''); }} loading={loading} />
         </>}
         {isPhone && <OtpMethodPicker value={channel} onChange={setChannel} disabled={loading} verifying={!!challengeId} />}
         {verificationError && <div className="f2-content-alert f2-content-alert--error" role="alert">{verificationError}</div>}

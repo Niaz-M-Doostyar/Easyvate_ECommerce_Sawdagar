@@ -17,12 +17,12 @@ export function OtpMethodPicker({ value, onChange, disabled, verifying = false }
     <p className={styles.hint}>{value === 'sms' ? 'A six-digit code will be sent to your Afghan mobile number.' : 'WhatsApp must be active on this number and connected to the internet.'}</p>
   </fieldset>;
 }
-export function OtpVerification({ code, onChange, phone, sentChannel, channel, retryAt, expiresAt, onResend, onEdit, loading }) {
+export function OtpVerification({ code, onChange, phone, sentChannel, deliveryStatus, channel, retryAt, expiresAt, onResend, onEdit, loading }) {
   const seconds = useOtpCountdown(retryAt);
   const expiry = useOtpCountdown(expiresAt);
   const input = useRef(null);
   return <section className={styles.verification} aria-label="Phone verification">
-    <div className={styles.sent}><span className={styles.sentIcon}><i className="far fa-shield-check" aria-hidden="true" /></span><div><strong>Check your {label(sentChannel)}</strong><p>We sent a code to <b dir="ltr">{phone}</b></p></div></div>
+    <div className={styles.sent}><span className={styles.sentIcon}><i className="far fa-shield-check" aria-hidden="true" /></span><div><strong>Check your {label(sentChannel)}</strong><p>{deliveryStatus === 'delivered' ? 'Code delivered to' : 'Code requested for'} <b dir="ltr">{phone}</b></p></div></div>
     <p className={styles.hint} style={{marginBottom:20}}>{sentChannel === 'sms' ? 'Open your Messages app and enter the six-digit code below. If your keyboard suggests the code, tap it to fill it in.' : 'Open WhatsApp and find your six-digit code, then return here to enter it.'}</p>
     <label className={styles.codeLabel} htmlFor="verification-code">Verification code</label>
     <div className={styles.codeWrap} onClick={() => input.current?.focus()}>

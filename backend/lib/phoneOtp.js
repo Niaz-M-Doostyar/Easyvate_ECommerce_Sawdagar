@@ -24,6 +24,15 @@ async function sendCode(phone, code, channel) {
   let data;
   try { data = await response.json(); } catch { throw deliveryError('OTP_PROVIDER_INVALID_RESPONSE'); }
   if (!data || data.status === 'failed' || data.error) throw deliveryError('OTP_PROVIDER_REJECTED');
+  // An HTTP success or queued request is not evidence of handset delivery.
+  // Validate the documented OTP response before activating its challenge.
+  const messageId = data.message_id || data.id;
+  if (Array.isArray(data) || typeof data !== 'object'
+    || !['pending', 'processed', 'sent', 'delivered'].includes(data.status)
+    || typeof messageId !== 'string' || !messageId.trim()
+    || !['sms', 'whatsapp'].includes(data.channel)) {
+    throw deliveryError('OTP_PROVIDER_INVALID_RESPONSE');
+  }
   return data;
 }
 module.exports = { normalizeAfghanPhone, codeHash, sendCode };

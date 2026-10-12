@@ -34,6 +34,7 @@ export default function RegisterScreen({ navigation }) {
   const [code, setCode] = useState('');
   const [channel, setChannel] = useState('sms');
   const [sentChannel, setSentChannel] = useState('sms');
+  const [deliveryStatus, setDeliveryStatus] = useState('pending');
   const [expiresAt, setExpiresAt] = useState(0);
   const [retryAt, setRetryAt] = useState(0);
   const retrySeconds = useOtpCountdown(retryAt);
@@ -64,7 +65,7 @@ export default function RegisterScreen({ navigation }) {
     if (Date.now() < retryAt) throw new Error(`Try again in ${Math.ceil((retryAt - Date.now()) / 1000)} seconds.`);
     try {
       const data = await authApi.requestCustomerOtp({ role: form.role, firstName: form.name.trim(), lastName: form.lastName.trim(), fullName: form.name.trim(), email: form.role === 'supplier' ? form.email.trim().toLowerCase() : '', companyName: form.companyName.trim(), province: form.province, district: form.district, village: form.village, landmark: form.landmark, phone: form.phone, password: form.password, confirmPassword: form.confirmPassword, channel });
-      setChallengeId(data.challengeId); setCode(''); setSentChannel(data.channel || channel); setExpiresAt(Date.now() + (data.expiresIn || 300) * 1000); setRetryAt(Date.now() + data.retryAfter * 1000); toast.success(data.message);
+      setChallengeId(data.challengeId); setCode(''); setSentChannel(data.channel || channel); setDeliveryStatus(data.deliveryStatus || 'pending'); setExpiresAt(Date.now() + (data.expiresIn || 300) * 1000); setRetryAt(Date.now() + data.retryAfter * 1000); toast.success(data.message);
     } catch (error) {
       const retryAfter = Number(error.data?.retryAfter);
       if (Number.isFinite(retryAfter) && retryAfter > 0) setRetryAt(Date.now() + retryAfter * 1000);
@@ -146,7 +147,7 @@ export default function RegisterScreen({ navigation }) {
             <Input editable={!challengeId && !loading} maxLength={72} returnKeyType="next" onSubmitEditing={() => confirmInput.current?.focus()} autoCapitalize="none" autoCorrect={false} label={t.password} icon="lock-closed-outline" value={form.password} onChangeText={v => set('password', v)} error={errors.password} secureTextEntry autoComplete="new-password" textContentType="newPassword" placeholder="Min 6 characters" />
             <Input editable={!challengeId && !loading} ref={confirmInput} maxLength={72} autoCapitalize="none" autoCorrect={false} label={t.confirmPassword} icon="lock-closed-outline" value={form.confirmPassword} onChangeText={v => set('confirmPassword', v)} error={errors.confirmPassword} secureTextEntry autoComplete="new-password" textContentType="newPassword" returnKeyType="done" onSubmitEditing={handleRegister} placeholder="Repeat password" />
             </>}
-              {challengeId && <OtpVerification code={code} onChange={value => { setCode(value); setVerificationError(''); }} phone={form.phone} sentChannel={sentChannel} channel={channel} retryAt={retryAt} expiresAt={expiresAt} onResend={resendCode} onEdit={() => { setChallengeId(''); setCode(''); setVerificationError(''); }} loading={loading} error={verificationError} />}
+              {challengeId && <OtpVerification code={code} onChange={value => { setCode(value); setVerificationError(''); }} phone={form.phone} sentChannel={sentChannel} deliveryStatus={deliveryStatus} channel={channel} retryAt={retryAt} expiresAt={expiresAt} onResend={resendCode} onEdit={() => { setChallengeId(''); setCode(''); setVerificationError(''); }} loading={loading} error={verificationError} />}
               <OtpMethodPicker value={channel} onChange={setChannel} disabled={loading} verifying={!!challengeId} />
             {!challengeId && verificationError ? <Text accessibilityRole="alert" style={[styles.error, { color: c.error }]}>{verificationError}</Text> : null}
             {challengeId ? <View accessibilityLiveRegion="polite" style={{marginTop:16}}>

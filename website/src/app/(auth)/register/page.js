@@ -26,6 +26,7 @@ export default function RegisterPage() {
   const [code, setCode] = useState("");
   const [channel, setChannel] = useState("sms");
   const [sentChannel, setSentChannel] = useState("sms");
+  const [deliveryStatus, setDeliveryStatus] = useState('pending');
   const [expiresAt, setExpiresAt] = useState(0);
   const [retryAt, setRetryAt] = useState(0);
   const retrySeconds = useOtpCountdown(retryAt);
@@ -45,7 +46,7 @@ export default function RegisterPage() {
     try {
       const data = await customerRequest('customer-otp', { ...form, role, channel });
       setChallengeId(data.challengeId);
-      setCode(""); setSentChannel(data.channel || channel); setExpiresAt(Date.now() + (data.expiresIn || 300) * 1000);
+      setCode(""); setSentChannel(data.channel || channel); setDeliveryStatus(data.deliveryStatus || 'pending'); setExpiresAt(Date.now() + (data.expiresIn || 300) * 1000);
       setRetryAt(Date.now() + data.retryAfter * 1000);
       toast.success(data.message);
     } catch (error) {
@@ -192,7 +193,7 @@ export default function RegisterPage() {
             </div>
 
             </fieldset>
-              {challengeId && <OtpVerification code={code} onChange={setCode} phone={form.phone} sentChannel={sentChannel} channel={channel} retryAt={retryAt} expiresAt={expiresAt} onResend={resendCode} onEdit={() => { setChallengeId(''); setCode(''); setFormError(''); }} loading={loading} />}
+              {challengeId && <OtpVerification code={code} onChange={setCode} phone={form.phone} sentChannel={sentChannel} deliveryStatus={deliveryStatus} channel={channel} retryAt={retryAt} expiresAt={expiresAt} onResend={resendCode} onEdit={() => { setChallengeId(''); setCode(''); setFormError(''); }} loading={loading} />}
               <OtpMethodPicker value={channel} onChange={setChannel} disabled={loading} verifying={!!challengeId} />
             <div className="f2-content-check" style={{ display: challengeId ? 'none' : undefined }}>
               <input type="checkbox" id="terms" required />

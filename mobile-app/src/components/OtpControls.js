@@ -19,7 +19,7 @@ export function OtpMethodPicker({ value, onChange, disabled, verifying = false }
     <Text style={[styles.hint, { color: c.textSecondary }]}>{value === 'sms' ? 'A six-digit code will be sent to your Afghan mobile number.' : 'WhatsApp must be active on this number and connected to the internet.'}</Text>
   </View>;
 }
-export function OtpVerification({ code, onChange, phone, sentChannel, channel, retryAt, expiresAt, onResend, onEdit, loading, error }) {
+export function OtpVerification({ code, onChange, phone, sentChannel, deliveryStatus, channel, retryAt, expiresAt, onResend, onEdit, loading, error }) {
   const { theme } = useTheme(); const c = theme.colors;
   const seconds = useOtpCountdown(retryAt); const expiry = useOtpCountdown(expiresAt);
   const input = useRef(null); const [focused, setFocused] = useState(false);
@@ -50,8 +50,8 @@ export function OtpVerification({ code, onChange, phone, sentChannel, channel, r
     return () => { appState.remove(); keyboard?.remove(); clearTimeout(focusTimer.current); };
   }, []);
   return <View style={[styles.verification, { backgroundColor: c.brandSurface, borderColor: c.border }]}>
-    <View style={styles.sent}><View style={[styles.sentIcon, { backgroundColor: c.card }]}><Ionicons name="shield-checkmark-outline" size={25} color={c.primary} /></View><View style={{flex:1}}><Text style={[styles.sentTitle, {color:c.text}]}>Check your {label(sentChannel)}</Text><Text style={[styles.hint, {color:c.textSecondary}]}>Code sent to <Text style={{fontWeight:'600',color:c.text}}>{phone}</Text></Text></View></View>
-    <Text style={[styles.hint, {color:c.textSecondary, marginBottom:16}]}>{sentChannel === 'sms' ? 'Stay on this screen. When the SMS arrives, tap the code above your keyboard to fill it in. You can also paste the six-digit code.' : 'Open WhatsApp and find your six-digit code, then return here to enter it.'}</Text>
+    <View style={styles.sent}><View style={[styles.sentIcon, { backgroundColor: c.card }]}><Ionicons name="shield-checkmark-outline" size={25} color={c.primary} /></View><View style={{flex:1}}><Text style={[styles.sentTitle, {color:c.text}]}>Check your {label(sentChannel)}</Text><Text style={[styles.hint, {color:c.textSecondary}]}>{deliveryStatus === 'delivered' ? 'Code delivered to' : 'Code requested for'} <Text style={{fontWeight:'600',color:c.text}}>{phone}</Text></Text></View></View>
+    <Text style={[styles.hint, {color:c.textSecondary, marginBottom:16}]}>{sentChannel === 'sms' ? 'When the SMS arrives, enter or paste its six-digit code. If your keyboard suggests the code, tap it to fill it in.' : 'Open WhatsApp and find your six-digit code, then return here to enter it.'}</Text>
     <Text style={[styles.label, {color:c.text}]}>Verification code</Text>
     <View style={styles.codeWrap} onLayout={event => setCodeWidth(event.nativeEvent.layout.width)}>
       <View pointerEvents="none" style={[styles.digits, { gap: layout.gap }]} accessible={false} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
