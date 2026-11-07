@@ -55,16 +55,17 @@ function localizeSiteContent(content) {
     next.about.ctaDescription = 'Explore products and shop with Sawdagar in Afghanistan.';
   }
   const phone = '+93 706 151 322';
-  const email = 'onlinesawdagar@gmail.com';
+  const email = 'info@sawdagar.com';
+  const legacyEmails = new Set(['onlinesawdagar@gmail.com', 'support@sawdagar.com']);
   for (const section of [next.header, next.footer]) {
     if (!section) continue;
     if (/^\+93 (700|799) 000 000$/.test(section.phone || '')) section.phone = phone;
-    if (['info@sawdagar.com', 'support@sawdagar.com'].includes(section.email)) section.email = email;
+    if (legacyEmails.has(section.email)) section.email = email;
   }
   if (next.footer?.aboutText?.startsWith("Afghanistan's premier")) next.footer.aboutText = 'Sawdagar connects Afghan suppliers, retailers and customers through online shopping. Browse products in Pashto, Dari and English, with prices in AFN.';
   for (const card of next.contact?.cards || []) {
     if (card.title === 'Phone' && card.lines?.some(line => /^\+93 (700|799) 000 000$/.test(line))) card.lines = [next.header?.phone || phone];
-    if (card.title === 'Email' && card.lines?.some(line => ['info@sawdagar.com', 'support@sawdagar.com'].includes(line))) card.lines = [next.header?.email || email];
+    if (Array.isArray(card.lines)) card.lines = card.lines.map(line => legacyEmails.has(line) ? email : line);
     if (card.title === 'Our Office' && card.lines?.includes('District 5, Main Street')) card.lines = ['Kandahar, Afghanistan'];
   }
   return next;

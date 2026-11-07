@@ -5,7 +5,7 @@ const SITE_CONTENT_KEY = 'website_content';
 // Default site content embedded directly — NO JSON file dependency
 const defaultSiteContent = {
   "header": {
-    "email": "onlinesawdagar@gmail.com",
+    "email": "info@sawdagar.com",
     "phone": "+93 706 151 322",
     "topBarMessage": "Welcome to Sawdagar Online Shopping Store!",
     "socialLinks": {
@@ -19,7 +19,7 @@ const defaultSiteContent = {
   "footer": {
     "aboutText": "Sawdagar connects Afghan suppliers, retailers and customers through online shopping. Browse products in Pashto, Dari and English, with prices in AFN.",
     "phone": "+93 706 151 322",
-    "email": "onlinesawdagar@gmail.com",
+    "email": "info@sawdagar.com",
     "address": "Kabul, Afghanistan",
     "businessHours": "Sat - Thu (8:00 AM - 5:00 PM)",
     "quickLinks": [
@@ -272,7 +272,7 @@ const defaultSiteContent = {
         "icon": "M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75",
         "title": "Email",
         "lines": [
-          "onlinesawdagar@gmail.com"
+          "info@sawdagar.com"
         ]
       }
     ],
