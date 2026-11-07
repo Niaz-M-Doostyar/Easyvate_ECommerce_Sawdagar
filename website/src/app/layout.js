@@ -22,6 +22,15 @@ export const metadata = {
   title: "Sawdagar - سوداګر | Afghanistan's #1 Online Marketplace",
   description: 'Shop products across Afghanistan and pay with Afghani (AFN) on delivery.',
   metadataBase: new URL('https://sawdagar.com'),
+  icons: {
+    icon: [
+      { url: '/assets/img/logo/sawdagar-icon-32.png', type: 'image/png', sizes: '32x32' },
+      { url: '/assets/img/logo/sawdagar-icon-48.png', type: 'image/png', sizes: '48x48' },
+    ],
+    apple: [
+      { url: '/assets/img/logo/sawdagar-icon-180.png', type: 'image/png', sizes: '180x180' },
+    ],
+  },
 };
 
 export const viewport = {
@@ -46,8 +55,6 @@ export default async function RootLayout({ children }) {
   return (
     <html lang="en" dir="ltr" suppressHydrationWarning>
       <head>
-        <link rel="icon" type="image/x-icon" href="/assets/img/logo/favicon.png" />
-
         {/* Preconnect to font origins */}
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />

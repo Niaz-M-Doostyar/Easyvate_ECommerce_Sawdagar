@@ -260,9 +260,18 @@ textarea {
   transition: border-color 180ms ease, box-shadow 180ms ease, background 180ms ease;
 }
 
-.sd-search-form:focus-within {
+.sd-search-form:focus-within,
+.sd-mobile-drawer__search:focus-within,
+.sd-mobile-search__form:focus-within {
   border-color: var(--sd-green);
-  box-shadow: 0 0 0 4px rgba(79, 104, 71, 0.09);
+  box-shadow: 0 0 0 4px rgba(245, 154, 87, 0.14);
+}
+
+/* The complete search field provides the focus ring, including on mobile. */
+.sd-search-form input:focus-visible,
+.sd-mobile-drawer__search input:focus-visible,
+.sd-mobile-search__form input:focus-visible {
+  outline: 0 !important;
 }
 
 .sd-search-form__category {
@@ -303,7 +312,7 @@ textarea {
 }
 
 .sd-search-form input::placeholder {
-  color: #9b9b94;
+  color: #767676;
   opacity: 1;
 }
 
@@ -1266,11 +1275,12 @@ textarea {
 .sd-mobile-drawer__search input {
   min-width: 0;
   flex: 1;
+  padding: 2px 4px;
   border: 0;
   outline: 0;
   color: var(--sd-charcoal);
   background: transparent;
-  font-size: 12px;
+  font-size: 16px;
 }
 
 .sd-mobile-drawer__search button {
@@ -2458,11 +2468,12 @@ textarea {
 .sd-mobile-search__form input {
   min-width: 0;
   flex: 1;
+  padding: 2px 4px;
   border: 0;
   outline: 0;
   color: var(--sd-charcoal);
   background: transparent;
-  font-size: 12px;
+  font-size: 16px;
 }
 
 .sd-mobile-search__form > button {
@@ -2956,9 +2967,9 @@ textarea {
 
 .sd-search-form input {
   height: 40px;
-  padding-inline: 0 14px;
+  padding-inline: 16px;
   font-family: "Work Sans", Vazirmatn, sans-serif;
-  font-size: 12px;
+  font-size: 14px;
 }
 
 .sd-search-form__submit {
