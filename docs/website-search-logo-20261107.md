@@ -21,6 +21,14 @@ drawer. At 390px and 1024px there was no horizontal page overflow; input spacing
 font sizes and the single focus ring were checked from the rendered page.
 Padding uses logical properties so it also applies in right-to-left layouts.
 
+The separate VPS production build and temporary loopback preview passed. Live
+checks on `https://sawdagar.com` confirmed the desktop 16px padding, mobile 16px
+text with a single surrounding focus ring, and all three correct PNG icon links.
+The website health check passed after activation. Backend and admin process IDs
+were unchanged. Deployed application source: `9a691d29`.
+
+![Live website header after the fix](assets/website-search-logo-20261107.jpg)
+
 ## Restore points
 
 - Git source backup: `backup/before-website-search-favicon-20261107`.
