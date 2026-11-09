@@ -8,8 +8,16 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { useToast } from "@/contexts/ToastContext";
 import { formatPrice } from "@/lib/currency";
 import { safeJsonParse } from "@/lib/utils";
+import { responsiveImage } from "@/lib/image";
 
 const FALLBACK_IMAGE = "/assets/img/product/placeholder.png";
+
+function handleImageError(event) {
+  const image = event.currentTarget;
+  image.removeAttribute('srcset');
+  image.removeAttribute('sizes');
+  if (image.getAttribute('src') !== FALLBACK_IMAGE) image.src = FALLBACK_IMAGE;
+}
 
 function ProductDetailSkeleton() {
   return (
@@ -245,10 +253,11 @@ export default function ProductDetailPage({ params }) {
                     aria-pressed={selectedImage === index}
                   >
                     <img
-                      src={image}
+                      {...responsiveImage(image, { widths: [80, 160, 280], sizes: '80px' })}
                       alt=""
-                      loading={index > 3 ? "lazy" : undefined}
-                      onError={(event) => { event.currentTarget.src = FALLBACK_IMAGE; }}
+                      loading="lazy"
+                      decoding="async"
+                      onError={handleImageError}
                     />
                   </button>
                 ))}
@@ -259,10 +268,11 @@ export default function ProductDetailPage({ params }) {
               <button type="button" className="swd-product-image-open" onClick={() => { setZoom(1); setViewerOpen(true); }} aria-label={t("view_image") || "Open and zoom product image"}>
               <img
                 key={selectedImage}
-                src={images[selectedImage] || FALLBACK_IMAGE}
+                {...responsiveImage(images[selectedImage] || FALLBACK_IMAGE, { widths: [420, 760, 1200], sizes: '(max-width: 767px) 90vw, (max-width: 1199px) 50vw, 640px' })}
                 alt={selectedImage === 0 ? productName : `${productName} ${selectedImage + 1}`}
                 fetchPriority="high"
-                onError={(event) => { event.currentTarget.src = FALLBACK_IMAGE; }}
+                decoding="async"
+                onError={handleImageError}
               />
               </button>
 

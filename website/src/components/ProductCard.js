@@ -7,7 +7,7 @@ import { useCart } from '@/contexts/CartContext';
 import { useToast } from '@/contexts/ToastContext';
 import QuickViewModal from './CleanQuickViewModal';
 import { formatPrice } from '@/lib/currency';
-import { optimizedImageUrl, responsiveImage, FALLBACK_PRODUCT_IMAGE } from '@/lib/image';
+import { normalizeImageUrl, responsiveImage, FALLBACK_PRODUCT_IMAGE } from '@/lib/image';
 
 export default function ProductCard({ product, layout = 'grid' }) {
   const { t, lang } = useLanguage();
@@ -25,14 +25,17 @@ export default function ProductCard({ product, layout = 'grid' }) {
   const price = product.retailPrice || product.suggestedPrice || 0;
   const oldPrice = product.suggestedPrice && product.suggestedPrice > price ? product.suggestedPrice : null;
   const discount = oldPrice ? Math.round((1 - price / oldPrice) * 100) : 0;
-  const images = (product.images || []).map(img => {
-    const url = img.url || img;
-    return url.startsWith('http') ? url : url.startsWith('/') ? url : `/${url}`;
-  });
+  const images = (product.images || []).map(normalizeImageUrl);
   const fallbackImg = FALLBACK_PRODUCT_IMAGE;
   if (images.length === 0) images.push(fallbackImg);
-  const activeImgResp = responsiveImage(images[activeImg], { widths: [320, 560, 760], quality: 75, sizes: '(max-width: 576px) 90vw, (max-width: 992px) 45vw, 280px' });
-  const listImgResp = responsiveImage(images[0], { widths: [280, 420, 560], quality: 75, sizes: '(max-width: 576px) 40vw, 200px' });
+  const activeImgResp = responsiveImage(images[activeImg], { widths: [160, 280, 420, 560, 760], sizes: '(max-width: 575px) calc((100vw - 76px) / 3), (max-width: 1199px) 42vw, 280px' });
+  const listImgResp = responsiveImage(images[0], { widths: [160, 280, 420, 560], sizes: '(max-width: 576px) 30vw, 200px' });
+  const applyFallback = (event) => {
+    const image = event.currentTarget;
+    image.removeAttribute('srcset');
+    image.removeAttribute('sizes');
+    if (image.getAttribute('src') !== fallbackImg) image.src = fallbackImg;
+  };
   const rating = Number(product.averageRating || product.rating || 0);
   const inStock = product.stock > 0;
 
@@ -65,7 +68,7 @@ export default function ProductCard({ product, layout = 'grid' }) {
         <div className={`product-item flex flex-row ${visible ? 'animate-fade-up' : 'opacity-0'}`}>
           <div className="product-img w-48 flex-shrink-0">
             {badge && <span className={`type ${badge.cls}`}>{badge.text}</span>}
-            <Link href={`/products/${product.id}`}><img src={listImgResp.src} srcSet={listImgResp.srcSet} sizes={listImgResp.sizes} alt={getName()} loading="lazy" decoding="async" onError={(e) => { e.target.src=fallbackImg; }} /></Link>
+            <Link href={`/products/${product.id}`}><img src={listImgResp.src} srcSet={listImgResp.srcSet} sizes={listImgResp.sizes} alt={getName()} loading="lazy" decoding="async" onError={applyFallback} /></Link>
           </div>
           <div className="product-content flex-1 flex flex-col justify-center">
             <h3 className="product-title"><Link href={`/products/${product.id}`}>{getName()}</Link></h3>
@@ -93,7 +96,7 @@ export default function ProductCard({ product, layout = 'grid' }) {
       <div className="product-img product-hover-gallery" ref={hoverRef} onMouseMove={handleMouseMove} onMouseLeave={() => setActiveImg(0)}>
         {badge && <span className={`type ${badge.cls}`}>{badge.text}</span>}
         <Link href={`/products/${product.id}`}>
-          <img src={activeImgResp.src} srcSet={activeImgResp.srcSet} sizes={activeImgResp.sizes} alt={getName()} loading="lazy" decoding="async" onError={(e) => { e.target.src=fallbackImg; }} style={{ transition: 'opacity 0.3s ease' }} />
+          <img src={activeImgResp.src} srcSet={activeImgResp.srcSet} sizes={activeImgResp.sizes} alt={getName()} loading="lazy" decoding="async" onError={applyFallback} style={{ transition: 'opacity 0.3s ease' }} />
         </Link>
         {/* Navigation arrows (shown on hover) */}
         {images.length > 1 && (

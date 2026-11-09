@@ -5,17 +5,13 @@ import { memo, useEffect, useState } from 'react';
 import { useCart } from '@/contexts/CartContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { formatPrice } from '@/lib/currency';
-import { responsiveImage } from '@/lib/image';
+import { normalizeImageUrl, responsiveImage } from '@/lib/image';
 import QuickViewModal from './CleanQuickViewModal';
 
 const FALLBACK_IMG = '/assets/img/product/e1.png';
 
 function normalizeImg(src) {
-  if (!src) return FALLBACK_IMG;
-  if (typeof src !== 'string') src = src.url;
-  if (!src) return FALLBACK_IMG;
-  if (src.startsWith('http') || src.startsWith('/')) return src;
-  return `/${src}`;
+  return normalizeImageUrl(src);
 }
 
 function localizedValue(item, field, lang) {
@@ -60,7 +56,10 @@ const MocartProductItem = memo(function MocartProductItem({ product, showBadge =
   const name = localizedValue(product, 'name', lang) || 'Product';
   const categoryName = localizedValue(product.category, 'name', lang);
   const rawImg = normalizeImg(product.images?.[0]);
-  const { src: optSrc, srcSet: optSrcSet, sizes: optSizes } = responsiveImage(rawImg);
+  const { src: optSrc, srcSet: optSrcSet, sizes: optSizes } = responsiveImage(rawImg, {
+    widths: [160, 280, 420, 560],
+    sizes: '(max-width: 767px) calc((100vw - 76px) / 3), (max-width: 991px) 28vw, (max-width: 1199px) 21vw, 260px',
+  });
   const imgSrc = imgError ? FALLBACK_IMG : optSrc;
   const { price, oldPrice } = productPrice(product);
   const isOutOfStock = Number(product.stock) <= 0;
@@ -151,6 +150,7 @@ export const MocartProductListItem = memo(function MocartProductListItem({ produ
   if (!product) return null;
 
   const name = localizedValue(product, 'name', lang) || 'Product';
+  const image = responsiveImage(normalizeImg(product.images?.[0]), { widths: [80, 160, 280], sizes: '76px' });
   const { price, oldPrice } = productPrice(product);
   const inStock = Number(product.stock) > 0;
   const rating = Number(product.averageRating || product.rating || 0);
@@ -169,7 +169,7 @@ export const MocartProductListItem = memo(function MocartProductListItem({ produ
   return (
     <article className="product-list-item sd-product-list-item">
       <Link href={`/products/${product.id}`} className="sd-product-list-image">
-        <img src={imgError ? FALLBACK_IMG : normalizeImg(product.images?.[0])} alt={name} loading="lazy" decoding="async" onError={() => setImgError(true)} />
+        <img src={imgError ? FALLBACK_IMG : image.src} srcSet={imgError ? undefined : image.srcSet} sizes={imgError ? undefined : image.sizes} alt={name} loading="lazy" decoding="async" onError={() => setImgError(true)} />
       </Link>
       <div className="sd-product-list-content">
         <h3><Link href={`/products/${product.id}`}>{name}</Link></h3>

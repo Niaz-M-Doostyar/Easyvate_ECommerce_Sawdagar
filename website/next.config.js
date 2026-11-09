@@ -38,11 +38,19 @@ const nextConfig = {
         ],
       },
       {
-        source: '/api/:path*',
+        // Image responses manage their own cache policy; their JSON errors still
+        // receive no-store from the backend. Keep all other API data real-time.
+        source: '/api/:path((?!image/?$).*)',
         headers: [
           { key: 'Cache-Control', value: 'no-store, no-cache, must-revalidate, proxy-revalidate' },
           { key: 'Pragma', value: 'no-cache' },
           { key: 'Expires', value: '0' },
+        ],
+      },
+      {
+        source: '/image-cache/:path*',
+        headers: [
+          { key: 'Cache-Control', value: 'public, max-age=31536000, immutable' },
         ],
       },
       {

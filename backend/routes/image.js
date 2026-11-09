@@ -14,7 +14,7 @@ if (!fs.existsSync(cacheRoot)) {
 
 // Track in-progress conversions to avoid duplicate work
 const pending = new Map();
-const allowedWidths = [80, 280, 320, 420, 500, 560, 700, 760, 800, 1200];
+const allowedWidths = [80, 160, 280, 320, 420, 500, 560, 700, 760, 800, 1200];
 const allowedQualities = [60, 75, 85];
 
 function nearestAllowed(value, allowed, fallback) {
@@ -33,7 +33,22 @@ function normalizeUploadPath(src) {
   return path.join(uploadsRoot, relative);
 }
 
+function setNoStoreHeaders(res) {
+  res.setHeader('Cache-Control', 'no-store, max-age=0');
+  res.setHeader('Pragma', 'no-cache');
+  res.removeHeader('ETag');
+}
+
+function setImageCacheHeaders(res, etag) {
+  res.setHeader('ETag', etag);
+  res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+  res.removeHeader('Pragma');
+  res.removeHeader('Expires');
+}
+
 router.get('/', async (req, res) => {
+  // Only completed image responses should override the API's no-store policy.
+  setNoStoreHeaders(res);
   try {
     const src = req.query.src;
     // Bucket variants so arbitrary query values cannot create unbounded files.
@@ -57,9 +72,8 @@ router.get('/', async (req, res) => {
 
     // ETag based on original file mtime + params
     const etag = `"${stat.mtimeMs}-${recipe}-${format}"`;
-    res.setHeader('ETag', etag);
-    res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
     if (req.headers['if-none-match'] === etag) {
+      setImageCacheHeaders(res, etag);
       return res.status(304).end();
     }
 
@@ -104,11 +118,18 @@ router.get('/', async (req, res) => {
 
     const contentType = format === 'jpeg' ? 'image/jpeg' : 'image/webp';
     res.setHeader('Content-Type', contentType);
-    res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
-    res.setHeader('ETag', etag);
-    return res.sendFile(cachePath);
+    setImageCacheHeaders(res, etag);
+    return res.sendFile(cachePath, (error) => {
+      if (!error) return;
+      console.error('Image delivery error:', error.message);
+      if (!res.headersSent) {
+        setNoStoreHeaders(res);
+        res.status(error.statusCode || 500).json({ error: 'Failed to deliver image' });
+      }
+    });
   } catch (error) {
     console.error('Image optimization error:', error.message);
+    setNoStoreHeaders(res);
     return res.status(500).json({ error: 'Failed to optimize image' });
   }
 });

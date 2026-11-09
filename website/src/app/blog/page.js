@@ -2,6 +2,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { responsiveImage } from "@/lib/image";
 
 export default function BlogPage() {
   const { lang } = useLanguage();
@@ -66,7 +67,17 @@ export default function BlogPage() {
                     <article className="blog-item f2-blog-card wow fadeInUp" data-wow-delay=".25s">
                       <div className="blog-item-img f2-blog-card__media">
                         <Link href={`/blog/${post.slug}`} tabIndex={-1} aria-hidden="true">
-                          <img src={post.image || '/assets/img/blog/01.jpg'} alt="" onError={e => { e.target.src = '/assets/img/blog/01.jpg'; }} />
+                          <img
+                            {...responsiveImage(post.image || '/assets/img/blog/01.jpg', { widths: [320, 560, 800], sizes: '(max-width: 767px) 90vw, (max-width: 991px) 45vw, 400px' })}
+                            alt=""
+                            loading="lazy"
+                            decoding="async"
+                            onError={(event) => {
+                              event.currentTarget.removeAttribute('srcset');
+                              event.currentTarget.removeAttribute('sizes');
+                              if (event.currentTarget.getAttribute('src') !== '/assets/img/blog/01.jpg') event.currentTarget.src = '/assets/img/blog/01.jpg';
+                            }}
+                          />
                         </Link>
                         <span className="blog-date"><i className="far fa-calendar-alt"></i> {new Date(post.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
                       </div>

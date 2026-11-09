@@ -1,0 +1,322 @@
+{
+  "/category-icons/auto-parts.png": [
+    {
+      "width": 80,
+      "src": "/image-cache/444dfa029fba/auto-parts-w80.webp"
+    },
+    {
+      "width": 160,
+      "src": "/image-cache/444dfa029fba/auto-parts-w160.webp"
+    },
+    {
+      "width": 280,
+      "src": "/image-cache/444dfa029fba/auto-parts-w280.webp"
+    }
+  ],
+  "/category-icons/bathroom.png": [
+    {
+      "width": 80,
+      "src": "/image-cache/50f2d38396fd/bathroom-w80.webp"
+    },
+    {
+      "width": 160,
+      "src": "/image-cache/50f2d38396fd/bathroom-w160.webp"
+    },
+    {
+      "width": 280,
+      "src": "/image-cache/50f2d38396fd/bathroom-w280.webp"
+    }
+  ],
+  "/category-icons/beverages.png": [
+    {
+      "width": 80,
+      "src": "/image-cache/8f7d0492c528/beverages-w80.webp"
+    },
+    {
+      "width": 160,
+      "src": "/image-cache/8f7d0492c528/beverages-w160.webp"
+    },
+    {
+      "width": 280,
+      "src": "/image-cache/8f7d0492c528/beverages-w280.webp"
+    }
+  ],
+  "/category-icons/clothing.png": [
+    {
+      "width": 80,
+      "src": "/image-cache/92a0a4b1da5e/clothing-w80.webp"
+    },
+    {
+      "width": 160,
+      "src": "/image-cache/92a0a4b1da5e/clothing-w160.webp"
+    },
+    {
+      "width": 280,
+      "src": "/image-cache/92a0a4b1da5e/clothing-w280.webp"
+    }
+  ],
+  "/category-icons/curd.png": [
+    {
+      "width": 80,
+      "src": "/image-cache/5c9ad06a9190/curd-w80.webp"
+    },
+    {
+      "width": 160,
+      "src": "/image-cache/5c9ad06a9190/curd-w160.webp"
+    },
+    {
+      "width": 280,
+      "src": "/image-cache/5c9ad06a9190/curd-w280.webp"
+    }
+  ],
+  "/category-icons/electronics.png": [
+    {
+      "width": 80,
+      "src": "/image-cache/d3ab175f3381/electronics-w80.webp"
+    },
+    {
+      "width": 160,
+      "src": "/image-cache/d3ab175f3381/electronics-w160.webp"
+    },
+    {
+      "width": 280,
+      "src": "/image-cache/d3ab175f3381/electronics-w280.webp"
+    }
+  ],
+  "/category-icons/food-groceries.png": [
+    {
+      "width": 80,
+      "src": "/image-cache/6c187b44780c/food-groceries-w80.webp"
+    },
+    {
+      "width": 160,
+      "src": "/image-cache/6c187b44780c/food-groceries-w160.webp"
+    },
+    {
+      "width": 280,
+      "src": "/image-cache/6c187b44780c/food-groceries-w280.webp"
+    }
+  ],
+  "/category-icons/general.png": [
+    {
+      "width": 80,
+      "src": "/image-cache/a194c241435b/general-w80.webp"
+    },
+    {
+      "width": 160,
+      "src": "/image-cache/a194c241435b/general-w160.webp"
+    },
+    {
+      "width": 280,
+      "src": "/image-cache/a194c241435b/general-w280.webp"
+    }
+  ],
+  "/category-icons/health-beauty.png": [
+    {
+      "width": 80,
+      "src": "/image-cache/d61d80ca4b58/health-beauty-w80.webp"
+    },
+    {
+      "width": 160,
+      "src": "/image-cache/d61d80ca4b58/health-beauty-w160.webp"
+    },
+    {
+      "width": 280,
+      "src": "/image-cache/d61d80ca4b58/health-beauty-w280.webp"
+    }
+  ],
+  "/category-icons/home-garden.png": [
+    {
+      "width": 80,
+      "src": "/image-cache/9b9d470107ad/home-garden-w80.webp"
+    },
+    {
+      "width": 160,
+      "src": "/image-cache/9b9d470107ad/home-garden-w160.webp"
+    },
+    {
+      "width": 280,
+      "src": "/image-cache/9b9d470107ad/home-garden-w280.webp"
+    }
+  ],
+  "/category-icons/jewelry.png": [
+    {
+      "width": 80,
+      "src": "/image-cache/52bf35ad0f2d/jewelry-w80.webp"
+    },
+    {
+      "width": 160,
+      "src": "/image-cache/52bf35ad0f2d/jewelry-w160.webp"
+    },
+    {
+      "width": 280,
+      "src": "/image-cache/52bf35ad0f2d/jewelry-w280.webp"
+    }
+  ],
+  "/category-icons/juice.png": [
+    {
+      "width": 80,
+      "src": "/image-cache/c1b136b0f0f6/juice-w80.webp"
+    },
+    {
+      "width": 160,
+      "src": "/image-cache/c1b136b0f0f6/juice-w160.webp"
+    },
+    {
+      "width": 280,
+      "src": "/image-cache/c1b136b0f0f6/juice-w280.webp"
+    }
+  ],
+  "/category-icons/kitchen.png": [
+    {
+      "width": 80,
+      "src": "/image-cache/78bd3446f175/kitchen-w80.webp"
+    },
+    {
+      "width": 160,
+      "src": "/image-cache/78bd3446f175/kitchen-w160.webp"
+    },
+    {
+      "width": 280,
+      "src": "/image-cache/78bd3446f175/kitchen-w280.webp"
+    }
+  ],
+  "/category-icons/marketplace.png": [
+    {
+      "width": 80,
+      "src": "/image-cache/20fccb9deb11/marketplace-w80.webp"
+    },
+    {
+      "width": 160,
+      "src": "/image-cache/20fccb9deb11/marketplace-w160.webp"
+    },
+    {
+      "width": 280,
+      "src": "/image-cache/20fccb9deb11/marketplace-w280.webp"
+    }
+  ],
+  "/category-icons/medical.png": [
+    {
+      "width": 80,
+      "src": "/image-cache/edb192cb6fb4/medical-w80.webp"
+    },
+    {
+      "width": 160,
+      "src": "/image-cache/edb192cb6fb4/medical-w160.webp"
+    },
+    {
+      "width": 280,
+      "src": "/image-cache/edb192cb6fb4/medical-w280.webp"
+    }
+  ],
+  "/category-icons/milk.png": [
+    {
+      "width": 80,
+      "src": "/image-cache/594a62442696/milk-w80.webp"
+    },
+    {
+      "width": 160,
+      "src": "/image-cache/594a62442696/milk-w160.webp"
+    },
+    {
+      "width": 280,
+      "src": "/image-cache/594a62442696/milk-w280.webp"
+    }
+  ],
+  "/category-icons/phones.png": [
+    {
+      "width": 80,
+      "src": "/image-cache/8b7747aeba13/phones-w80.webp"
+    },
+    {
+      "width": 160,
+      "src": "/image-cache/8b7747aeba13/phones-w160.webp"
+    },
+    {
+      "width": 280,
+      "src": "/image-cache/8b7747aeba13/phones-w280.webp"
+    }
+  ],
+  "/category-icons/shoes.png": [
+    {
+      "width": 80,
+      "src": "/image-cache/cef8e48957eb/shoes-w80.webp"
+    },
+    {
+      "width": 160,
+      "src": "/image-cache/cef8e48957eb/shoes-w160.webp"
+    },
+    {
+      "width": 280,
+      "src": "/image-cache/cef8e48957eb/shoes-w280.webp"
+    }
+  ],
+  "/category-icons/sports.png": [
+    {
+      "width": 80,
+      "src": "/image-cache/9a45025e0ad9/sports-w80.webp"
+    },
+    {
+      "width": 160,
+      "src": "/image-cache/9a45025e0ad9/sports-w160.webp"
+    },
+    {
+      "width": 280,
+      "src": "/image-cache/9a45025e0ad9/sports-w280.webp"
+    }
+  ],
+  "/category-icons/tomato-paste.png": [
+    {
+      "width": 80,
+      "src": "/image-cache/3dbe6a79420f/tomato-paste-w80.webp"
+    },
+    {
+      "width": 160,
+      "src": "/image-cache/3dbe6a79420f/tomato-paste-w160.webp"
+    },
+    {
+      "width": 280,
+      "src": "/image-cache/3dbe6a79420f/tomato-paste-w280.webp"
+    }
+  ],
+  "/assets/img/home/offer-essentials-20261006.jpg": [
+    {
+      "width": 320,
+      "src": "/image-cache/91a37931c220/offer-essentials-20261006-w320.webp"
+    },
+    {
+      "width": 1200,
+      "src": "/assets/img/home/offer-essentials-20261006.jpg"
+    }
+  ],
+  "/assets/img/home/offer-discover-20261006.jpg": [
+    {
+      "width": 320,
+      "src": "/image-cache/4f38523dd08f/offer-discover-20261006-w320.webp"
+    },
+    {
+      "width": 1200,
+      "src": "/assets/img/home/offer-discover-20261006.jpg"
+    }
+  ],
+  "/assets/img/home/offer-latest-20261006.jpg": [
+    {
+      "width": 320,
+      "src": "/image-cache/f0c253cd4ad4/offer-latest-20261006-w320.webp"
+    },
+    {
+      "width": 1200,
+      "src": "/assets/img/home/offer-latest-20261006.jpg"
+    }
+  ],
+  "/assets/img/home/campaign-marketplace-20261006.jpg": [
+    {
+      "width": 320,
+      "src": "/image-cache/48436b3d8b6e/campaign-marketplace-20261006-w320.webp"
+    },
+    {
+      "width": 1200,
+      "src": "/assets/img/home/campaign-marketplace-20261006.jpg"
+    }
+  ]
+}

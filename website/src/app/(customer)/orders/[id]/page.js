@@ -6,6 +6,7 @@ import { authHeaders } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { formatPrice } from "@/lib/currency";
 import AccountLayout from "@/components/AccountLayout";
+import { responsiveImage } from "@/lib/image";
 
 export default function OrderDetailPage({ params }) {
   const { id } = params;
@@ -128,7 +129,7 @@ export default function OrderDetailPage({ params }) {
                     <tr key={i}>
                       <td>
                         <div className="f2-order-product">
-                          <img src={image} alt="" />
+                          <img {...responsiveImage(image, { widths: [80, 160], sizes: '58px' })} alt="" loading="lazy" decoding="async" />
                           <strong>{item.product?.nameEn || `Product #${item.productId}`}</strong>
                         </div>
                       </td>

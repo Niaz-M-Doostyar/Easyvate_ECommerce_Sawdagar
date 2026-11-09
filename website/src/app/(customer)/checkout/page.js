@@ -8,6 +8,7 @@ import { useCart } from "@/contexts/CartContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useToast } from "@/contexts/ToastContext";
 import { formatPrice } from "@/lib/currency";
+import { responsiveImage } from "@/lib/image";
 
 const PROVINCES = "Badakhshan,Badghis,Baghlan,Balkh,Bamyan,Daykundi,Farah,Faryab,Ghazni,Ghor,Helmand,Herat,Jowzjan,Kabul,Kandahar,Kapisa,Khost,Kunar,Kunduz,Laghman,Logar,Nangarhar,Nimroz,Nuristan,Paktia,Paktika,Panjshir,Parwan,Samangan,Sar-e Pol,Takhar,Uruzgan,Wardak,Zabul".split(",");
 
@@ -339,9 +340,15 @@ export default function CheckoutPage() {
                     <div className="swd-checkout-item" key={item.id || item.productId}>
                       <div className="swd-checkout-item__image">
                         <img
-                          src={getImage(item)}
+                          {...responsiveImage(getImage(item), { widths: [80, 160], sizes: '(max-width: 575px) 52px, 58px' })}
                           alt={productName}
-                          onError={(event) => { event.currentTarget.src = FALLBACK_IMAGE; }}
+                          loading="lazy"
+                          decoding="async"
+                          onError={(event) => {
+                            event.currentTarget.removeAttribute('srcset');
+                            event.currentTarget.removeAttribute('sizes');
+                            if (event.currentTarget.getAttribute('src') !== FALLBACK_IMAGE) event.currentTarget.src = FALLBACK_IMAGE;
+                          }}
                         />
                         <span>{item.quantity}</span>
                       </div>

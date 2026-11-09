@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import siteContentDefaults from "@/data/siteContentDefaults.json";
+import { responsiveImage } from "@/lib/image";
 
 export default function AboutPage() {
   const [content, setContent] = useState(siteContentDefaults.about);
@@ -43,7 +44,7 @@ export default function AboutPage() {
                 <div className="about-img f2-about-collage__images">
                   <div className="row">
                     <div className="col-7">
-                      <img className="img-1" src={content.missionImage || "/assets/img/about/01.jpg"} alt="About Sawdagar" />
+                      <img className="img-1" {...responsiveImage(content.missionImage || "/assets/img/about/01.jpg", { widths: [320, 560, 800], sizes: "(max-width: 991px) 58vw, 320px" })} alt="About Sawdagar" decoding="async" />
                     </div>
                     <div className="col-5 align-self-end">
                       <img className="img-2" src="/assets/img/about/02.jpg" alt="About Sawdagar" />

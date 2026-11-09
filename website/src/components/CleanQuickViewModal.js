@@ -6,14 +6,12 @@ import Link from 'next/link';
 import { useCart } from '@/contexts/CartContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { formatPrice } from '@/lib/currency';
+import { normalizeImageUrl, responsiveImage } from '@/lib/image';
 
 const FALLBACK_IMAGE = '/assets/img/product/e1.png';
 
 function normalizeImage(image) {
-  const url = typeof image === 'string' ? image : image?.url;
-  if (!url) return FALLBACK_IMAGE;
-  if (url.startsWith('http') || url.startsWith('/')) return url;
-  return `/${url}`;
+  return normalizeImageUrl(image);
 }
 
 function translated(t, key, fallback) {
@@ -140,7 +138,7 @@ export default function CleanQuickViewModal({ product, onClose }) {
             <div className="sd-quick-thumbnails" aria-label="Choose product image">
               {images.map((src, index) => (
                 <button type="button" key={`${src}-${index}`} className={index === active ? 'active' : ''} onClick={() => setActive(index)} aria-label={`Show image ${index + 1}`} aria-pressed={index === active}>
-                  <img src={src} alt="" />
+                  <img {...responsiveImage(src, { widths: [80, 160, 280], sizes: '64px' })} alt="" loading="lazy" decoding="async" />
                 </button>
               ))}
             </div>

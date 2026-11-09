@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useCart } from "@/contexts/CartContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { formatPrice } from "@/lib/currency";
+import { responsiveImage } from "@/lib/image";
 
 const FALLBACK_IMAGE = "/assets/img/product/placeholder.png";
 
@@ -143,9 +144,15 @@ export default function CartPage() {
                       <div className="swd-cart-product">
                         <Link href={`/products/${productId}`} className="swd-cart-product__image">
                           <img
-                            src={image}
+                            {...responsiveImage(image, { widths: [80, 160, 280], sizes: '(max-width: 575px) 74px, 86px' })}
                             alt={productName}
-                            onError={(event) => { event.currentTarget.src = FALLBACK_IMAGE; }}
+                            loading="lazy"
+                            decoding="async"
+                            onError={(event) => {
+                              event.currentTarget.removeAttribute('srcset');
+                              event.currentTarget.removeAttribute('sizes');
+                              if (event.currentTarget.getAttribute('src') !== FALLBACK_IMAGE) event.currentTarget.src = FALLBACK_IMAGE;
+                            }}
                           />
                         </Link>
                         <div>

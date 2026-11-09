@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useParams } from "next/navigation";
+import { responsiveImage } from "@/lib/image";
 
 export default function BlogDetailPage() {
   const { slug } = useParams();
@@ -67,7 +68,7 @@ export default function BlogDetailPage() {
               <article className="blog-single-wrap f2-blog-article">
                 {post.image && (
                   <div className="blog-single-img f2-blog-article__media">
-                    <img src={post.image} alt={getTitle(post)} onError={e => { e.target.style.display = 'none'; }} />
+                    <img {...responsiveImage(post.image, { widths: [560, 800, 1200], sizes: '(max-width: 991px) 90vw, 1000px' })} alt={getTitle(post)} decoding="async" onError={e => { e.currentTarget.style.display = 'none'; }} />
                   </div>
                 )}
                 <div className="blog-single-content f2-blog-article__content">

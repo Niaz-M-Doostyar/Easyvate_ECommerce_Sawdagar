@@ -7,8 +7,13 @@ import { useToast } from "@/contexts/ToastContext";
 import { formatPrice } from "@/lib/currency";
 import Pagination from "@/components/Pagination";
 import AccountLayout from "@/components/AccountLayout";
+import { responsiveImage } from "@/lib/image";
 
-const imgBase = process.env.NEXT_PUBLIC_API_URL || "";
+function handleImageFallback(event) {
+  event.currentTarget.removeAttribute('srcset');
+  event.currentTarget.removeAttribute('sizes');
+  if (event.currentTarget.getAttribute('src') !== '/placeholder.png') event.currentTarget.src = '/placeholder.png';
+}
 
 export default function SupplierPortalPage() {
   const { user } = useAuth();
@@ -128,7 +133,7 @@ export default function SupplierPortalPage() {
               {products.map((p) => (
                 <article key={p.id} className="f2-supplier-product">
                   <div className="f2-supplier-product__media">
-                    <img src={p.images?.[0]?.url ? `${imgBase}${p.images[0].url}` : "/placeholder.png"} alt={p.nameEn} onError={e => { e.currentTarget.src = "/placeholder.png"; }} />
+                    <img {...responsiveImage(p.images?.[0]?.url || "/placeholder.png", { widths: [160, 320, 560, 800], sizes: '(max-width: 575px) 90vw, (max-width: 767px) 120px, 150px' })} alt={p.nameEn} loading="lazy" decoding="async" onError={handleImageFallback} />
                   </div>
                   <div className="f2-supplier-product__body">
                     <div className="f2-supplier-product__title">
@@ -184,7 +189,7 @@ export default function SupplierPortalPage() {
                     {(o.items || []).map((item, i) => (
                       <div key={i}>
                         <span className="flex items-center gap-2">
-                          {item.product?.images?.[0]?.url && <img src={item.product.images[0].url} alt="" className="w-10 h-10 rounded object-cover" />}
+                          {item.product?.images?.[0]?.url && <img {...responsiveImage(item.product.images[0].url, { widths: [80, 160], sizes: '40px' })} alt="" className="w-10 h-10 rounded object-cover" loading="lazy" decoding="async" onError={handleImageFallback} />}
                           {item.product?.nameEn || "Product"} × {item.quantity}
                         </span>
                         <strong>{formatPrice(item.retailPrice * item.quantity)}</strong>

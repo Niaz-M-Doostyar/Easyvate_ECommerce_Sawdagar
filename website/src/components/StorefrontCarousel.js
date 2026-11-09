@@ -50,37 +50,152 @@ export function StorefrontCarousel({ children, className = '', label = 'Items' }
   );
 }
 
+function heroImage(image) {
+  return image ? responsiveImage(image, {
+    widths: [320, 560, 800, 1200],
+    sizes: '(max-width: 456px) calc(92vw - 60px), (max-width: 767px) 360px, (max-width: 1199px) 40vw, 514px',
+  }) : null;
+}
+
+function imageKey(image, viewport) {
+  return image ? JSON.stringify([image.src, image.srcSet, image.sizes, viewport]) : '';
+}
+
 export function StorefrontHero({ slides, hero = {} }) {
   const [active, setActive] = useState(0);
-  const [paused, setPaused] = useState(false);
+  const [requested, setRequested] = useState(null);
+  const [hovered, setHovered] = useState(false);
+  const [focused, setFocused] = useState(false);
+  const [reducedMotion, setReducedMotion] = useState(false);
+  const [viewport, setViewport] = useState('');
+  const [loadedImages, setLoadedImages] = useState({});
+  const imageRef = useRef(null);
+  const preloads = useRef(new Map());
   const slideId = useId();
   const safeSlides = Array.isArray(slides) ? slides.filter(Boolean) : [];
+  const slidesKey = JSON.stringify(safeSlides.map(slide => [slide.id, slide.image]));
+  const activeIndex = active < safeSlides.length ? active : 0;
+  const nextIndex = (activeIndex + 1) % (safeSlides.length || 1);
+  const paused = hovered || focused;
+  const slide = safeSlides[activeIndex];
+  const image = heroImage(slide?.image);
+  const currentKey = imageKey(image, viewport);
+  const nextImage = heroImage(safeSlides[nextIndex]?.image);
+  const nextKey = imageKey(nextImage, viewport);
+  const currentSettled = !image || loadedImages[currentKey] !== undefined;
+  const targetIndex = requested ?? nextIndex;
+  const targetImage = heroImage(safeSlides[targetIndex]?.image);
+  const targetKey = imageKey(targetImage, viewport);
 
   useEffect(() => {
-    if (active >= safeSlides.length) setActive(0);
-  }, [active, safeSlides.length]);
+    setActive(0);
+    setRequested(null);
+  }, [slidesKey]);
 
   useEffect(() => {
-    if (safeSlides.length < 2 || paused || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return undefined;
-    const timer = window.setInterval(() => setActive((current) => (current + 1) % safeSlides.length), 7000);
-    return () => window.clearInterval(timer);
-  }, [paused, safeSlides.length]);
+    const media = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const update = () => setReducedMotion(media.matches);
+    update();
+    media.addEventListener?.('change', update);
+    return () => media.removeEventListener?.('change', update);
+  }, []);
+
+  useEffect(() => {
+    let densityQuery;
+    const update = () => {
+      const density = window.devicePixelRatio || 1;
+      setViewport(`${window.innerWidth}:${density}`);
+      densityQuery?.removeEventListener?.('change', update);
+      densityQuery = window.matchMedia(`(resolution: ${density}dppx)`);
+      densityQuery.addEventListener?.('change', update);
+    };
+    update();
+    window.addEventListener('resize', update);
+    return () => {
+      window.removeEventListener('resize', update);
+      densityQuery?.removeEventListener?.('change', update);
+    };
+  }, []);
+
+  // A cached first image may finish before hydration attaches its load handler.
+  useEffect(() => {
+    if (currentKey && imageRef.current?.complete) {
+      const loaded = imageRef.current.naturalWidth > 0;
+      setLoadedImages(current => current[currentKey] === loaded ? current : { ...current, [currentKey]: loaded });
+    }
+  }, [currentKey]);
+
+  useEffect(() => {
+    if (!safeSlides.length) return undefined;
+    const manual = requested !== null;
+    if (!manual && (safeSlides.length < 2 || !currentSettled || paused || reducedMotion || loadedImages[targetKey] === false)) return undefined;
+    if (manual && targetIndex === activeIndex) {
+      setRequested(null);
+      return undefined;
+    }
+
+    let cancelled = false;
+    const finish = (loaded) => {
+      if (cancelled) return;
+      if (targetKey) setLoadedImages(current => current[targetKey] === loaded ? current : { ...current, [targetKey]: loaded });
+      if (manual) {
+        if (loaded) setActive(targetIndex);
+        setRequested(null);
+      }
+    };
+
+    if (!targetImage || loadedImages[targetKey] === true) {
+      finish(true);
+      return undefined;
+    }
+    let preload = preloads.current.get(targetKey);
+    if (!preload) {
+      const loader = new window.Image();
+      preload = new Promise(resolve => {
+        loader.onload = async () => {
+          await loader.decode?.().catch(() => {});
+          resolve(true);
+        };
+        loader.onerror = () => {
+          // A transient failure can be retried by a later manual selection.
+          // The false readiness entry prevents an automatic retry loop.
+          preloads.current.delete(targetKey);
+          resolve(false);
+        };
+      });
+      preloads.current.set(targetKey, preload);
+      loader.decoding = 'async';
+      loader.fetchPriority = manual ? 'high' : 'low';
+      // Set the same responsive candidates before src, avoiding a second fetch
+      // of the fallback URL during preloading or when this image is displayed.
+      if (targetImage.sizes) loader.sizes = targetImage.sizes;
+      if (targetImage.srcSet) loader.srcset = targetImage.srcSet;
+      loader.src = targetImage.src;
+    }
+    preload.then(finish);
+    return () => { cancelled = true; };
+  }, [activeIndex, currentSettled, loadedImages, paused, reducedMotion, requested, safeSlides.length, slidesKey, targetIndex, targetKey]);
+
+  useEffect(() => {
+    if (safeSlides.length < 2 || paused || reducedMotion || requested !== null || !currentSettled || (nextImage && loadedImages[nextKey] !== true)) return undefined;
+    const timer = window.setTimeout(() => setActive(nextIndex), 7000);
+    return () => window.clearTimeout(timer);
+  }, [activeIndex, currentSettled, loadedImages, nextIndex, nextKey, paused, reducedMotion, requested, safeSlides.length, slidesKey]);
 
   if (safeSlides.length === 0) return null;
-  const slide = safeSlides[active] || safeSlides[0];
   const shopHref = slide.primaryButtonHref || hero.primaryButtonHref;
   const shopLabel = slide.primaryButtonLabel || hero.primaryButtonLabel;
-  const selectSlide = (index) => setActive((index + safeSlides.length) % safeSlides.length);
+  const selectSlide = (index) => setRequested((index + safeSlides.length) % safeSlides.length);
 
   return (
     <section
       className="storefront-hero"
       aria-roledescription="carousel"
       aria-label="Featured marketplace offers"
-      onMouseEnter={() => setPaused(true)}
-      onMouseLeave={() => setPaused(false)}
-      onFocusCapture={() => setPaused(true)}
-      onBlurCapture={(event) => { if (!event.currentTarget.contains(event.relatedTarget)) setPaused(false); }}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      onFocusCapture={() => setFocused(true)}
+      onBlurCapture={(event) => { if (!event.currentTarget.contains(event.relatedTarget)) setFocused(false); }}
     >
       <div className="storefront-hero-shape storefront-hero-shape-one" aria-hidden="true" />
       <div className="storefront-hero-shape storefront-hero-shape-two" aria-hidden="true" />
@@ -106,14 +221,17 @@ export function StorefrontHero({ slides, hero = {} }) {
         </div>
 
         {slide.image && (
-          <div className="storefront-hero-visual" key={`visual-${active}`}>
+          <div className="storefront-hero-visual">
             <div className="storefront-hero-image-shell">
               <img
-                src={responsiveImage(slide.image, { widths: [480, 720, 960], quality: 78 }).src}
-                srcSet={responsiveImage(slide.image, { widths: [480, 720, 960], quality: 78 }).srcSet}
-                sizes="(max-width: 991px) 88vw, 580px"
+                {...image}
+                ref={imageRef}
                 alt={slide.title || ''}
+                loading="eager"
                 fetchPriority="high"
+                decoding="async"
+                onLoad={() => setLoadedImages(current => current[currentKey] ? current : { ...current, [currentKey]: true })}
+                onError={() => setLoadedImages(current => current[currentKey] === false ? current : { ...current, [currentKey]: false })}
               />
             </div>
             {slide.priceValue && (
@@ -128,18 +246,18 @@ export function StorefrontHero({ slides, hero = {} }) {
         {safeSlides.length > 1 && (
           <div className="storefront-hero-navigation">
             <div className="storefront-hero-arrows">
-              <button type="button" onClick={() => selectSlide(active - 1)} aria-label="Previous featured offer"><i className="far fa-arrow-left" aria-hidden="true" /></button>
-              <button type="button" onClick={() => selectSlide(active + 1)} aria-label="Next featured offer"><i className="far fa-arrow-right" aria-hidden="true" /></button>
+              <button type="button" onClick={() => selectSlide((requested ?? activeIndex) - 1)} aria-label="Previous featured offer"><i className="far fa-arrow-left" aria-hidden="true" /></button>
+              <button type="button" onClick={() => selectSlide((requested ?? activeIndex) + 1)} aria-label="Next featured offer"><i className="far fa-arrow-right" aria-hidden="true" /></button>
             </div>
             <div className="storefront-hero-dots" role="tablist" aria-label="Choose featured offer">
               {safeSlides.map((item, index) => (
                 <button
                   type="button"
                   key={`${item.title}-${index}`}
-                  className={index === active ? 'active' : ''}
+                  className={index === activeIndex ? 'active' : ''}
                   onClick={() => selectSlide(index)}
                   aria-label={`Show offer ${index + 1}`}
-                  aria-selected={index === active}
+                  aria-selected={index === activeIndex}
                   aria-controls={slideId}
                   role="tab"
                 />

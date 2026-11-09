@@ -1,11 +1,12 @@
 'use client';
 
-import { Fragment, useCallback, useEffect, useState } from 'react';
+import { Fragment, useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useSiteData } from '@/contexts/SiteDataContext';
 import MocartProductItem, { MocartProductListItem } from '@/components/MocartProductItem';
 import { DealCountdown, StorefrontCarousel, StorefrontHero } from '@/components/StorefrontCarousel';
+import { optimizedImageUrl, responsiveImage } from '@/lib/image';
 
 const OFFER_IMAGE_FALLBACKS = [
   '/assets/img/home/offer-essentials-20261006.jpg',
@@ -32,7 +33,41 @@ function imageSource(value) {
 
 function applyImageFallback(event, fallback) {
   const image = event.currentTarget;
+  image.removeAttribute('srcset');
+  image.removeAttribute('sizes');
   if (image.getAttribute('src') !== fallback) image.src = fallback;
+}
+
+function ContentImage({ src, widths = [320, 560, 800], sizes = '(max-width: 767px) 90vw, 420px', ...props }) {
+  return <img {...responsiveImage(src, { widths, sizes })} loading="lazy" decoding="async" {...props} />;
+}
+
+function VideoCard({ image, children }) {
+  const element = useRef(null);
+  const [nearby, setNearby] = useState(false);
+
+  useEffect(() => {
+    if (!image || nearby) return undefined;
+    if (!('IntersectionObserver' in window)) {
+      setNearby(true);
+      return undefined;
+    }
+    const observer = new IntersectionObserver((entries) => {
+      if (entries.some((entry) => entry.isIntersecting)) {
+        setNearby(true);
+        observer.disconnect();
+      }
+    }, { rootMargin: '400px 0px' });
+    if (element.current) observer.observe(element.current);
+    return () => observer.disconnect();
+  }, [image, nearby]);
+
+  const background = nearby && image ? optimizedImageUrl(image, { width: 1200 }) : '';
+  return (
+    <div ref={element} className="sd-video-card" style={{ '--sd-video-image': background ? `url(${JSON.stringify(background)})` : 'none' }}>
+      {children}
+    </div>
+  );
 }
 
 function localizedValue(item, field, lang) {
@@ -374,7 +409,7 @@ export default function HomePageClient({
                   <article className="sd-feature" key={feature.id || feature.title || index}>
                     {featureImage && (
                       <span className="sd-feature-icon">
-                        <img src={featureImage} alt="" loading="lazy" decoding="async" />
+                        <ContentImage src={featureImage} widths={[80, 160]} sizes="48px" alt="" />
                       </span>
                     )}
                     <div>
@@ -403,7 +438,7 @@ export default function HomePageClient({
                   <article className="sd-category-card" key={category.id}>
                     <Link href={'/categories/' + category.slug}>
                       <span className="sd-category-image">
-                        <img src={categoryImage} alt="" loading="lazy" decoding="async" />
+                        <ContentImage src={categoryImage} widths={[80, 160, 280]} sizes="80px" alt="" />
                       </span>
                       <h3>{getName(category)}</h3>
                       <p>{productCount} Items</p>
@@ -423,8 +458,10 @@ export default function HomePageClient({
               {promoBanners.slice(0, 3).map((banner, index) => (
                 <article className="sd-promo-card" key={banner.id || banner.title || index}>
                   <div className="sd-promo-media">
-                    <img
+                    <ContentImage
                       src={banner.resolvedImage}
+                      widths={[320, 560, 800]}
+                      sizes="(max-width: 767px) 90vw, (max-width: 991px) 45vw, 420px"
                       alt=""
                       loading="lazy"
                       decoding="async"
@@ -504,7 +541,7 @@ export default function HomePageClient({
                   <Link href={brand.href || brand.link || '/search'}>
                     {imageSource(brand.image) && (
                       <span className="sd-brand-logo">
-                        <img src={imageSource(brand.image)} alt={brand.name || ''} loading="lazy" decoding="async" />
+                        <ContentImage src={imageSource(brand.image)} widths={[160, 280, 420]} sizes="180px" alt={brand.name || ''} />
                       </span>
                     )}
                     {brand.name && <span className="sd-brand-name">{brand.name}</span>}
@@ -522,8 +559,10 @@ export default function HomePageClient({
           <div className="container">
             <div className="sd-collection-banner">
               <div className="sd-collection-media">
-                <img
+                <ContentImage
                   src={bigBannerImage}
+                  widths={[420, 760, 1200]}
+                  sizes="(max-width: 991px) 90vw, 700px"
                   alt=""
                   loading="lazy"
                   decoding="async"
@@ -554,10 +593,7 @@ export default function HomePageClient({
       {videoId && (
         <section className="sd-section sd-editorial-section">
           <div className="container">
-            <div
-              className="sd-video-card"
-              style={{ '--sd-video-image': videoImage ? 'url("' + videoImage + '")' : 'none' }}
-            >
+            <VideoCard image={videoImage}>
               {videoPlaying ? (
                 <iframe
                   src={'https://www.youtube.com/embed/' + videoId + '?autoplay=1&rel=0'}
@@ -574,7 +610,7 @@ export default function HomePageClient({
                   </button>
                 </div>
               )}
-            </div>
+            </VideoCard>
           </div>
         </section>
       )}
@@ -618,7 +654,7 @@ export default function HomePageClient({
               </div>
               {dealImage && (
                 <div className="sd-deal-visual">
-                  <img src={dealImage} alt="" loading="lazy" decoding="async" />
+                  <ContentImage src={dealImage} widths={[420, 760, 1200]} sizes="(max-width: 767px) 90vw, 530px" alt="" />
                   {dealOfWeek.discountPercent !== undefined && dealOfWeek.discountPercent !== '' && (
                     <span className="sd-deal-discount">
                       <strong>
@@ -654,7 +690,7 @@ export default function HomePageClient({
                   onClick={() => openGallery(index)}
                   aria-label={'Open gallery image ' + (index + 1)}
                 >
-                  <img src={item.resolvedImage} alt={item.alt || ''} loading="lazy" decoding="async" />
+                  <ContentImage src={item.resolvedImage} widths={[320, 560, 800, 1200]} sizes={item.isWide ? '(max-width: 767px) 90vw, 560px' : '(max-width: 767px) 45vw, 280px'} alt={item.alt || ''} />
                   <span><i className="fal fa-plus" aria-hidden="true" /></span>
                 </button>
               ))}
@@ -724,7 +760,7 @@ export default function HomePageClient({
                     {(item.name || item.role || imageSource(item.image)) && (
                       <figcaption>
                         {imageSource(item.image) && (
-                          <img src={imageSource(item.image)} alt="" loading="lazy" decoding="async" />
+                          <ContentImage src={imageSource(item.image)} widths={[80, 160]} sizes="52px" alt="" />
                         )}
                         <span>
                           {item.name && <strong>{item.name}</strong>}
@@ -765,11 +801,11 @@ export default function HomePageClient({
                     {postImage && (
                       postHref ? (
                         <Link href={postHref} className="sd-blog-image">
-                          <img src={postImage} alt={title} loading="lazy" decoding="async" />
+                          <ContentImage src={postImage} alt={title} />
                         </Link>
                       ) : (
                         <span className="sd-blog-image">
-                          <img src={postImage} alt={title} loading="lazy" decoding="async" />
+                          <ContentImage src={postImage} alt={title} />
                         </span>
                       )
                     )}
@@ -846,7 +882,7 @@ export default function HomePageClient({
               {instagramItems.map((item, index) => {
                 const content = (
                   <>
-                    <img src={item.resolvedImage} alt={item.alt || ''} loading="lazy" decoding="async" />
+                    <ContentImage src={item.resolvedImage} widths={[160, 280, 560]} sizes="(max-width: 767px) 45vw, 230px" alt={item.alt || ''} />
                     <span><i className="fab fa-instagram" aria-hidden="true" /></span>
                   </>
                 );
